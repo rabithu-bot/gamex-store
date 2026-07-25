@@ -46,15 +46,16 @@ export default function ImageGallery({ images, alt }) {
         className="gallery-main-wrap"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onClick={() => setZoomed(true)}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={active}
-          className={`gallery-main gallery-zoomable ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
+          className={`gallery-main ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
           src={gallery[active]}
           alt={alt}
-          onClick={() => setZoomed(true)}
         />
+        {/* Single zoom badge — bottom-left, inside the fixed-size box above. */}
         <div className="gallery-zoom-hint" aria-hidden="true">
           <ZoomIn size={14} />
           Tap to zoom
@@ -65,7 +66,10 @@ export default function ImageGallery({ images, alt }) {
               type="button"
               className="gallery-nav prev"
               aria-label="Previous photo"
-              onClick={() => goTo(active - 1, -1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active - 1, -1);
+              }}
             >
               <ChevronLeft size={20} />
             </button>
@@ -73,7 +77,10 @@ export default function ImageGallery({ images, alt }) {
               type="button"
               className="gallery-nav next"
               aria-label="Next photo"
-              onClick={() => goTo(active + 1, 1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(active + 1, 1);
+              }}
             >
               <ChevronRight size={20} />
             </button>
@@ -86,21 +93,21 @@ export default function ImageGallery({ images, alt }) {
       {gallery.length > 1 && (
         <div className="gallery-thumbs">
           {gallery.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <button
               key={src}
               ref={(el) => (thumbRefs.current[i] = el)}
-              src={src}
-              alt={`${alt} thumbnail ${i + 1}`}
-              className={`gallery-thumb ${i === active ? "active" : ""}`}
+              type="button"
+              className={`gallery-thumb-btn ${i === active ? "active" : ""}`}
               onClick={() => goTo(i)}
-            />
+              aria-label={`View photo ${i + 1}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`${alt} thumbnail ${i + 1}`} className="gallery-thumb-img" />
+            </button>
           ))}
         </div>
       )}
-      {zoomed && (
-        <Lightbox src={gallery[active]} alt={alt} onClose={() => setZoomed(false)} />
-      )}
+      {zoomed && <Lightbox src={gallery[active]} alt={alt} onClose={() => setZoomed(false)} />}
     </div>
   );
 }
