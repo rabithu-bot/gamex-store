@@ -22,6 +22,8 @@ export async function POST(request) {
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
   const price = Number(formData.get("price"));
+  const originalPriceRaw = formData.get("originalPrice");
+  const originalPrice = originalPriceRaw ? Number(originalPriceRaw) : null;
   const category = String(formData.get("category") || "").trim();
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
@@ -42,6 +44,10 @@ export async function POST(request) {
       title,
       description,
       price,
+      // Only stored as a real discount when it's actually higher than price —
+      // the display layer also checks this, but keeping bad data out at the
+      // source avoids a listing quietly claiming a "discount" that's not one.
+      originalPrice: originalPrice && originalPrice > price ? originalPrice : null,
       category,
       accountId,
       accountPassword,

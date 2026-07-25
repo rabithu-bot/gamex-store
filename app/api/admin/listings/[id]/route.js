@@ -19,6 +19,11 @@ export async function PUT(request, { params }) {
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
   const price = Number(formData.get("price"));
+  const finalPrice = price || existing.price;
+  // Cleared (left blank) means "no discount" — unlike the fields above, this
+  // one has to be settable back to null, so it can't fall back to existing.
+  const originalPriceRaw = formData.get("originalPrice");
+  const originalPrice = originalPriceRaw ? Number(originalPriceRaw) : null;
   const category = String(formData.get("category") || "").trim();
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
@@ -37,7 +42,8 @@ export async function PUT(request, { params }) {
     data: {
       title: title || existing.title,
       description: description || existing.description,
-      price: price || existing.price,
+      price: finalPrice,
+      originalPrice: originalPrice && originalPrice > finalPrice ? originalPrice : null,
       category: category || existing.category,
       accountId: accountId || existing.accountId,
       accountPassword: accountPassword || existing.accountPassword,

@@ -266,6 +266,13 @@ select:focus-visible {
   gap: 0.4rem;
 }
 
+.card-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
 .badge {
   display: inline-block;
   font-size: 0.7rem;
@@ -863,6 +870,77 @@ select:focus-visible {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
+}
+
+/* ---- Product info column (title/price/description/trust) ---- */
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-info h1 {
+  line-height: 1.25;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.price-original {
+  text-decoration: line-through;
+  opacity: 0.5;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.price-original-sm {
+  font-size: 0.75rem;
+}
+
+.price-discount-badge {
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.product-description {
+  line-height: 1.6;
+}
+
+.buy-bar-price-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* ---- Trust badges ---- */
+
+.trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c4b5fd;
 }
 
 /* ---- Buy bar: inline on desktop, sticky app-style CTA bar on mobile ---- */

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ShieldCheck, Zap, Headset } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import SiteHeader from "@/app/components/SiteHeader";
 import ListingCard from "@/app/components/ListingCard";
@@ -38,6 +39,10 @@ export default async function ProductPage({ params }) {
 
   const images = JSON.parse(listing.images || "[]");
   const similarListings = await getSimilarListings(listing);
+  const hasDiscount = listing.originalPrice && listing.originalPrice > listing.price;
+  const discountPercent = hasDiscount
+    ? Math.round((1 - listing.price / listing.originalPrice) * 100)
+    : 0;
 
   return (
     <>
@@ -47,20 +52,31 @@ export default async function ProductPage({ params }) {
           <div>
             <ImageGallery images={images} alt={listing.title} />
           </div>
-          <div>
+          <div className="product-info">
             <span className="badge">{listing.category}</span>
-            <h1 style={{ marginTop: "0.6rem" }}>{listing.title}</h1>
-            <p className="price" style={{ fontSize: "1.5rem", margin: "0.6rem 0" }}>
-              ₹{listing.price.toLocaleString("en-IN")}
-            </p>
-            <p className="muted" style={{ whiteSpace: "pre-wrap" }}>
-              {listing.description}
-            </p>
+            <h1>{listing.title}</h1>
+            <div className="price-row">
+              {hasDiscount && (
+                <span className="price-original">₹{listing.originalPrice.toLocaleString("en-IN")}</span>
+              )}
+              <span className="price" style={{ fontSize: "1.5rem" }}>
+                ₹{listing.price.toLocaleString("en-IN")}
+              </span>
+              {hasDiscount && <span className="price-discount-badge">{discountPercent}% OFF</span>}
+            </div>
+            <p className="muted product-description">{listing.description}</p>
 
             <div className="buy-bar">
               <div className="buy-bar-mobile-price">
                 <span className="muted">Price</span>
-                <strong className="price">₹{listing.price.toLocaleString("en-IN")}</strong>
+                <span className="buy-bar-price-value">
+                  {hasDiscount && (
+                    <span className="price-original price-original-sm">
+                      ₹{listing.originalPrice.toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  <strong className="price">₹{listing.price.toLocaleString("en-IN")}</strong>
+                </span>
               </div>
               {listing.status === "available" ? (
                 <BuyForm listingId={listing.id} listingTitle={listing.title} />
@@ -69,6 +85,21 @@ export default async function ProductPage({ params }) {
                   Sold
                 </p>
               )}
+            </div>
+
+            <div className="trust-badges">
+              <div className="trust-badge">
+                <ShieldCheck size={18} />
+                <span>100% Verified Account</span>
+              </div>
+              <div className="trust-badge">
+                <Zap size={18} />
+                <span>Instant Delivery, Safe Transfer</span>
+              </div>
+              <div className="trust-badge">
+                <Headset size={18} />
+                <span>24/7 Support</span>
+              </div>
             </div>
           </div>
         </div>

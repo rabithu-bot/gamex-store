@@ -6,6 +6,7 @@ const emptyForm = {
   title: "",
   description: "",
   price: "",
+  originalPrice: "",
   category: "",
   accountId: "",
   accountPassword: "",
@@ -57,6 +58,7 @@ export default function ListingsPanel() {
       title: listing.title,
       description: listing.description,
       price: listing.price,
+      originalPrice: listing.originalPrice || "",
       category: listing.category,
       accountId: listing.accountId,
       accountPassword: listing.accountPassword,
@@ -109,14 +111,23 @@ export default function ListingsPanel() {
             />
           </div>
           <div className="form-field">
-            <label>Category</label>
+            <label>Original Price (₹, optional)</label>
             <input
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="Free Fire / PUBG / ..."
-              required
+              type="number"
+              value={form.originalPrice}
+              onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+              placeholder="Shows struck through if higher than price"
             />
           </div>
+        </div>
+        <div className="form-field">
+          <label>Category</label>
+          <input
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            placeholder="Free Fire / PUBG / ..."
+            required
+          />
         </div>
         <div className="field-grid-2">
           <div className="form-field">
@@ -184,15 +195,24 @@ export default function ListingsPanel() {
                   />
                 </div>
                 <div className="form-field">
-                  <label>Status</label>
-                  <select
-                    value={editForm.status}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  >
-                    <option value="available">available</option>
-                    <option value="sold">sold</option>
-                  </select>
+                  <label>Original Price (₹, optional)</label>
+                  <input
+                    type="number"
+                    value={editForm.originalPrice}
+                    onChange={(e) => setEditForm({ ...editForm, originalPrice: e.target.value })}
+                    placeholder="Blank = no discount shown"
+                  />
                 </div>
+              </div>
+              <div className="form-field">
+                <label>Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <option value="available">available</option>
+                  <option value="sold">sold</option>
+                </select>
               </div>
               <div className="field-grid-2">
                 <div className="form-field">
@@ -223,7 +243,11 @@ export default function ListingsPanel() {
                 <strong>{listing.title}</strong>{" "}
                 <span className={`status-pill ${listing.status}`}>{listing.status}</span>
                 <div className="muted">
-                  {listing.category} · ₹{listing.price.toLocaleString("en-IN")}
+                  {listing.category} ·{" "}
+                  {listing.originalPrice > listing.price && (
+                    <span className="price-original">₹{listing.originalPrice.toLocaleString("en-IN")}</span>
+                  )}{" "}
+                  ₹{listing.price.toLocaleString("en-IN")}
                 </div>
                 <div className="muted">Account ID: {listing.accountId}</div>
               </div>

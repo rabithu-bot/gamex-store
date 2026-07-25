@@ -7,6 +7,7 @@ export default function ListingCard({ listing }) {
   const images = JSON.parse(listing.images || "[]");
   const innerRef = useRef(null);
   const glareRef = useRef(null);
+  const hasDiscount = listing.originalPrice && listing.originalPrice > listing.price;
 
   function handleMouseMove(e) {
     const el = innerRef.current;
@@ -42,7 +43,14 @@ export default function ListingCard({ listing }) {
         <div className="card-body">
           <span className="badge">{listing.category}</span>
           <strong>{listing.title}</strong>
-          <span className="price">₹{listing.price.toLocaleString("en-IN")}</span>
+          <span className="card-price-row">
+            {hasDiscount && (
+              <span className="price-original price-original-sm">
+                ₹{listing.originalPrice.toLocaleString("en-IN")}
+              </span>
+            )}
+            <span className="price">₹{listing.price.toLocaleString("en-IN")}</span>
+          </span>
         </div>
         <div ref={glareRef} className="tilt-card-glare" />
       </div>

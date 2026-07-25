@@ -57,7 +57,7 @@ export default function ImageGallery({ images, alt }) {
         />
         <div className="gallery-zoom-hint" aria-hidden="true">
           <ZoomIn size={14} />
-          Click to zoom
+          Tap to zoom
         </div>
         {gallery.length > 1 && (
           <>

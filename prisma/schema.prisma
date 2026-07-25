@@ -17,6 +17,7 @@ model Listing {
   title           String
   description     String
   price           Int
+  originalPrice   Int? // optional "was" price, shown struck through next to price when higher
   category        String
   images          String // JSON array of file paths
   status          String   @default("available") // available | sold
