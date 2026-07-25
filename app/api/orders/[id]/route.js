@@ -1,0 +1,43 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/app/lib/prisma";
+
+export async function GET(request, { params }) {
+  const { id } = await params;
+  const order = await prisma.order.findUnique({
+    where: { id: Number(id) },
+    include: { listing: true, messages: { orderBy: { createdAt: "asc" } } },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  const response = {
+    id: order.id,
+    status: order.status,
+    buyerName: order.buyerName,
+    createdAt: order.createdAt,
+    proofSubmitted: Boolean(order.screenshotPath),
+    messages: order.messages.map((m) => ({
+      id: m.id,
+      sender: m.sender,
+      body: m.body,
+      attachmentPath: m.attachmentPath,
+      createdAt: m.createdAt,
+    })),
+    listing: {
+      id: order.listing?.id ?? null,
+      title: order.listingTitle,
+      price: order.listingPrice,
+    },
+  };
+
+  if (order.status === "confirmed") {
+    response.account = {
+      accountId: order.accountId,
+      accountPassword: order.accountPassword,
+    };
+  }
+
+  return NextResponse.json(response);
+}

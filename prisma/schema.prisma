@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Listing {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String
+  price           Int
+  category        String
+  images          String // JSON array of file paths
+  status          String   @default("available") // available | sold
+  accountId       String
+  accountPassword String
+  createdAt       DateTime @default(now())
+  orders          Order[]
+}
+
+model Order {
+  id     Int      @id @default(autoincrement())
+  // Nullable + SetNull: deleting a listing must never take its orders (and their
+  // messages) down with it. Buyer name, title/price/credentials are snapshotted
+  // onto the order at purchase time so the order stays fully readable forever,
+  // independent of whatever happens to the listing afterward.
+  listingId       Int?
+  listing         Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  listingTitle    String
+  listingPrice    Int
+  accountId       String
+  accountPassword String
+  buyerName       String?
+  screenshotPath  String?
+  status          String    @default("pending") // pending | confirmed
+  createdAt       DateTime  @default(now())
+  confirmedAt     DateTime?
+  messages        Message[]
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  orderId        Int
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender         String // buyer | admin
+  body           String
+  attachmentPath String?
+  createdAt      DateTime @default(now())
+}
+
+model QuickReply {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
