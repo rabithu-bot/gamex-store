@@ -250,7 +250,7 @@ select:focus-visible {
 .card-image {
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
+  object-fit: contain;
   background: var(--accent-soft);
   transition: transform 0.35s ease;
 }
@@ -873,7 +873,7 @@ select:focus-visible {
 
 @media (max-width: 640px) {
   .product-page-main {
-    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+    padding-bottom: calc(280px + env(safe-area-inset-bottom));
   }
 
   .buy-bar {
@@ -926,15 +926,17 @@ select:focus-visible {
   position: relative;
   overflow: hidden;
   border-radius: 16px;
+  height: min(50vh, 420px);
+  background: var(--surface);
 }
 
 .gallery-main {
-  width: 100%;
-  border-radius: 16px;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border: 1px solid var(--border);
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid var(--border);
 }
 
 .gallery-slide-next {
@@ -1017,7 +1019,8 @@ select:focus-visible {
   height: 64px;
   flex-shrink: 0;
   border-radius: 10px;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--surface);
   cursor: pointer;
   border: 2px solid transparent;
   opacity: 0.6;
@@ -2297,7 +2300,7 @@ select:focus-visible {
    above this breakpoint untouched.
    ========================================================================= */
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   /* Listings read as a compact horizontal list, like a marketplace app,
      instead of a vertical card grid. */
   .listing-grid {
@@ -2399,7 +2402,7 @@ select:focus-visible {
   transform: scale(0.94);
 }
 
-@media (min-width: 601px) {
+@media (min-width: 641px) {
   .mobile-tab-bar {
     display: none;
   }
