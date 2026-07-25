@@ -6,7 +6,7 @@ export default function SiteHeader() {
       <Link href="/" className="brand">
         GAMEX STORE
       </Link>
-      <nav>
+      <nav className="site-header-nav-desktop">
         <Link href="/orders">My Orders</Link>
       </nav>
     </header>

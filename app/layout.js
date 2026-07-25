@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "./components/Toast";
 import AuroraBackground from "./components/AuroraBackground";
 import SplashScreen from "./components/SplashScreen";
+import MobileTabBar from "./components/MobileTabBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
         <AuroraBackground />
         <SplashScreen />
         <ToastProvider>{children}</ToastProvider>
+        <MobileTabBar />
       </body>
     </html>
   );

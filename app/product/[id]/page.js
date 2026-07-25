@@ -42,7 +42,7 @@ export default async function ProductPage({ params }) {
   return (
     <>
       <SiteHeader />
-      <main className="container">
+      <main className="container product-page-main">
         <div className="product-layout">
           <div>
             <ImageGallery images={images} alt={listing.title} />
@@ -57,13 +57,19 @@ export default async function ProductPage({ params }) {
               {listing.description}
             </p>
 
-            {listing.status === "available" ? (
-              <BuyForm listingId={listing.id} listingTitle={listing.title} />
-            ) : (
-              <p className="status-pill sold" style={{ marginTop: "1rem" }}>
-                Sold
-              </p>
-            )}
+            <div className="buy-bar">
+              <div className="buy-bar-mobile-price">
+                <span className="muted">Price</span>
+                <strong className="price">₹{listing.price.toLocaleString("en-IN")}</strong>
+              </div>
+              {listing.status === "available" ? (
+                <BuyForm listingId={listing.id} listingTitle={listing.title} />
+              ) : (
+                <p className="status-pill sold" style={{ marginTop: "1rem" }}>
+                  Sold
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

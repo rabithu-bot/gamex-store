@@ -12,6 +12,13 @@
 html {
   height: 100%;
   color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 html,
@@ -97,6 +104,22 @@ select:focus-visible {
   margin: 0 auto;
   padding: 1.5rem;
   flex: 1;
+  animation: page-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Opacity-only: an animated `transform` here (even one that settles at
+   translateY(0)) would make this element a containing block for any
+   position:fixed descendant — e.g. the mobile buy bar or the Lightbox —
+   pinning them to this box instead of the viewport. Opacity is safe. */
+@keyframes page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    animation: none;
+  }
 }
 
 /* ---- Hero ---- */
@@ -196,6 +219,27 @@ select:focus-visible {
   flex-direction: column;
   background: var(--surface);
   transition: transform 0.15s ease, border-color 0.15s ease;
+  animation: card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.listing-grid .card:nth-child(1) { animation-delay: 0.02s; }
+.listing-grid .card:nth-child(2) { animation-delay: 0.06s; }
+.listing-grid .card:nth-child(3) { animation-delay: 0.1s; }
+.listing-grid .card:nth-child(4) { animation-delay: 0.14s; }
+.listing-grid .card:nth-child(5) { animation-delay: 0.18s; }
+.listing-grid .card:nth-child(6) { animation-delay: 0.22s; }
+.listing-grid .card:nth-child(7) { animation-delay: 0.26s; }
+.listing-grid .card:nth-child(8) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
 }
 
 .card:hover {
@@ -254,10 +298,15 @@ select:focus-visible {
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   color: white;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn:hover {
   filter: brightness(1.08);
+}
+
+.btn:active {
+  transform: scale(0.96);
 }
 
 .btn.secondary {
@@ -275,6 +324,7 @@ select:focus-visible {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .form-field {
@@ -812,6 +862,63 @@ select:focus-visible {
   .product-layout {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+}
+
+/* ---- Buy bar: inline on desktop, sticky app-style CTA bar on mobile ---- */
+
+.buy-bar-mobile-price {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .product-page-main {
+    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+
+  .buy-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 1.25rem;
+    background: rgba(13, 11, 23, 0.92);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3);
+    animation: buy-bar-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .buy-bar-mobile-price {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  .buy-bar-mobile-price .price {
+    font-size: 1.15rem;
+  }
+
+  .buy-bar > *:not(.buy-bar-mobile-price) {
+    margin-top: 0 !important;
+    flex: 1;
+  }
+}
+
+@keyframes buy-bar-in {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy-bar {
+    animation: none;
   }
 }
 
@@ -2181,5 +2288,119 @@ select:focus-visible {
   .tabs button,
   .btn {
     min-height: 40px;
+  }
+}
+
+/* =========================================================================
+   Distinct mobile experience — a native-app-like list/tab layout instead of
+   just a shrunk desktop grid. Desktop keeps the tilt-card grid + hover chrome
+   above this breakpoint untouched.
+   ========================================================================= */
+
+@media (max-width: 600px) {
+  /* Listings read as a compact horizontal list, like a marketplace app,
+     instead of a vertical card grid. */
+  .listing-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .card {
+    border-radius: 14px;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+
+  /* .card's only direct child is .tilt-card-inner (a plain block div) — the
+     row layout has to live here, not on .card, or it never reaches the
+     image/body underneath. */
+  .tilt-card-inner {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .card-image {
+    width: 108px;
+    height: 108px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+  }
+
+  .card:hover .card-image {
+    transform: none;
+  }
+
+  .card-body {
+    padding: 0.7rem 0.8rem;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .card-body strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    font-size: 0.62rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  .site-header-nav-desktop {
+    display: none;
+  }
+}
+
+/* ---- Mobile bottom tab bar (app-like primary nav) ---- */
+
+.mobile-tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(13, 11, 23, 0.85);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+}
+
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0 0.5rem;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 0.68rem;
+  font-weight: 600;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.mobile-tab.active {
+  opacity: 1;
+  color: #c4b5fd;
+}
+
+.mobile-tab:active {
+  transform: scale(0.94);
+}
+
+@media (min-width: 601px) {
+  .mobile-tab-bar {
+    display: none;
   }
 }
