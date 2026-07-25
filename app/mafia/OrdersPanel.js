@@ -113,7 +113,7 @@ export default function OrdersPanel() {
                 </td>
                 <td>
                   {order.screenshotPath ? (
-                    <a href={`/api/admin/uploads/${order.screenshotPath}`} target="_blank" rel="noreferrer">
+                    <a href={order.screenshotPath} target="_blank" rel="noreferrer">
                       View
                     </a>
                   ) : (

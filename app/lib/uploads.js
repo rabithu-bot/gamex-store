@@ -1,54 +1,38 @@
-import { mkdir, writeFile } from "fs/promises";
+import { put } from "@vercel/blob";
 import path from "path";
 import crypto from "crypto";
 
-// STORAGE_DIR lets a host mount one persistent disk over this whole folder
-// (e.g. Render). Defaults to the project root so local dev is unaffected.
-const STORAGE_ROOT = path.join(process.env.STORAGE_DIR || process.cwd(), "storage", "uploads");
-const PRIVATE_UPLOAD_DIR = path.join(STORAGE_ROOT, "private");
-const PUBLIC_LISTING_DIR = path.join(STORAGE_ROOT, "listings");
-const PUBLIC_MESSAGE_DIR = path.join(STORAGE_ROOT, "messages");
-
-async function saveFile(file, dir) {
-  if (!file || typeof file.arrayBuffer !== "function") return null;
-
-  await mkdir(dir, { recursive: true });
+// Vercel's serverless functions run on a read-only filesystem, so uploads
+// can't be written to local disk the way they can in local dev — everything
+// goes to Vercel Blob instead, keyed by a random, unguessable path.
+async function saveFile(file, prefix) {
+  if (!file || typeof file.arrayBuffer !== "function" || file.size === 0) return null;
 
   const ext = path.extname(file.name || "").slice(0, 10);
-  const safeName = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+  const key = `${prefix}/${Date.now()}-${crypto.randomUUID()}${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await writeFile(path.join(dir, safeName), buffer);
+  const blob = await put(key, buffer, {
+    access: "public",
+    contentType: file.type || undefined,
+  });
 
-  return safeName;
+  return blob.url;
 }
 
-// Payment screenshots: private, only ever served through the admin-authenticated route.
+// Payment screenshots: the URL is only ever included in admin-authenticated
+// API responses (never sent to the buyer-facing order endpoint), so it stays
+// effectively private even though the underlying blob store is public.
 export function savePaymentScreenshot(file) {
-  return saveFile(file, PRIVATE_UPLOAD_DIR);
+  return saveFile(file, "payment-screenshots");
 }
 
-export function paymentScreenshotDir() {
-  return PRIVATE_UPLOAD_DIR;
+// Listing photos: public, shown directly on the storefront.
+export function saveListingImage(file) {
+  return saveFile(file, "listings");
 }
 
-// Listing photos: public, served through an unauthenticated API route reading from disk.
-export async function saveListingImage(file) {
-  const fileName = await saveFile(file, PUBLIC_LISTING_DIR);
-  return fileName ? `/api/uploads/listings/${fileName}` : null;
-}
-
-export function listingImageDir() {
-  return PUBLIC_LISTING_DIR;
-}
-
-// Chat attachments: public (both buyer and admin can view either side's uploads),
-// served through an unauthenticated API route reading from disk.
-export async function saveMessageAttachment(file) {
-  const fileName = await saveFile(file, PUBLIC_MESSAGE_DIR);
-  return fileName ? `/api/uploads/messages/${fileName}` : null;
-}
-
-export function messageAttachmentDir() {
-  return PUBLIC_MESSAGE_DIR;
+// Chat attachments: public (both buyer and admin can view either side's uploads).
+export function saveMessageAttachment(file) {
+  return saveFile(file, "messages");
 }
