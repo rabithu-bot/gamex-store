@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
-const SWIPE_THRESHOLD = 40;
+const SWIPE_THRESHOLD = 28;
 
 export default function ImageGallery({ images, alt }) {
   const gallery = images.length > 0 ? images : ["/window.svg"];

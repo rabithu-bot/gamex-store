@@ -1007,8 +1007,10 @@ select:focus-visible {
 .gallery-main-wrap {
   position: relative;
   width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
   aspect-ratio: 1 / 1;
-  max-height: 400px;
+  max-height: 320px;
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--border);
@@ -1026,21 +1028,24 @@ select:focus-visible {
 }
 
 .gallery-slide-next {
-  animation: gallery-slide-from-right 0.35s ease both;
+  animation: gallery-slide-from-right 0.18s ease-out both;
 }
 
 .gallery-slide-prev {
-  animation: gallery-slide-from-left 0.35s ease both;
+  animation: gallery-slide-from-left 0.18s ease-out both;
 }
 
+/* Transform-only — no opacity dip — so the next photo is fully visible the
+   instant it appears instead of fading in over the dark background (that
+   fade was the "blank space" flash during a swipe). */
 @keyframes gallery-slide-from-right {
-  from { transform: translateX(8%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translateX(5%); }
+  to { transform: translateX(0); }
 }
 
 @keyframes gallery-slide-from-left {
-  from { transform: translateX(-8%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translateX(-5%); }
+  to { transform: translateX(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1097,8 +1102,9 @@ select:focus-visible {
 
 .gallery-thumbs {
   display: flex;
+  max-width: 340px;
+  margin: 1rem auto 0;
   gap: 0.5rem;
-  margin-top: 1rem;
   padding-bottom: 0.5rem;
   overflow-x: auto;
 }

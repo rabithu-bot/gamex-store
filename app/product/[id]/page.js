@@ -64,8 +64,6 @@ export default async function ProductPage({ params }) {
               </span>
               {hasDiscount && <span className="price-discount-badge">{discountPercent}% OFF</span>}
             </div>
-            <p className="muted product-description">{listing.description}</p>
-
             <div className="buy-bar">
               <div className="buy-bar-mobile-price">
                 <span className="muted">Price</span>
@@ -86,6 +84,8 @@ export default async function ProductPage({ params }) {
                 </p>
               )}
             </div>
+
+            <p className="muted product-description">{listing.description}</p>
 
             <div className="trust-badges">
               <div className="trust-badge">
