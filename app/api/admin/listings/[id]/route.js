@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { saveListingImage } from "@/app/lib/uploads";
+import { parseRareItems } from "@/app/lib/listingTags";
 
 export async function PUT(request, { params }) {
   if (!(await requireAdmin())) {
@@ -28,6 +29,11 @@ export async function PUT(request, { params }) {
   // Blank clears it (like originalPrice) rather than falling back to the
   // existing value — an admin removing the UID needs that to actually stick.
   const gameUid = String(formData.get("gameUid") || "").trim() || null;
+  const tier = String(formData.get("tier") || "").trim() || null;
+  const levelRaw = formData.get("level");
+  const level = levelRaw ? Number(levelRaw) : null;
+  const server = String(formData.get("server") || "").trim() || null;
+  const rareItems = parseRareItems(formData.get("rareItems"));
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const status = String(formData.get("status") || existing.status);
@@ -49,6 +55,10 @@ export async function PUT(request, { params }) {
       originalPrice: originalPrice && originalPrice > finalPrice ? originalPrice : null,
       category: category || existing.category,
       gameUid,
+      tier,
+      level,
+      server,
+      rareItems: JSON.stringify(rareItems),
       accountId: accountId || existing.accountId,
       accountPassword: accountPassword || existing.accountPassword,
       status,

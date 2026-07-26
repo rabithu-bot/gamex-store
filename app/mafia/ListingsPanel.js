@@ -9,6 +9,10 @@ const emptyForm = {
   originalPrice: "",
   category: "",
   gameUid: "",
+  tier: "",
+  level: "",
+  server: "",
+  rareItems: "",
   accountId: "",
   accountPassword: "",
 };
@@ -62,6 +66,10 @@ export default function ListingsPanel() {
       originalPrice: listing.originalPrice || "",
       category: listing.category,
       gameUid: listing.gameUid || "",
+      tier: listing.tier || "",
+      level: listing.level || "",
+      server: listing.server || "",
+      rareItems: (listing.rareItems || []).join(", "),
       accountId: listing.accountId,
       accountPassword: listing.accountPassword,
       status: listing.status,
@@ -137,6 +145,40 @@ export default function ListingsPanel() {
             value={form.gameUid}
             onChange={(e) => setForm({ ...form, gameUid: e.target.value })}
             placeholder="Public in-game ID shown to buyers, e.g. 2083601348"
+          />
+        </div>
+        <div className="field-grid-2">
+          <div className="form-field">
+            <label>Tier badge (optional)</label>
+            <input
+              value={form.tier}
+              onChange={(e) => setForm({ ...form, tier: e.target.value })}
+              placeholder="Premium / Standard / ..."
+            />
+          </div>
+          <div className="form-field">
+            <label>Level (optional)</label>
+            <input
+              type="number"
+              value={form.level}
+              onChange={(e) => setForm({ ...form, level: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="form-field">
+          <label>Server (optional)</label>
+          <input
+            value={form.server}
+            onChange={(e) => setForm({ ...form, server: e.target.value })}
+            placeholder="India / Asia / Global / ..."
+          />
+        </div>
+        <div className="form-field">
+          <label>Rare items included (optional)</label>
+          <input
+            value={form.rareItems}
+            onChange={(e) => setForm({ ...form, rareItems: e.target.value })}
+            placeholder="Comma-separated, e.g. 3 EVO MAX, PRIME 7, 1500 Diamonds Available"
           />
         </div>
         <div className="field-grid-2">
@@ -234,6 +276,40 @@ export default function ListingsPanel() {
               </div>
               <div className="field-grid-2">
                 <div className="form-field">
+                  <label>Tier badge (optional)</label>
+                  <input
+                    value={editForm.tier}
+                    onChange={(e) => setEditForm({ ...editForm, tier: e.target.value })}
+                    placeholder="Premium / Standard / ..."
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Level (optional)</label>
+                  <input
+                    type="number"
+                    value={editForm.level}
+                    onChange={(e) => setEditForm({ ...editForm, level: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="form-field">
+                <label>Server (optional)</label>
+                <input
+                  value={editForm.server}
+                  onChange={(e) => setEditForm({ ...editForm, server: e.target.value })}
+                  placeholder="India / Asia / Global / ..."
+                />
+              </div>
+              <div className="form-field">
+                <label>Rare items included (optional)</label>
+                <input
+                  value={editForm.rareItems}
+                  onChange={(e) => setEditForm({ ...editForm, rareItems: e.target.value })}
+                  placeholder="Comma-separated, e.g. 3 EVO MAX, PRIME 7"
+                />
+              </div>
+              <div className="field-grid-2">
+                <div className="form-field">
                   <label>Account ID</label>
                   <input
                     value={editForm.accountId}
@@ -268,6 +344,17 @@ export default function ListingsPanel() {
                   ₹{listing.price.toLocaleString("en-IN")}
                 </div>
                 {listing.gameUid && <div className="muted">Public Game UID: {listing.gameUid}</div>}
+                {(listing.tier || listing.level || listing.server) && (
+                  <div className="muted">
+                    {[
+                      listing.tier,
+                      listing.level ? `Level ${listing.level}` : null,
+                      listing.server,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                )}
                 <div className="muted">Account ID: {listing.accountId}</div>
               </div>
               <div style={{ display: "flex", gap: "0.5rem" }}>

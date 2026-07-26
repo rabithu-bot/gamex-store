@@ -53,7 +53,7 @@ export default function ListingCard({ listing }) {
           <strong>{listing.title}</strong>
           {listing.gameUid && (
             <span className="card-uid">
-              ID <span className="card-uid-value">{listing.gameUid}</span>
+              UID <span className="card-uid-value">{listing.gameUid}</span>
             </span>
           )}
           <span className="card-price-row">

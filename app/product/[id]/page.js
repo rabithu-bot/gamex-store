@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ShieldCheck, Zap, Headset } from "lucide-react";
+import { ShieldCheck, Zap, Headset, Star, Server, Hash, Gem } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import SiteHeader from "@/app/components/SiteHeader";
 import ListingCard from "@/app/components/ListingCard";
@@ -38,6 +38,7 @@ export default async function ProductPage({ params }) {
   if (!listing) notFound();
 
   const images = JSON.parse(listing.images || "[]");
+  const rareItems = JSON.parse(listing.rareItems || "[]");
   const similarListings = await getSimilarListings(listing);
   const hasDiscount = listing.originalPrice && listing.originalPrice > listing.price;
   const discountPercent = hasDiscount
@@ -54,8 +55,16 @@ export default async function ProductPage({ params }) {
             <ImageGallery images={images} alt={listing.title} />
           </div>
           <div className="product-info">
-            <span className="badge">{listing.category}</span>
+            <div className="product-badge-row">
+              <span className="badge">{listing.category}</span>
+              {listing.tier && <span className="badge badge-tier">{listing.tier}</span>}
+            </div>
             <h1>{listing.title}</h1>
+            {listing.gameUid && (
+              <span className="card-uid product-uid">
+                UID <span className="card-uid-value">{listing.gameUid}</span>
+              </span>
+            )}
             <div className="price-row">
               {hasDiscount && (
                 <span className="price-original">₹{listing.originalPrice.toLocaleString("en-IN")}</span>
@@ -68,6 +77,34 @@ export default async function ProductPage({ params }) {
               </span>
               {hasDiscount && <span className="price-discount-badge">{discountPercent}% OFF</span>}
             </div>
+            {(listing.level || listing.server) && (
+              <div className="stat-box-row">
+                {listing.level && (
+                  <div className="stat-box">
+                    <Star size={16} />
+                    <div>
+                      <span className="muted">Level</span>
+                      <strong>{listing.level}</strong>
+                    </div>
+                  </div>
+                )}
+                {listing.server && (
+                  <div className="stat-box">
+                    <Server size={16} />
+                    <div>
+                      <span className="muted">Server</span>
+                      <strong>{listing.server}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="verified-transaction-bar">
+              <ShieldCheck size={16} />
+              Verified &amp; Secure Transaction
+            </div>
+
             <div className="buy-bar">
               <div className="buy-bar-mobile-price">
                 <span className="muted">Price</span>
@@ -91,7 +128,29 @@ export default async function ProductPage({ params }) {
               )}
             </div>
 
-            <p className="muted product-description">{listing.description}</p>
+            <div className="product-section">
+              <h3 className="product-section-heading">
+                <Hash size={15} />
+                Description
+              </h3>
+              <p className="muted product-description">{listing.description}</p>
+            </div>
+
+            {rareItems.length > 0 && (
+              <div className="product-section">
+                <h3 className="product-section-heading">
+                  <Gem size={15} />
+                  Rare Items Included
+                </h3>
+                <div className="rare-items-row">
+                  {rareItems.map((item) => (
+                    <span key={item} className="rare-item-tag">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="trust-badges">
               <div className="trust-badge">

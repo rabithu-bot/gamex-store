@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/Toast";
 import AuroraBackground from "./components/AuroraBackground";
@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Bold, condensed display face for badges/tags and headings — gives
+// category/tier pills a punchier "gamer" look without touching body text.
+const rajdhani = Rajdhani({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 export const metadata = {
   title: "GAMEX STORE",
   description: "Buy verified gaming accounts directly from the owner, pay securely on-site.",
@@ -25,7 +33,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable}`}>
       <body>
         <AuroraBackground />
         <SplashScreen />

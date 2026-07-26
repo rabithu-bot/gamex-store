@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { saveListingImage } from "@/app/lib/uploads";
+import { parseRareItems } from "@/app/lib/listingTags";
 
 export async function GET() {
   if (!(await requireAdmin())) {
@@ -9,7 +10,11 @@ export async function GET() {
   }
   const listings = await prisma.listing.findMany({ orderBy: { createdAt: "desc" } });
   return NextResponse.json(
-    listings.map((listing) => ({ ...listing, images: JSON.parse(listing.images) }))
+    listings.map((listing) => ({
+      ...listing,
+      images: JSON.parse(listing.images),
+      rareItems: JSON.parse(listing.rareItems),
+    }))
   );
 }
 
@@ -26,6 +31,11 @@ export async function POST(request) {
   const originalPrice = originalPriceRaw ? Number(originalPriceRaw) : null;
   const category = String(formData.get("category") || "").trim();
   const gameUid = String(formData.get("gameUid") || "").trim() || null;
+  const tier = String(formData.get("tier") || "").trim() || null;
+  const levelRaw = formData.get("level");
+  const level = levelRaw ? Number(levelRaw) : null;
+  const server = String(formData.get("server") || "").trim() || null;
+  const rareItems = parseRareItems(formData.get("rareItems"));
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const imageFiles = formData.getAll("images").filter((f) => typeof f !== "string");
@@ -51,6 +61,10 @@ export async function POST(request) {
       originalPrice: originalPrice && originalPrice > price ? originalPrice : null,
       category,
       gameUid,
+      tier,
+      level,
+      server,
+      rareItems: JSON.stringify(rareItems),
       accountId,
       accountPassword,
       images: JSON.stringify(imagePaths),

@@ -24,6 +24,15 @@ model Listing {
   // below which stay private until purchase. Optional since existing listings
   // predate this field.
   gameUid         String?
+  // Small badge shown next to category on the product page, e.g. "Premium" /
+  // "Standard" — free text set by the admin per listing, optional.
+  tier            String?
+  level           Int?
+  server          String?
+  // JSON array of short tag strings, e.g. ["3 EVO MAX", "PRIME 7"] — shown as
+  // pills in the "Rare Items Included" section. Defaults to an empty array
+  // rather than null so display code never needs a null-check before parsing.
+  rareItems       String   @default("[]")
   images          String // JSON array of file paths
   status          String   @default("available") // available | sold
   accountId       String
