@@ -5,6 +5,11 @@ import Link from "next/link";
 import { ArrowLeft, Paperclip, X, Trash2, Send } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import QuickRepliesMenu from "@/app/mafia/QuickRepliesMenu";
+import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
+
+const POLL_INTERVAL_MS = 1500;
+const LONG_PRESS_MS = 2000;
+const LONG_PRESS_MOVE_CANCEL_PX = 10;
 
 function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
@@ -30,8 +35,12 @@ export default function ChatThread({ orderId }) {
   const [zoomSrc, setZoomSrc] = useState(null);
   const [quickReplies, setQuickReplies] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
   const fileInputRef = useRef(null);
   const bottomRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const longPressStartRef = useRef(null);
+  const lastPointerTypeRef = useRef(null);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
@@ -50,9 +59,11 @@ export default function ChatThread({ orderId }) {
   useEffect(() => {
     fetchOrder();
     fetchQuickReplies();
-    const interval = setInterval(fetchOrder, 4000);
+    const interval = setInterval(fetchOrder, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchOrder, fetchQuickReplies]);
+
+  useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,15 +93,63 @@ export default function ChatThread({ orderId }) {
 
   async function handleDeleteMessage(messageId) {
     if (!order) return;
+    // Optimistic: drop it from the local list immediately so unsending feels
+    // instant, then let the next poll tick reconcile with the server. If the
+    // request fails, worst case the message reappears a few seconds later —
+    // never a phantom deletion, so no rollback bookkeeping is needed.
+    setOrder((prev) => (prev ? { ...prev, messages: prev.messages.filter((m) => m.id !== messageId) } : prev));
     await fetch(`/api/admin/orders/${order.id}/messages/${messageId}`, { method: "DELETE" });
     fetchOrder();
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function openMenuAt(messageId, clientX, clientY) {
+    const estimatedWidth = 160;
+    const estimatedHeight = 96;
+    const x = Math.max(8, Math.min(clientX, window.innerWidth - estimatedWidth - 8));
+    const y = Math.max(8, Math.min(clientY, window.innerHeight - estimatedHeight - 8));
+    setActiveMenu({ messageId, x, y });
+  }
+
+  function handleBubblePointerDown(e, messageId) {
+    lastPointerTypeRef.current = e.pointerType;
+    if (e.pointerType === "mouse") return; // desktop uses the right-click/context-menu path instead
+    longPressStartRef.current = { x: e.clientX, y: e.clientY };
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      openMenuAt(messageId, e.clientX, e.clientY);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleBubblePointerMove(e) {
+    if (!longPressTimerRef.current || !longPressStartRef.current) return;
+    const dx = e.clientX - longPressStartRef.current.x;
+    const dy = e.clientY - longPressStartRef.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_CANCEL_PX) clearLongPressTimer();
+  }
+
+  function handleBubbleContextMenu(e, messageId) {
+    e.preventDefault();
+    // A genuine desktop right-click reports button 2; a touch device's own
+    // native long-press-triggers-contextmenu behavior reports button 0 — we
+    // want to ignore that second case since our pointer-based timer above
+    // already handles touch long-press.
+    if (e.button === 2 || lastPointerTypeRef.current === "mouse") {
+      openMenuAt(messageId, e.clientX, e.clientY);
+    }
   }
 
   async function handleDeleteConversation() {
     if (!order) return;
     if (!confirm("Delete this entire conversation? This cannot be undone.")) return;
     await fetch(`/api/admin/orders/${order.id}/messages`, { method: "DELETE" });
-    window.location.href = "/mafia?tab=messages";
+    window.location.href = "/mafia/messages";
   }
 
   async function handleAddQuickReply(text) {
@@ -111,7 +170,7 @@ export default function ChatThread({ orderId }) {
     return (
       <div className="admin-chat-page">
         <div className="admin-chat-header">
-          <Link href="/mafia?tab=messages" className="admin-chat-back">
+          <Link href="/mafia/messages" className="admin-chat-back">
             <ArrowLeft size={18} />
             Back
           </Link>
@@ -130,7 +189,7 @@ export default function ChatThread({ orderId }) {
   return (
     <div className="admin-chat-page">
       <div className="admin-chat-header">
-        <Link href="/mafia?tab=messages" className="admin-chat-back">
+        <Link href="/mafia/messages" className="admin-chat-back">
           <ArrowLeft size={18} />
           Back
         </Link>
@@ -162,7 +221,15 @@ export default function ChatThread({ orderId }) {
             key={m.id}
             className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}
           >
-            <div className={`admin-chat-bubble ${m.sender === "admin" ? "sent" : "received"}`}>
+            <div
+              className={`admin-chat-bubble ${m.sender === "admin" ? "sent" : "received"}`}
+              onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
+              onPointerMove={handleBubblePointerMove}
+              onPointerUp={clearLongPressTimer}
+              onPointerLeave={clearLongPressTimer}
+              onPointerCancel={clearLongPressTimer}
+              onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
+            >
               {m.attachmentPath && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -173,14 +240,6 @@ export default function ChatThread({ orderId }) {
                 />
               )}
               {m.body && <p>{m.body}</p>}
-              <button
-                type="button"
-                className="dm-delete-message"
-                aria-label="Delete message"
-                onClick={() => handleDeleteMessage(m.id)}
-              >
-                <Trash2 size={12} />
-              </button>
             </div>
             <span className="admin-chat-timestamp">{formatTime(m.createdAt)}</span>
           </div>
@@ -270,6 +329,18 @@ export default function ChatThread({ orderId }) {
       </div>
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
+
+      {activeMenu && (
+        <MessageUnsendMenu
+          x={activeMenu.x}
+          y={activeMenu.y}
+          onUnsend={() => {
+            handleDeleteMessage(activeMenu.messageId);
+            setActiveMenu(null);
+          }}
+          onClose={() => setActiveMenu(null)}
+        />
+      )}
     </div>
   );
 }

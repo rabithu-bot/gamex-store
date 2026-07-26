@@ -8,7 +8,7 @@ export async function DELETE(request, { params }) {
   }
 
   const { id, messageId } = await params;
-  const orderId = Number(id);
+  const orderId = id;
 
   await prisma.message.deleteMany({ where: { id: Number(messageId), orderId } });
 

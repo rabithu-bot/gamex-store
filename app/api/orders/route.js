@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getOrCreateSessionId } from "@/app/lib/customerSession";
 import { expireStaleOrders } from "@/app/lib/orderExpiry";
+import { createOrder } from "@/app/lib/orderIds";
+import { generateAccessToken, hashAccessToken, setOrderAccessCookie } from "@/app/lib/orderAccessToken";
 
 export async function POST(request) {
   const body = await request.json();
@@ -27,6 +29,18 @@ export async function POST(request) {
     orderBy: { createdAt: "desc" },
   });
   if (existing) {
+    // Rotate the token on every hit rather than special-casing "was the
+    // cookie already there" — cheap, idempotent from the buyer's
+    // perspective (same device, same request), and defends against the
+    // token cookie's oldest-entry eviction having dropped this order's
+    // token since it was first issued. Re-authenticating here is safe
+    // because it's already gated on a match against gamex_session_id.
+    const token = generateAccessToken();
+    await prisma.order.update({
+      where: { id: existing.id },
+      data: { accessTokenHash: hashAccessToken(token) },
+    });
+    await setOrderAccessCookie(existing.id, token);
     return NextResponse.json({ id: existing.id });
   }
 
@@ -38,17 +52,18 @@ export async function POST(request) {
     );
   }
 
-  const order = await prisma.order.create({
-    data: {
-      listingId,
-      buyerName,
-      listingTitle: listing.title,
-      listingPrice: listing.price,
-      accountId: listing.accountId,
-      accountPassword: listing.accountPassword,
-      sessionId,
-    },
+  const token = generateAccessToken();
+  const order = await createOrder({
+    listingId,
+    buyerName,
+    listingTitle: listing.title,
+    listingPrice: listing.price,
+    accountId: listing.accountId,
+    accountPassword: listing.accountPassword,
+    sessionId,
+    accessTokenHash: hashAccessToken(token),
   });
+  await setOrderAccessCookie(order.id, token);
 
   return NextResponse.json({ id: order.id });
 }

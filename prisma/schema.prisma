@@ -28,7 +28,10 @@ model Listing {
 }
 
 model Order {
-  id     Int      @id @default(autoincrement())
+  // 12-char alphabetic id ([a-zA-Z] only), generated in application code via
+  // app/lib/orderIds.js — Prisma's @default() only supports built-ins
+  // (autoincrement/uuid/cuid/...), so there's deliberately no @default here.
+  id              String    @id
   // Nullable + SetNull: deleting a listing must never take its orders (and their
   // messages) down with it. Buyer name, title/price/credentials are snapshotted
   // onto the order at purchase time so the order stays fully readable forever,
@@ -41,11 +44,17 @@ model Order {
   accountPassword String
   buyerName       String?
   screenshotPath  String?
-  status          String    @default("pending") // pending | pending_verification | confirmed | declined
+  status          String    @default("pending") // pending | pending_verification | confirmed | declined | expired
   // Ties this order to the buyer's gamex_session_id cookie so "My Orders" can
   // find it with no login and no manually-copied order link. Nullable because
   // orders created before this field existed have none.
   sessionId       String?
+  // SHA-256 hash of the buyer's single-device access token (see
+  // app/lib/orderAccessToken.js) — the raw token itself is never persisted,
+  // only kept in the buyer's own httpOnly cookie. Null for orders created
+  // before this system existed; those are grandfathered through with no
+  // ownership check rather than being locked out retroactively.
+  accessTokenHash String?   @unique
   createdAt       DateTime  @default(now())
   confirmedAt     DateTime?
   messages        Message[]
@@ -55,12 +64,14 @@ model Order {
 
 model Message {
   id             Int      @id @default(autoincrement())
-  orderId        Int
+  orderId        String
   order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   sender         String // buyer | admin
   body           String
   attachmentPath String?
   createdAt      DateTime @default(now())
+
+  @@index([orderId])
 }
 
 model QuickReply {

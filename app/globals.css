@@ -685,39 +685,11 @@ select:focus-visible {
 
 /* ---- Dashboard section (focused view) ---- */
 
-.dashboard-focus-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.dashboard-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: inherit;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dashboard-back:hover {
-  border-color: var(--accent);
-  color: #c4b5fd;
-}
-
 .dashboard-focus-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0;
+  margin: 0 0 1rem;
 }
 
 /* ---- Admin stats bar ---- */
@@ -1673,48 +1645,6 @@ select:focus-visible {
   color: #f87171;
 }
 
-.dm-bubble {
-  position: relative;
-  padding-right: 1.8rem;
-}
-
-.dm-bubble.self {
-  align-self: flex-end;
-  background: var(--accent-soft);
-  border-color: transparent;
-}
-
-.dm-bubble.them {
-  align-self: flex-start;
-}
-
-.dm-delete-message {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: inherit;
-  opacity: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.dm-bubble:hover .dm-delete-message {
-  opacity: 0.55;
-}
-
-.dm-delete-message:hover {
-  opacity: 1 !important;
-  color: #f87171;
-}
-
 /* ---- Chat attachments ---- */
 
 .chat-attachment {
@@ -2028,12 +1958,149 @@ select:focus-visible {
   white-space: nowrap;
 }
 
-/* ---- Vault logout button ---- */
+/* ---- Admin header bar ---- */
 
-.vault-logout {
+.admin-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13, 11, 23, 0.75);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-header-back,
+.admin-header-gear {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-header-back:hover,
+.admin-header-gear:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+}
+
+/* ---- Admin settings drawer ---- */
+
+.admin-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8, 6, 16, 0.6);
+  backdrop-filter: blur(4px);
+  animation: lightbox-fade-in 0.2s ease both;
+}
+
+.admin-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  width: min(360px, 100vw);
+  padding: 1.25rem;
+  background: var(--surface-solid);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  animation: admin-drawer-slide-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes admin-drawer-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-drawer-backdrop,
+  .admin-drawer {
+    animation: none;
+  }
+}
+
+.admin-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.admin-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-drawer-close:hover {
+  border-color: var(--accent);
+}
+
+.admin-drawer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-drawer-row-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-drawer-chevron {
+  transition: transform 0.15s ease;
+}
+
+.admin-drawer-chevron.open {
+  transform: rotate(180deg);
+}
+
+.admin-drawer-qr {
+  padding: 0.25rem 0.1rem 0.5rem;
+}
+
+.admin-drawer-signout {
+  margin-top: auto;
+  width: 100%;
 }
 
 /* ---- Animated aurora background ---- */
@@ -2774,6 +2841,14 @@ select:focus-visible {
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   line-height: 1.45;
+  cursor: pointer;
+  /* Long-press-to-unsend needs to win over the browser's own text-selection
+     callout on touch devices, while still letting the thread scroll
+     vertically underneath a finger resting on a bubble. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 .admin-chat-bubble.sent {
@@ -2843,6 +2918,51 @@ select:focus-visible {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* ---- Instagram-style long-press/right-click "Unsend" popover ---- */
+
+.dm-context-popover {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.97);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  animation: dm-context-popover-in 0.12s ease-out both;
+}
+
+@keyframes dm-context-popover-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.dm-context-popover-unsend,
+.dm-context-popover-cancel {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dm-context-popover-unsend {
+  color: #f87171;
+}
+
+.dm-context-popover-unsend:hover,
+.dm-context-popover-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ---- Quick reply autosuggest ---- */
@@ -2999,12 +3119,6 @@ select:focus-visible {
   .gallery-nav {
     width: 44px;
     height: 44px;
-  }
-
-  .dm-delete-message {
-    width: 26px;
-    height: 26px;
-    opacity: 0.55;
   }
 
   .copy-btn,

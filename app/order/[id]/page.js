@@ -10,8 +10,10 @@ import OrderSteps from "./OrderSteps";
 import SupportChat from "./SupportChat";
 import ConfirmingPayment from "./ConfirmingPayment";
 import SecurityNoticeModal from "./SecurityNoticeModal";
+import AccessDeniedNotice from "./AccessDeniedNotice";
 
 const PAYMENT_STEP_STATUSES = ["pending", "pending_verification", "declined"];
+const POLL_INTERVAL_MS = 1500;
 
 function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -30,6 +32,7 @@ export default function OrderPage() {
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
   const [showDeclineNotice, setShowDeclineNotice] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -38,12 +41,16 @@ export default function OrderPage() {
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
-    if (res.ok) setOrder(await res.json());
+    if (res.ok) {
+      setOrder(await res.json());
+    } else if (res.status === 403) {
+      setAccessDenied(true);
+    }
   }, [id]);
 
   useEffect(() => {
     fetchOrder();
-    const interval = setInterval(fetchOrder, 4000);
+    const interval = setInterval(fetchOrder, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchOrder]);
 
@@ -89,6 +96,10 @@ export default function OrderPage() {
     });
     setSubmitting(false);
     if (!res.ok) {
+      if (res.status === 403) {
+        setAccessDenied(true);
+        return;
+      }
       const data = await res.json();
       setSubmitError(data.error || "Something went wrong");
       return;
@@ -108,15 +119,31 @@ export default function OrderPage() {
       body: formData,
     });
     if (res.ok) fetchOrder();
+    else if (res.status === 403) setAccessDenied(true);
   }
 
   async function handleSaveName(name) {
-    await fetch(`/api/orders/${id}/name`, {
+    const res = await fetch(`/api/orders/${id}/name`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ buyerName: name }),
     });
+    if (res.status === 403) {
+      setAccessDenied(true);
+      return;
+    }
     await fetchOrder();
+  }
+
+  if (accessDenied) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="container" style={{ maxWidth: 560 }}>
+          <AccessDeniedNotice />
+        </main>
+      </>
+    );
   }
 
   if (!order) {

@@ -7,7 +7,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const orderId = Number(id);
+  const orderId = id;
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) {

@@ -9,7 +9,7 @@ export async function POST(request, { params }) {
   }
 
   const { id } = await params;
-  const orderId = Number(id);
+  const orderId = id;
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) {
@@ -40,7 +40,7 @@ export async function DELETE(request, { params }) {
   }
 
   const { id } = await params;
-  const orderId = Number(id);
+  const orderId = id;
 
   await prisma.message.deleteMany({ where: { orderId } });
 

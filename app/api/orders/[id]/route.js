@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { expireStaleOrders, ORDER_EXPIRY_MS } from "@/app/lib/orderExpiry";
+import { assertOrderAccess } from "@/app/lib/orderAccessToken";
 
 export async function GET(request, { params }) {
   const { id } = await params;
   await expireStaleOrders();
   const order = await prisma.order.findUnique({
-    where: { id: Number(id) },
+    where: { id },
     include: { listing: true, messages: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  if (!(await assertOrderAccess(id, order))) {
+    return NextResponse.json(
+      { error: "Access denied", code: "UNRECOGNIZED_DEVICE" },
+      { status: 403 }
+    );
   }
 
   const response = {
