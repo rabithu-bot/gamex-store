@@ -6,8 +6,9 @@ import ListingCard from "@/app/components/ListingCard";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  // Cheapest accounts surface first for buyers browsing the storefront.
   const listings = await prisma.listing.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { price: "asc" },
   });
 
   return (

@@ -1270,12 +1270,29 @@ select:focus-visible {
   flex-wrap: wrap;
 }
 
-.product-uid {
-  font-size: 0.72rem;
+.product-uid-highlight {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  width: fit-content;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.1);
+  color: rgba(165, 243, 252, 0.75);
 }
 
-.product-uid .card-uid-value {
-  font-size: 1rem;
+.product-uid-highlight-value {
+  font-family: var(--font-display), var(--font-geist-sans);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #22d3ee;
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
 }
 
 .stat-box-row {
@@ -1325,7 +1342,24 @@ select:focus-visible {
 .product-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Each section gets its own accent so the page doesn't read as one flat
+   wall of purple — blue for factual info, amber/gold for the "loot" feel
+   of rare items. */
+.product-section-description {
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.product-section-rare {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.07);
 }
 
 .product-section-heading {
@@ -1337,6 +1371,14 @@ select:focus-visible {
   font-size: 1rem;
   letter-spacing: 0.02em;
   color: #d8cffc;
+}
+
+.heading-description {
+  color: #93c5fd;
+}
+
+.heading-rare {
+  color: #fcd34d;
 }
 
 .rare-items-row {
@@ -1352,9 +1394,9 @@ select:focus-visible {
   letter-spacing: 0.02em;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--accent-soft);
-  color: #c4b5fd;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.14);
+  color: #fde68a;
 }
 
 .buy-bar-price-value {

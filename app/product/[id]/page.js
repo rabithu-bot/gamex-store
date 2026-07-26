@@ -13,7 +13,7 @@ const SIMILAR_LIMIT = 8;
 async function getSimilarListings(listing) {
   const sameCategory = await prisma.listing.findMany({
     where: { status: "available", category: listing.category, id: { not: listing.id } },
-    orderBy: { createdAt: "desc" },
+    orderBy: { price: "asc" },
     take: SIMILAR_LIMIT,
   });
 
@@ -24,7 +24,7 @@ async function getSimilarListings(listing) {
       status: "available",
       id: { notIn: [listing.id, ...sameCategory.map((l) => l.id)] },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { price: "asc" },
     take: SIMILAR_LIMIT - sameCategory.length,
   });
 
@@ -61,8 +61,8 @@ export default async function ProductPage({ params }) {
             </div>
             <h1>{listing.title}</h1>
             {listing.gameUid && (
-              <span className="card-uid product-uid">
-                UID <span className="card-uid-value">{listing.gameUid}</span>
+              <span className="product-uid-highlight">
+                UID <span className="product-uid-highlight-value">{listing.gameUid}</span>
               </span>
             )}
             <div className="price-row">
@@ -128,8 +128,8 @@ export default async function ProductPage({ params }) {
               )}
             </div>
 
-            <div className="product-section">
-              <h3 className="product-section-heading">
+            <div className="product-section product-section-description">
+              <h3 className="product-section-heading heading-description">
                 <Hash size={15} />
                 Description
               </h3>
@@ -137,8 +137,8 @@ export default async function ProductPage({ params }) {
             </div>
 
             {rareItems.length > 0 && (
-              <div className="product-section">
-                <h3 className="product-section-heading">
+              <div className="product-section product-section-rare">
+                <h3 className="product-section-heading heading-rare">
                   <Gem size={15} />
                   Rare Items Included
                 </h3>
