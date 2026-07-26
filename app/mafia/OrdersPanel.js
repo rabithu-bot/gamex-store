@@ -2,8 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search, Eye, EyeOff } from "lucide-react";
+import Lightbox from "@/app/components/Lightbox";
 
-const FILTERS = ["all", "pending"];
+const FILTERS = ["all", "pending_verification", "pending"];
+const FILTER_LABELS = {
+  all: "All",
+  pending_verification: "Needs Review",
+  pending: "Awaiting Payment",
+};
 
 export default function OrdersPanel() {
   const [orders, setOrders] = useState(null);
@@ -11,6 +17,7 @@ export default function OrdersPanel() {
   const [visibilityBusyId, setVisibilityBusyId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [zoomedProof, setZoomedProof] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
@@ -40,7 +47,7 @@ export default function OrdersPanel() {
   }
 
   const counts = useMemo(() => {
-    const base = { all: orders?.length || 0, pending: 0, confirmed: 0 };
+    const base = { all: orders?.length || 0 };
     orders?.forEach((o) => {
       base[o.status] = (base[o.status] || 0) + 1;
     });
@@ -69,7 +76,7 @@ export default function OrdersPanel() {
         <div className="tabs">
           {FILTERS.map((f) => (
             <button key={f} className={filter === f ? "active" : ""} onClick={() => setFilter(f)}>
-              {f[0].toUpperCase() + f.slice(1)} <span className="tab-count">{counts[f] || 0}</span>
+              {FILTER_LABELS[f]} <span className="tab-count">{counts[f] || 0}</span>
             </button>
           ))}
         </div>
@@ -113,25 +120,45 @@ export default function OrdersPanel() {
                 </td>
                 <td>
                   {order.screenshotPath ? (
-                    <a href={order.screenshotPath} target="_blank" rel="noreferrer">
-                      View
-                    </a>
+                    <button
+                      type="button"
+                      className="proof-thumb-btn"
+                      onClick={() => setZoomedProof(order.screenshotPath)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={order.screenshotPath} alt={`Payment proof for order #${order.id}`} />
+                    </button>
                   ) : (
                     "—"
                   )}
                 </td>
                 <td>
-                  <span className={`status-pill ${order.status}`}>{order.status}</span>
+                  <span className={`status-pill ${order.status}`}>
+                    {order.status.replace("_", " ")}
+                  </span>
                 </td>
                 <td>
+                  {order.status === "pending_verification" && (
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        className="btn success"
+                        disabled={busyId === order.id}
+                        onClick={() => handleAction(order.id, "confirm")}
+                      >
+                        Confirm &amp; Release Account
+                      </button>
+                      <button
+                        className="btn decline"
+                        disabled={busyId === order.id}
+                        onClick={() => handleAction(order.id, "decline")}
+                      >
+                        Decline &amp; Flag Screenshot
+                      </button>
+                    </div>
+                  )}
+
                   {order.status === "pending" && (
-                    <button
-                      className="btn"
-                      disabled={busyId === order.id}
-                      onClick={() => handleAction(order.id, "confirm")}
-                    >
-                      Confirm
-                    </button>
+                    <span className="muted">Awaiting payment screenshot</span>
                   )}
 
                   {order.status === "confirmed" && (
@@ -167,12 +194,18 @@ export default function OrdersPanel() {
                       <span className="muted">Listing deleted</span>
                     )
                   )}
+
+                  {order.status === "declined" && <span className="muted">Awaiting new screenshot</span>}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
+      )}
+
+      {zoomedProof && (
+        <Lightbox src={zoomedProof} alt="Payment proof" onClose={() => setZoomedProof(null)} />
       )}
     </div>
   );

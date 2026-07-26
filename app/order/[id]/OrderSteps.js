@@ -3,15 +3,15 @@ import { Check, Clock, X } from "lucide-react";
 const STEPS = ["Order Placed", "Payment Submitted", "Confirmed"];
 
 export default function OrderSteps({ status, hasProof }) {
-  const rejected = status === "rejected";
+  const declined = status === "declined";
 
-  // step index that is currently "in progress" (0-based), -1 once everything is done/rejected
+  // step index that is currently "in progress" (0-based), -1 once everything is done/declined
   let currentIndex = 0;
   if (hasProof) currentIndex = 1;
-  if (status === "confirmed" || rejected) currentIndex = 2;
+  if (status === "confirmed" || declined) currentIndex = 2;
 
   function stepState(i) {
-    if (rejected && i === 2) return "error";
+    if (declined && i === 2) return "error";
     if (i < currentIndex) return "done";
     if (i === currentIndex) return status === "confirmed" && i === 2 ? "done" : "current";
     return "";
@@ -33,7 +33,7 @@ export default function OrderSteps({ status, hasProof }) {
                 <Clock size={14} />
               )}
             </div>
-            <span>{rejected && i === 2 ? "Rejected" : label}</span>
+            <span>{declined && i === 2 ? "Declined" : label}</span>
           </div>
         );
       })}

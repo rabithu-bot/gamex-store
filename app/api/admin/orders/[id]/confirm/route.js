@@ -14,12 +14,19 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  // Confirming payment no longer auto-marks the listing sold — the admin decides
-  // separately (via the listing visibility control) when buyers should see it as sold.
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { status: "confirmed", confirmedAt: new Date() },
-  });
+  // Confirming releases the credentials to the buyer, so the listing must stop
+  // showing as available to everyone else in the same beat — the admin can still
+  // flip it back with the listing-visibility control afterward if needed (e.g.
+  // relisting more stock under the same listing).
+  await prisma.$transaction([
+    prisma.order.update({
+      where: { id: orderId },
+      data: { status: "confirmed", confirmedAt: new Date() },
+    }),
+    ...(order.listingId
+      ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "sold" } })]
+      : []),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

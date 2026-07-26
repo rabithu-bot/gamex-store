@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { X, ShieldCheck } from "lucide-react";
-import { findMyOrderForListing, saveMyOrder } from "@/app/lib/myOrders";
 
 export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   const router = useRouter();
@@ -27,15 +26,13 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
     setError("");
     setChecking(true);
     try {
-      const existing = findMyOrderForListing(listingId);
-      if (existing) {
-        const existingRes = await fetch(`/api/orders/${existing.id}`, { cache: "no-store" });
-        if (existingRes.ok) {
-          const existingOrder = await existingRes.json();
-          if (existingOrder.status !== "rejected") {
-            router.push(`/order/${existing.id}`);
-            return;
-          }
+      const res = await fetch("/api/orders/mine", { cache: "no-store" });
+      if (res.ok) {
+        const mine = await res.json();
+        const existing = mine.find((o) => o.listingId === listingId && o.status !== "declined");
+        if (existing) {
+          router.push(`/order/${existing.id}`);
+          return;
         }
       }
       setChecking(false);
@@ -63,7 +60,6 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
         setLoading(false);
         return;
       }
-      saveMyOrder({ id: data.id, listingId, listingTitle });
       router.push(`/order/${data.id}`);
     } catch {
       setError("Network error, please try again.");

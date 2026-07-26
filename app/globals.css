@@ -278,8 +278,8 @@ select:focus-visible {
 }
 
 .card-image-sold {
-  filter: grayscale(35%);
-  opacity: 0.8;
+  filter: grayscale(50%) contrast(1.25);
+  opacity: 0.5;
 }
 
 .card-image-badge {
@@ -291,22 +291,32 @@ select:focus-visible {
   backdrop-filter: blur(6px);
 }
 
+/* Diagonal "SOLD OUT" stamp, centered over the thumbnail rather than a
+   corner pill — deliberately loud, this is the primary signal a listing
+   is gone. */
 .sold-badge {
   position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
+  top: 50%;
+  left: 50%;
   z-index: 2;
+  transform: translate(-50%, -50%) rotate(-12deg);
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: #dc2626;
+  justify-content: center;
+  user-select: none;
+  pointer-events: none;
+  border: 3px solid #dc2626;
+  background: rgba(220, 38, 38, 0.9);
   color: #fff;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 1.1rem;
+  border-radius: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.5);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
 }
 
 .card-body {
@@ -344,6 +354,7 @@ select:focus-visible {
 .price-sold {
   color: #ef4444;
   text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 
 .btn {
@@ -380,6 +391,34 @@ select:focus-visible {
 
 .btn.danger {
   background: #dc2626;
+  box-shadow: none;
+}
+
+.btn.success {
+  background: #059669;
+  box-shadow: none;
+}
+
+.btn.success:hover {
+  background: #10b981;
+  filter: none;
+}
+
+.btn.decline {
+  background: #e11d48;
+  box-shadow: none;
+}
+
+.btn.decline:hover {
+  background: #f43f5e;
+  filter: none;
+}
+
+.btn.sold-out-cta:disabled {
+  background: rgba(69, 10, 10, 0.5);
+  border: 1px solid rgba(153, 27, 27, 0.6);
+  color: rgba(248, 113, 113, 0.9);
+  opacity: 1;
   box-shadow: none;
 }
 
@@ -436,12 +475,17 @@ select:focus-visible {
   color: #eab308;
 }
 
+.status-pill.pending_verification {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+}
+
 .status-pill.confirmed {
   background: rgba(34, 197, 94, 0.18);
   color: #4ade80;
 }
 
-.status-pill.rejected,
+.status-pill.declined,
 .status-pill.sold {
   background: rgba(220, 38, 38, 0.18);
   color: #f87171;
@@ -700,6 +744,23 @@ select:focus-visible {
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
   vertical-align: top;
+}
+
+.proof-thumb-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  padding: 0;
+  cursor: zoom-in;
+  background: var(--accent-soft);
+}
+
+.proof-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .error-text {
@@ -1665,6 +1726,39 @@ select:focus-visible {
   opacity: 0.6;
 }
 
+/* ---- Security & Audit notice (declined-payment modal) ---- */
+
+.security-notice-modal {
+  text-align: center;
+}
+
+.security-notice-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.16);
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.security-notice-modal h3 {
+  font-size: 1.05rem;
+}
+
+.security-notice-modal p {
+  margin-top: 0.6rem;
+  line-height: 1.55;
+  font-size: 0.88rem;
+}
+
+.security-notice-cta {
+  width: 100%;
+  margin-top: 1.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .checkout-modal-backdrop,
   .checkout-modal {
@@ -1703,25 +1797,6 @@ select:focus-visible {
   .gallery-zoom-hint {
     opacity: 1;
   }
-}
-
-/* ---- Order save/bookmark reminder ---- */
-
-.order-save-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.8rem 1rem;
-  margin: 1rem 0;
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.order-save-note .copy-btn {
-  flex-shrink: 0;
 }
 
 /* ---- My Orders page ---- */
@@ -2615,8 +2690,11 @@ select:focus-visible {
   }
 
   .sold-badge {
-    padding: 0.14rem 0.4rem;
-    font-size: 0.56rem;
+    border-width: 2px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.58rem;
+    border-radius: 5px;
+    letter-spacing: 0.06em;
   }
 
   .card-body {

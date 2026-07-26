@@ -43,6 +43,7 @@ export default async function ProductPage({ params }) {
   const discountPercent = hasDiscount
     ? Math.round((1 - listing.price / listing.originalPrice) * 100)
     : 0;
+  const isSold = listing.status !== "available";
 
   return (
     <>
@@ -59,7 +60,10 @@ export default async function ProductPage({ params }) {
               {hasDiscount && (
                 <span className="price-original">₹{listing.originalPrice.toLocaleString("en-IN")}</span>
               )}
-              <span className="price" style={{ fontSize: "1.5rem" }}>
+              <span
+                className={`price${isSold ? " price-sold" : ""}`}
+                style={{ fontSize: "1.5rem" }}
+              >
                 ₹{listing.price.toLocaleString("en-IN")}
               </span>
               {hasDiscount && <span className="price-discount-badge">{discountPercent}% OFF</span>}
@@ -73,15 +77,17 @@ export default async function ProductPage({ params }) {
                       ₹{listing.originalPrice.toLocaleString("en-IN")}
                     </span>
                   )}
-                  <strong className="price">₹{listing.price.toLocaleString("en-IN")}</strong>
+                  <strong className={`price${isSold ? " price-sold" : ""}`}>
+                    ₹{listing.price.toLocaleString("en-IN")}
+                  </strong>
                 </span>
               </div>
               {listing.status === "available" ? (
                 <BuyForm listingId={listing.id} listingTitle={listing.title} listingPrice={listing.price} />
               ) : (
-                <p className="status-pill sold" style={{ marginTop: "1rem" }}>
-                  Sold
-                </p>
+                <button type="button" className="btn sold-out-cta" style={{ marginTop: "1.25rem" }} disabled>
+                  SOLD OUT
+                </button>
               )}
             </div>
 

@@ -41,10 +41,16 @@ model Order {
   accountPassword String
   buyerName       String?
   screenshotPath  String?
-  status          String    @default("pending") // pending | confirmed
+  status          String    @default("pending") // pending | pending_verification | confirmed | declined
+  // Ties this order to the buyer's gamex_session_id cookie so "My Orders" can
+  // find it with no login and no manually-copied order link. Nullable because
+  // orders created before this field existed have none.
+  sessionId       String?
   createdAt       DateTime  @default(now())
   confirmedAt     DateTime?
   messages        Message[]
+
+  @@index([sessionId])
 }
 
 model Message {

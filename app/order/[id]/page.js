@@ -5,10 +5,12 @@ import { useParams } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import { useToast } from "@/app/components/Toast";
-import { saveMyOrder } from "@/app/lib/myOrders";
 import OrderSteps from "./OrderSteps";
 import SupportChat from "./SupportChat";
 import ConfirmingPayment from "./ConfirmingPayment";
+import SecurityNoticeModal from "./SecurityNoticeModal";
+
+const PAYMENT_STEP_STATUSES = ["pending", "pending_verification", "declined"];
 
 export default function OrderPage() {
   const { id } = useParams();
@@ -17,9 +19,8 @@ export default function OrderPage() {
   const [screenshot, setScreenshot] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [pageUrl, setPageUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
+  const [showDeclineNotice, setShowDeclineNotice] = useState(false);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
@@ -33,12 +34,8 @@ export default function OrderPage() {
   }, [fetchOrder]);
 
   useEffect(() => {
-    if (order?.proofSubmitted) setSubmitted(true);
-  }, [order?.proofSubmitted]);
-
-  useEffect(() => {
-    setPageUrl(window.location.href);
-  }, []);
+    setShowDeclineNotice(order?.status === "declined");
+  }, [order?.status]);
 
   useEffect(() => {
     fetch("/api/settings/payment-qr", { cache: "no-store" })
@@ -47,19 +44,15 @@ export default function OrderPage() {
       .catch(() => {});
   }, []);
 
-  // Bookmarks this order on this device — even if the buyer arrived here directly
-  // (shared link, refresh) rather than through the Buy Now flow — so "My Orders"
-  // can always find it again, no account/login needed.
-  useEffect(() => {
-    if (order?.id && order?.listing?.id) {
-      saveMyOrder({ id: order.id, listingId: order.listing.id, listingTitle: order.listing.title });
-    }
-  }, [order?.id, order?.listing?.id, order?.listing?.title]);
+  // Driven by the order's own status rather than a local flag, so a decline
+  // (which needs a fresh screenshot) correctly brings the upload form back
+  // instead of leaving the buyer stuck on the "confirming" spinner forever.
+  const submitted = order?.status === "pending_verification";
 
   async function handleSubmitProof(e) {
     e.preventDefault();
     setSubmitError("");
-    if (!screenshot) {
+    if (!screenshot || screenshot.size === 0) {
       setSubmitError("Please attach a payment screenshot.");
       return;
     }
@@ -77,7 +70,7 @@ export default function OrderPage() {
       setSubmitError(data.error || "Something went wrong");
       return;
     }
-    setSubmitted(true);
+    setScreenshot(null);
     toast("Payment screenshot submitted");
     fetchOrder();
   }
@@ -129,15 +122,11 @@ export default function OrderPage() {
 
         <OrderSteps status={order.status} hasProof={order.proofSubmitted} />
 
-        <div className="order-save-note">
-          <span className="muted">
-            Bookmark this page or copy the link below — you can always find this order again
-            from <strong>My Orders</strong> on this device, even if you close the tab.
-          </span>
-          {pageUrl && <CopyButton value={pageUrl} label="Copy order link" />}
-        </div>
+        {showDeclineNotice && (
+          <SecurityNoticeModal onClose={() => setShowDeclineNotice(false)} />
+        )}
 
-        {order.status === "pending" && (
+        {PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="panel">
             <h3>1. Pay via UPI</h3>
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
@@ -158,6 +147,12 @@ export default function OrderPage() {
               <ConfirmingPayment />
             ) : (
               <form onSubmit={handleSubmitProof}>
+                {order.status === "declined" && (
+                  <p className="error-text" style={{ marginBottom: "0.75rem" }}>
+                    Your previous screenshot couldn&apos;t be verified — please attach a new one to
+                    try again.
+                  </p>
+                )}
                 <div className="form-field">
                   <label htmlFor="screenshot">Payment screenshot</label>
                   <input

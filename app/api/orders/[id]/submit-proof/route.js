@@ -10,17 +10,27 @@ export async function POST(request, { params }) {
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
-  if (order.status !== "pending") {
+  // "declined" is allowed back in here too — a decline just means the buyer
+  // needs to attach a fresh screenshot, not that the order is dead.
+  if (order.status !== "pending" && order.status !== "declined") {
     return NextResponse.json(
-      { error: "This order is no longer pending" },
+      { error: "This order is not awaiting payment proof" },
       { status: 400 }
     );
   }
 
-  const formData = await request.formData();
+  let formData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Please attach a payment screenshot" }, { status: 400 });
+  }
   const screenshot = formData.get("screenshot");
 
-  if (!screenshot || typeof screenshot.arrayBuffer !== "function") {
+  // Mandatory payment-proof guarantee: no image blob, no write to the
+  // database — a request with a missing or empty file never reaches here
+  // as anything other than a rejection.
+  if (!screenshot || typeof screenshot.arrayBuffer !== "function" || screenshot.size === 0) {
     return NextResponse.json(
       { error: "Please attach a payment screenshot" },
       { status: 400 }
@@ -31,7 +41,7 @@ export async function POST(request, { params }) {
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { screenshotPath },
+    data: { screenshotPath, status: "pending_verification" },
   });
 
   return NextResponse.json({ ok: true });
