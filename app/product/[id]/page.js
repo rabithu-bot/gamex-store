@@ -77,7 +77,7 @@ export default async function ProductPage({ params }) {
                 </span>
               </div>
               {listing.status === "available" ? (
-                <BuyForm listingId={listing.id} listingTitle={listing.title} />
+                <BuyForm listingId={listing.id} listingTitle={listing.title} listingPrice={listing.price} />
               ) : (
                 <p className="status-pill sold" style={{ marginTop: "1rem" }}>
                   Sold

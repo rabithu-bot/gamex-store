@@ -1005,8 +1005,11 @@ select:focus-visible {
 }
 
 @media (max-width: 640px) {
+  /* The buy-bar is now a fixed single-line height (the name/checkout step
+     moved into a modal instead of expanding in place), so this only needs
+     to clear the tab bar + bar itself, not a worst-case expanded form. */
   .product-page-main {
-    padding-bottom: calc(280px + env(safe-area-inset-bottom));
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
   }
 
   .buy-bar {
@@ -1020,10 +1023,10 @@ select:focus-visible {
     justify-content: space-between;
     gap: 1rem;
     padding: 0.7rem 1.25rem;
-    background: rgba(13, 11, 23, 0.92);
-    backdrop-filter: blur(16px);
-    border-top: 1px solid var(--border);
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3);
+    background: rgba(13, 11, 23, 0.88);
+    backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -20px 45px rgba(0, 0, 0, 0.45);
     animation: buy-bar-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
@@ -1560,6 +1563,111 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .lightbox-backdrop,
   .lightbox-image {
+    animation: none;
+  }
+}
+
+/* ---- Checkout modal ---- */
+
+.checkout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  animation: lightbox-fade-in 0.2s ease both;
+}
+
+.checkout-modal {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+  animation: lightbox-zoom-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.checkout-modal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.checkout-modal-close:hover {
+  background: rgba(139, 92, 246, 0.75);
+  color: white;
+}
+
+.checkout-modal-header {
+  padding-right: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.checkout-modal-header h3 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.checkout-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.checkout-modal .form-field input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.checkout-modal .form-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.35);
+  outline: none;
+}
+
+.checkout-modal-cta {
+  width: 100%;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+}
+
+.checkout-modal-trust {
+  text-align: center;
+  font-size: 0.72rem;
+  margin-top: 0.85rem;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-modal-backdrop,
+  .checkout-modal {
     animation: none;
   }
 }
