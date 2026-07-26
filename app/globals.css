@@ -1280,9 +1280,11 @@ select:focus-visible {
   letter-spacing: 0.08em;
   padding: 0.3rem 0.7rem;
   border-radius: 8px;
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  background: rgba(34, 211, 238, 0.1);
-  color: rgba(165, 243, 252, 0.75);
+  /* Fuchsia — pulled straight from the aurora background's own blob colors,
+     so it reads as eye-catching without clashing with the page behind it. */
+  border: 1px solid rgba(217, 70, 239, 0.4);
+  background: rgba(217, 70, 239, 0.12);
+  color: rgba(240, 171, 252, 0.8);
 }
 
 .product-uid-highlight-value {
@@ -1291,8 +1293,8 @@ select:focus-visible {
   font-size: 1.05rem;
   letter-spacing: 0.02em;
   text-transform: none;
-  color: #22d3ee;
-  text-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+  color: #e879f9;
+  text-shadow: 0 0 14px rgba(217, 70, 239, 0.5);
 }
 
 .stat-box-row {
@@ -1353,8 +1355,8 @@ select:focus-visible {
    wall of purple — blue for factual info, amber/gold for the "loot" feel
    of rare items. */
 .product-section-description {
-  border-color: rgba(96, 165, 250, 0.3);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(217, 70, 239, 0.3);
+  background: rgba(217, 70, 239, 0.07);
 }
 
 .product-section-rare {
@@ -1374,7 +1376,7 @@ select:focus-visible {
 }
 
 .heading-description {
-  color: #93c5fd;
+  color: #f0abfc;
 }
 
 .heading-rare {
@@ -3387,4 +3389,141 @@ select:focus-visible {
   .mobile-tab-bar {
     display: none;
   }
+}
+
+/* =========================================================================
+   Admin panel light theme — scoped entirely to a .admin-light wrapper
+   (the guarded (dashboard) layout + the login page) so the public storefront
+   stays on its original dark theme untouched. Redefining the core variables
+   fixes most component chrome automatically (panel/card/table/form-field all
+   reference these); the rules below cover the remaining spots that used a
+   literal dark-mode color instead of a variable (e.g. the full-screen admin
+   chat overlay, or pastel text colors that read fine on dark but vanish on
+   white).
+   ========================================================================= */
+
+.admin-light {
+  --background: #f5f4fb;
+  --surface: rgba(255, 255, 255, 0.75);
+  --surface-solid: #ffffff;
+  --border: rgba(124, 58, 237, 0.2);
+  --foreground: #221d35;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-soft: rgba(139, 92, 246, 0.12);
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+.admin-light .form-field input,
+.admin-light .form-field textarea,
+.admin-light .form-field select,
+.admin-light .admin-search,
+.admin-light .admin-chat-input,
+.admin-light .support-name-edit,
+.admin-light .support-name-form input,
+.admin-light .quick-reply-add input {
+  background: #ffffff;
+}
+
+.admin-light .dashboard-nav-icon,
+.admin-light .stat-icon.available,
+.admin-light .dashboard-badge,
+.admin-light .vault-eyebrow,
+.admin-light .chat-attach-btn:hover,
+.admin-light .support-name-edit:hover,
+.admin-light .quick-reply-text:hover,
+.admin-light .quick-reply-suggestion:hover {
+  color: #7c3aed;
+}
+
+.admin-light .error-text,
+.admin-light .dm-context-popover-unsend,
+.admin-light .dm-delete-conversation:hover,
+.admin-light .chat-attachment-preview button:hover,
+.admin-light .quick-reply-delete:hover {
+  color: #dc2626;
+}
+
+.admin-light .status-pill.pending {
+  color: #a16207;
+}
+
+.admin-light .status-pill.pending_verification {
+  color: #2563eb;
+}
+
+.admin-light .status-pill.confirmed {
+  color: #16a34a;
+}
+
+.admin-light .status-pill.declined,
+.admin-light .status-pill.sold {
+  color: #dc2626;
+}
+
+.admin-light .status-pill.expired {
+  color: #64748b;
+}
+
+.admin-light .listing-toggle.on .listing-toggle-label {
+  color: #16a34a;
+}
+
+.admin-light .listing-toggle.off .listing-toggle-label {
+  color: #dc2626;
+}
+
+.admin-light .admin-header-bar {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.admin-light .admin-header-back,
+.admin-light .admin-header-gear {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.admin-light .admin-header-back:hover,
+.admin-light .admin-header-gear:hover {
+  background: rgba(124, 58, 237, 0.16);
+}
+
+.admin-light .vault-title {
+  background: linear-gradient(90deg, #4c1d95, #7c3aed, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ---- Full-screen admin chat overlay: fully hardcoded dark colors, needs
+   an explicit light pass rather than relying on variable inheritance ---- */
+
+.admin-light .admin-chat-page {
+  background: var(--background);
+}
+
+.admin-light .admin-chat-header {
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-light .admin-chat-dock {
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid var(--border);
+}
+
+.admin-light .admin-chat-bubble.received {
+  background: rgba(124, 58, 237, 0.08);
+  color: var(--foreground);
+}
+
+.admin-light .dm-context-popover {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 15px 35px rgba(124, 58, 237, 0.18);
+}
+
+.admin-light .dm-context-popover-unsend:hover,
+.admin-light .dm-context-popover-cancel:hover {
+  background: rgba(124, 58, 237, 0.08);
 }

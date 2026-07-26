@@ -8,9 +8,9 @@ export default async function AdminDashboardLayout({ children }) {
   }
 
   return (
-    <>
+    <div className="admin-light">
       <AdminHeader />
       <main className="container">{children}</main>
-    </>
+    </div>
   );
 }

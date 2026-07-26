@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="vault-page">
+    <main className="vault-page admin-light">
       <div className="vault-glow" aria-hidden="true" />
       <div className={`vault-card ${shake ? "vault-shake" : ""}`}>
         <div className="vault-icon">

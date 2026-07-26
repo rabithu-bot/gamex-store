@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, ListChecks } from "lucide-react";
+import { Search } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
 
@@ -18,7 +18,6 @@ export default function OrdersPanel() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [zoomedProof, setZoomedProof] = useState(null);
-  const [viewAll, setViewAll] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
@@ -59,22 +58,6 @@ export default function OrdersPanel() {
   }, [orders, filter, query]);
 
   if (!orders) return <p className="muted">Loading orders...</p>;
-
-  if (!viewAll) {
-    return (
-      <div className="orders-gate">
-        <button type="button" className="orders-gate-card" onClick={() => setViewAll(true)}>
-          <span className="orders-gate-icon">
-            <ListChecks size={22} />
-          </span>
-          <strong>View All Orders</strong>
-          <span className="muted">
-            {counts.all || 0} total · {counts.pending_verification || 0} need review
-          </span>
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div>

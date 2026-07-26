@@ -107,7 +107,15 @@ export default function ImageGallery({ images, alt }) {
           ))}
         </div>
       )}
-      {zoomed && <Lightbox src={gallery[active]} alt={alt} onClose={() => setZoomed(false)} />}
+      {zoomed && (
+        <Lightbox
+          images={gallery}
+          index={active}
+          alt={alt}
+          onNavigate={(i) => goTo(i)}
+          onClose={() => setZoomed(false)}
+        />
+      )}
     </div>
   );
 }
