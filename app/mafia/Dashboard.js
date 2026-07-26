@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, ShoppingBag, Package, MessagesSquare, ShieldCheck } from "lucide-react";
+import { LogOut, ShoppingBag, Package, MessagesSquare, ShieldCheck, Settings } from "lucide-react";
 import ListingsPanel from "./ListingsPanel";
 import OrdersPanel from "./OrdersPanel";
 import MessagesPanel from "./MessagesPanel";
+import SettingsPanel from "./SettingsPanel";
 import StatsBar from "./StatsBar";
 
 export default function Dashboard() {
@@ -58,11 +59,16 @@ export default function Dashboard() {
           <MessagesSquare size={15} />
           Messages
         </button>
+        <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>
+          <Settings size={15} />
+          Settings
+        </button>
       </div>
 
       {tab === "orders" && <OrdersPanel />}
       {tab === "listings" && <ListingsPanel />}
       {tab === "messages" && <MessagesPanel />}
+      {tab === "settings" && <SettingsPanel />}
     </div>
   );
 }

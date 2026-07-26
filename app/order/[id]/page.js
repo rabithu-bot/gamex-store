@@ -19,6 +19,7 @@ export default function OrderPage() {
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [pageUrl, setPageUrl] = useState("");
+  const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
@@ -37,6 +38,13 @@ export default function OrderPage() {
 
   useEffect(() => {
     setPageUrl(window.location.href);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/settings/payment-qr", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => data.url && setQrUrl(data.url))
+      .catch(() => {});
   }, []);
 
   // Bookmarks this order on this device — even if the buyer arrived here directly
@@ -137,7 +145,7 @@ export default function OrderPage() {
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/upi-qr.jpg"
+              src={qrUrl}
               alt="UPI payment QR code"
               style={{ width: 220, margin: "0.5rem auto", display: "block", borderRadius: 12 }}
             />

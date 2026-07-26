@@ -36,3 +36,8 @@ export function saveListingImage(file) {
 export function saveMessageAttachment(file) {
   return saveFile(file, "messages");
 }
+
+// UPI payment QR: public, shown on every pending order's payment step.
+export function savePaymentQr(file) {
+  return saveFile(file, "payment-qr");
+}
