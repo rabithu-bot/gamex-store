@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getOrCreateSessionId } from "@/app/lib/customerSession";
+import { expireStaleOrders } from "@/app/lib/orderExpiry";
 
 export async function POST(request) {
   const body = await request.json();
@@ -14,13 +15,15 @@ export async function POST(request) {
     return NextResponse.json({ error: "Please enter your name" }, { status: 400 });
   }
 
+  await expireStaleOrders();
   const sessionId = await getOrCreateSessionId();
 
   // Idempotent: a buyer re-clicking "Buy Now" for something they already
   // checked out on this device should land back on that same order instead
-  // of spawning a duplicate one.
+  // of spawning a duplicate one — unless that attempt already died (declined
+  // or timed out), in which case a fresh order is exactly what they want.
   const existing = await prisma.order.findFirst({
-    where: { sessionId, listingId, status: { not: "declined" } },
+    where: { sessionId, listingId, status: { notIn: ["declined", "expired"] } },
     orderBy: { createdAt: "desc" },
   });
   if (existing) {

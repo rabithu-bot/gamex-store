@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { savePaymentScreenshot } from "@/app/lib/uploads";
+import { expireStaleOrders } from "@/app/lib/orderExpiry";
 
 export async function POST(request, { params }) {
   const { id } = await params;
   const orderId = Number(id);
+
+  // Sweep first so a screenshot can't sneak in past the 5-minute window just
+  // because the periodic sweep on a GET hasn't caught this order yet.
+  await expireStaleOrders();
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) {

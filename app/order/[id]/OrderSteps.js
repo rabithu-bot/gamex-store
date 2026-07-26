@@ -4,17 +4,26 @@ const STEPS = ["Order Placed", "Payment Submitted", "Confirmed"];
 
 export default function OrderSteps({ status, hasProof }) {
   const declined = status === "declined";
+  const expired = status === "expired";
 
-  // step index that is currently "in progress" (0-based), -1 once everything is done/declined
+  // step index that is currently "in progress" (0-based)
   let currentIndex = 0;
   if (hasProof) currentIndex = 1;
   if (status === "confirmed" || declined) currentIndex = 2;
+  if (expired) currentIndex = 1;
 
   function stepState(i) {
     if (declined && i === 2) return "error";
+    if (expired && i === 1) return "error";
     if (i < currentIndex) return "done";
     if (i === currentIndex) return status === "confirmed" && i === 2 ? "done" : "current";
     return "";
+  }
+
+  function stepLabel(label, i) {
+    if (declined && i === 2) return "Declined";
+    if (expired && i === 1) return "Expired";
+    return label;
   }
 
   return (
@@ -33,7 +42,7 @@ export default function OrderSteps({ status, hasProof }) {
                 <Clock size={14} />
               )}
             </div>
-            <span>{declined && i === 2 ? "Declined" : label}</span>
+            <span>{stepLabel(label, i)}</span>
           </div>
         );
       })}

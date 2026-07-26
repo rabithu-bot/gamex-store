@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import { useToast } from "@/app/components/Toast";
@@ -12,6 +13,13 @@ import SecurityNoticeModal from "./SecurityNoticeModal";
 
 const PAYMENT_STEP_STATUSES = ["pending", "pending_verification", "declined"];
 
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export default function OrderPage() {
   const { id } = useParams();
   const toast = useToast();
@@ -21,6 +29,12 @@ export default function OrderPage() {
   const [submitError, setSubmitError] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
   const [showDeclineNotice, setShowDeclineNotice] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
@@ -48,6 +62,15 @@ export default function OrderPage() {
   // (which needs a fresh screenshot) correctly brings the upload form back
   // instead of leaving the buyer stuck on the "confirming" spinner forever.
   const submitted = order?.status === "pending_verification";
+
+  // Ticks down locally so the buyer sees 00:00 the instant the window closes,
+  // instead of waiting up to 4s for the next poll to confirm the server-side
+  // expiry sweep already caught it.
+  const msRemaining =
+    order?.status === "pending" && order?.expiresAt
+      ? new Date(order.expiresAt).getTime() - now
+      : null;
+  const isExpired = order?.status === "expired" || (msRemaining !== null && msRemaining <= 0);
 
   async function handleSubmitProof(e) {
     e.preventDefault();
@@ -126,9 +149,24 @@ export default function OrderPage() {
           <SecurityNoticeModal onClose={() => setShowDeclineNotice(false)} />
         )}
 
-        {PAYMENT_STEP_STATUSES.includes(order.status) && (
+        {isExpired && (
+          <div className="panel expired-notice">
+            <h3>Session Expired</h3>
+            <p className="muted">Please restart checkout if you wish to purchase.</p>
+            <Link href="/" className="btn" style={{ marginTop: "0.75rem", display: "inline-flex" }}>
+              Browse listings
+            </Link>
+          </div>
+        )}
+
+        {!isExpired && PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="panel">
             <h3>1. Pay via UPI</h3>
+            {order.status === "pending" && msRemaining !== null && (
+              <p className="checkout-countdown">
+                ⏱️ Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
+              </p>
+            )}
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
               Scan this QR with any UPI app, then enter the amount below yourself.
             </p>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getSessionId } from "@/app/lib/customerSession";
+import { expireStaleOrders } from "@/app/lib/orderExpiry";
 
 // Backs both the "My Orders" page and BuyForm's "did I already order this?"
 // check — both just need this device's session-scoped order list, keyed off
@@ -8,6 +9,8 @@ import { getSessionId } from "@/app/lib/customerSession";
 export async function GET() {
   const sessionId = await getSessionId();
   if (!sessionId) return NextResponse.json([]);
+
+  await expireStaleOrders();
 
   const orders = await prisma.order.findMany({
     where: { sessionId },

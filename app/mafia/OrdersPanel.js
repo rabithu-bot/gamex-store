@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, Eye, EyeOff } from "lucide-react";
+import { Search } from "lucide-react";
+import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
 
 const FILTERS = ["all", "pending_verification", "pending"];
@@ -14,7 +15,6 @@ const FILTER_LABELS = {
 export default function OrdersPanel() {
   const [orders, setOrders] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [visibilityBusyId, setVisibilityBusyId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [zoomedProof, setZoomedProof] = useState(null);
@@ -33,17 +33,6 @@ export default function OrdersPanel() {
     await fetch(`/api/admin/orders/${orderId}/${action}`, { method: "POST" });
     await fetchOrders();
     setBusyId(null);
-  }
-
-  async function handleSetListingStatus(listingId, status) {
-    setVisibilityBusyId(listingId);
-    await fetch(`/api/admin/listings/${listingId}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    await fetchOrders();
-    setVisibilityBusyId(null);
   }
 
   const counts = useMemo(() => {
@@ -163,33 +152,7 @@ export default function OrdersPanel() {
 
                   {order.status === "confirmed" && (
                     order.listing ? (
-                      <div className="listing-visibility">
-                        <span className="muted listing-visibility-label">
-                          Listing is currently{" "}
-                          <strong>{order.listing.status === "sold" ? "sold" : "available"}</strong> to
-                          buyers
-                        </span>
-                        <div className="listing-visibility-actions">
-                          <button
-                            type="button"
-                            className={`btn secondary visibility-btn ${order.listing.status === "sold" ? "active-sold" : ""}`}
-                            disabled={visibilityBusyId === order.listing.id}
-                            onClick={() => handleSetListingStatus(order.listing.id, "sold")}
-                          >
-                            <EyeOff size={14} />
-                            Show Sold
-                          </button>
-                          <button
-                            type="button"
-                            className={`btn secondary visibility-btn ${order.listing.status === "available" ? "active-available" : ""}`}
-                            disabled={visibilityBusyId === order.listing.id}
-                            onClick={() => handleSetListingStatus(order.listing.id, "available")}
-                          >
-                            <Eye size={14} />
-                            Keep Available
-                          </button>
-                        </div>
-                      </div>
+                      <ListingAvailabilityToggle listing={order.listing} onChanged={fetchOrders} />
                     ) : (
                       <span className="muted">Listing deleted</span>
                     )

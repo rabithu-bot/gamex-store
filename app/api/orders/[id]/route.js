@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
+import { expireStaleOrders, ORDER_EXPIRY_MS } from "@/app/lib/orderExpiry";
 
 export async function GET(request, { params }) {
   const { id } = await params;
+  await expireStaleOrders();
   const order = await prisma.order.findUnique({
     where: { id: Number(id) },
     include: { listing: true, messages: { orderBy: { createdAt: "asc" } } },
@@ -17,6 +19,7 @@ export async function GET(request, { params }) {
     status: order.status,
     buyerName: order.buyerName,
     createdAt: order.createdAt,
+    expiresAt: new Date(order.createdAt.getTime() + ORDER_EXPIRY_MS),
     proofSubmitted: Boolean(order.screenshotPath),
     messages: order.messages.map((m) => ({
       id: m.id,

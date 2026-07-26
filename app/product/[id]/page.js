@@ -114,7 +114,7 @@ export default async function ProductPage({ params }) {
           <section style={{ marginTop: "3rem" }}>
             <h2>Similar Accounts</h2>
             <p className="muted">Other accounts you might be interested in.</p>
-            <div className="listing-grid">
+            <div className="listing-grid" style={{ marginBottom: "3rem" }}>
               {similarListings.map((similar) => (
                 <ListingCard key={similar.id} listing={similar} />
               ))}

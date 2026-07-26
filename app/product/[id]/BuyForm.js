@@ -29,7 +29,9 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
       const res = await fetch("/api/orders/mine", { cache: "no-store" });
       if (res.ok) {
         const mine = await res.json();
-        const existing = mine.find((o) => o.listingId === listingId && o.status !== "declined");
+        const existing = mine.find(
+          (o) => o.listingId === listingId && o.status !== "declined" && o.status !== "expired"
+        );
         if (existing) {
           router.push(`/order/${existing.id}`);
           return;

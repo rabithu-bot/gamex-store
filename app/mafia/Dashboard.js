@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, ShoppingBag, Package, MessagesSquare, ShieldCheck, Settings } from "lucide-react";
 import ListingsPanel from "./ListingsPanel";
@@ -13,6 +13,14 @@ export default function Dashboard() {
   const router = useRouter();
   const [tab, setTab] = useState("orders");
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Lets a "< Back" link from the full-screen chat page (or anywhere else)
+  // return to a specific tab via /mafia?tab=messages instead of always
+  // landing back on the default Orders tab.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (requested) setTab(requested);
+  }, []);
 
   async function handleLogout() {
     if (loggingOut) return;
