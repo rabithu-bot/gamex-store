@@ -212,13 +212,14 @@ select:focus-visible {
 }
 
 .card {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), var(--surface);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   animation: card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -243,20 +244,69 @@ select:focus-visible {
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent);
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--accent-soft);
+}
+
+.card-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
 }
 
 .card-image {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   object-fit: contain;
-  background: var(--accent-soft);
-  transition: transform 0.35s ease;
+  transition: transform 0.35s ease, filter 0.3s ease, opacity 0.3s ease;
 }
 
 .card:hover .card-image {
   transform: scale(1.06);
+}
+
+.card-image-sold {
+  filter: grayscale(35%);
+  opacity: 0.8;
+}
+
+.card-image-badge {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  z-index: 2;
+  background: rgba(13, 11, 23, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.sold-badge {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.5);
 }
 
 .card-body {
@@ -289,6 +339,11 @@ select:focus-visible {
   font-weight: 700;
   font-size: 1.1rem;
   color: #d8cffc;
+}
+
+.price-sold {
+  color: #ef4444;
+  text-decoration: line-through;
 }
 
 .btn {
@@ -2429,7 +2484,7 @@ select:focus-visible {
     align-items: stretch;
   }
 
-  .card-image {
+  .card-image-wrap {
     width: 108px;
     height: 108px;
     aspect-ratio: 1 / 1;
@@ -2438,6 +2493,22 @@ select:focus-visible {
 
   .card:hover .card-image {
     transform: none;
+  }
+
+  /* The 108px box is too narrow for a full-length category name and the
+     sold badge to both sit at full size without colliding. */
+  .card-image-badge {
+    max-width: 44px;
+    padding: 0.12rem 0.3rem;
+    font-size: 0.55rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sold-badge {
+    padding: 0.14rem 0.4rem;
+    font-size: 0.56rem;
   }
 
   .card-body {

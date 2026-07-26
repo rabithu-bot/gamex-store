@@ -8,6 +8,7 @@ export default function ListingCard({ listing }) {
   const innerRef = useRef(null);
   const glareRef = useRef(null);
   const hasDiscount = listing.originalPrice && listing.originalPrice > listing.price;
+  const isSold = listing.status !== "available";
 
   function handleMouseMove(e) {
     const el = innerRef.current;
@@ -38,10 +39,17 @@ export default function ListingCard({ listing }) {
       onMouseLeave={handleMouseLeave}
     >
       <div ref={innerRef} className="tilt-card-inner">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="card-image" src={images[0] || "/window.svg"} alt={listing.title} />
+        <div className="card-image-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className={`card-image${isSold ? " card-image-sold" : ""}`}
+            src={images[0] || "/window.svg"}
+            alt={listing.title}
+          />
+          <span className="badge card-image-badge">{listing.category}</span>
+          {isSold && <span className="sold-badge">Sold Out</span>}
+        </div>
         <div className="card-body">
-          <span className="badge">{listing.category}</span>
           <strong>{listing.title}</strong>
           <span className="card-price-row">
             {hasDiscount && (
@@ -49,7 +57,9 @@ export default function ListingCard({ listing }) {
                 ₹{listing.originalPrice.toLocaleString("en-IN")}
               </span>
             )}
-            <span className="price">₹{listing.price.toLocaleString("en-IN")}</span>
+            <span className={`price${isSold ? " price-sold" : ""}`}>
+              ₹{listing.price.toLocaleString("en-IN")}
+            </span>
           </span>
         </div>
         <div ref={glareRef} className="tilt-card-glare" />
