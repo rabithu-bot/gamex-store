@@ -20,15 +20,16 @@ export default function ConfirmingPayment() {
 
   return (
     <div className="confirming-payment">
+      <span className="confirming-status-badge">⏳ Payment Verification in Progress</span>
       <div className="confirming-ring">
-        <div className="confirming-ring-inner" />
+        <div className="confirming-ring-spinner" />
+        <div className="confirming-ring-inner">
+          <span className="confirming-timer">{timeLabel}</span>
+        </div>
       </div>
-      <h3>Confirming Payment</h3>
-      <p className="confirming-timer">{timeLabel}</p>
-      <p className="muted">
-        {secondsLeft > 0
-          ? "We're verifying your payment. This usually only takes a few minutes."
-          : "Still verifying — thanks for your patience."}
+      <p className="muted confirming-instruction">
+        Your payment proof is under review. Credentials will automatically unlock once confirmed
+        by our verification team.
       </p>
     </div>
   );

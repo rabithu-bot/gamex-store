@@ -459,6 +459,46 @@ select:focus-visible {
   background: var(--surface);
 }
 
+/* ---- Checkout payment card (glassmorphic, elevated) ---- */
+
+.checkout-panel {
+  position: relative;
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(40px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 50px rgba(168, 85, 247, 0.15);
+}
+
+.payable-badge-row {
+  display: flex;
+  justify-content: center;
+  margin: 0.75rem 0;
+}
+
+.payable-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.payable-badge span:first-child {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -602,6 +642,84 @@ select:focus-visible {
   color: #c4b5fd;
 }
 
+/* ---- Dashboard section picker (home) ---- */
+
+.dashboard-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.dashboard-nav-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-nav-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.dashboard-nav-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: #c4b5fd;
+}
+
+/* ---- Dashboard section (focused view) ---- */
+
+.dashboard-focus-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.dashboard-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-back:hover {
+  border-color: var(--accent);
+  color: #c4b5fd;
+}
+
+.dashboard-focus-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
 /* ---- Admin stats bar ---- */
 
 .stats-bar {
@@ -666,6 +784,47 @@ select:focus-visible {
   display: block;
   font-size: 0.72rem;
   opacity: 0.6;
+}
+
+/* ---- Orders gate (hides filters/table until "View All" is clicked) ---- */
+
+.orders-gate {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.orders-gate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 2rem 2.5rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.orders-gate-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.orders-gate-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: #c4b5fd;
 }
 
 /* ---- Orders toolbar (filter + search) ---- */
@@ -984,15 +1143,29 @@ select:focus-visible {
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   border-color: transparent;
   color: white;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
 }
 
 .order-step.done .line {
   background: var(--accent);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
 }
 
 .order-step.current .dot {
   border-color: var(--accent);
   color: #c4b5fd;
+  animation: order-step-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes order-step-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(139, 92, 246, 0.45); }
+  50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-step.current .dot {
+    animation: none;
+  }
 }
 
 .order-step.current span {
@@ -2132,37 +2305,69 @@ select:focus-visible {
   padding: 1.5rem 0 0.5rem;
 }
 
+.confirming-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #c4b5fd;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  animation: confirming-badge-glow 2s ease-in-out infinite;
+}
+
+@keyframes confirming-badge-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+  50% { box-shadow: 0 0 18px rgba(139, 92, 246, 0.55); }
+}
+
 .confirming-ring {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 1rem;
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 1.25rem;
   border-radius: 50%;
-  padding: 5px;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+}
+
+/* A separate layer from .confirming-ring-inner so the spin animation never
+   rotates the timer text sitting on top of it — the two are siblings, not
+   parent/child, precisely to avoid that. */
+.confirming-ring-spinner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
   background: conic-gradient(from 0deg, transparent, var(--accent) 75%, transparent);
   animation: confirming-spin 1.3s linear infinite;
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
 }
 
 .confirming-ring-inner {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 4px;
   border-radius: 50%;
   background: var(--surface-solid);
-}
-
-.confirming-payment h3 {
-  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .confirming-timer {
-  font-size: 1.9rem;
+  font-size: 2.25rem;
   font-weight: 800;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin: 0.2rem 0;
+  letter-spacing: 0.05em;
+  color: #c084fc;
+  filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));
+}
+
+.confirming-instruction {
+  max-width: 320px;
+  margin: 0 auto;
+  line-height: 1.55;
 }
 
 @keyframes confirming-spin {
@@ -2172,6 +2377,21 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .confirming-ring {
     animation: none;
+  }
+
+  .confirming-status-badge {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .confirming-ring {
+    width: 130px;
+    height: 130px;
+  }
+
+  .confirming-timer {
+    font-size: 1.9rem;
   }
 }
 

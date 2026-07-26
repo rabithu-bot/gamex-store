@@ -160,7 +160,7 @@ export default function OrderPage() {
         )}
 
         {!isExpired && PAYMENT_STEP_STATUSES.includes(order.status) && (
-          <div className="panel">
+          <div className="checkout-panel">
             <h3>1. Pay via UPI</h3>
             {order.status === "pending" && msRemaining !== null && (
               <p className="checkout-countdown">
@@ -176,9 +176,12 @@ export default function OrderPage() {
               alt="UPI payment QR code"
               style={{ width: 220, margin: "0.5rem auto", display: "block", borderRadius: 12 }}
             />
-            <p style={{ textAlign: "center", marginTop: "0.6rem" }}>
-              Amount to pay: <strong className="price">₹{order.listing.price.toLocaleString("en-IN")}</strong>
-            </p>
+            <div className="payable-badge-row">
+              <span className="payable-badge">
+                <span>Total Payable</span>
+                <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
+              </span>
+            </div>
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
             {submitted ? (

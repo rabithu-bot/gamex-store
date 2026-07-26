@@ -1,6 +1,6 @@
 import { Check, Clock, X } from "lucide-react";
 
-const STEPS = ["Order Placed", "Payment Submitted", "Confirmed"];
+const STEPS = ["Scan & Pay", "Verification", "Unlock Credentials"];
 
 export default function OrderSteps({ status, hasProof }) {
   const declined = status === "declined";

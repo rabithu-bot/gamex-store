@@ -23,14 +23,13 @@ export default function SecurityNoticeModal({ onClose }) {
         <div className="security-notice-icon">
           <ShieldAlert size={22} />
         </div>
-        <h3>Security &amp; Audit Notice</h3>
+        <h3>Payment Verification Failed ❌</h3>
         <p className="muted">
-          Transaction verification failed. Our compliance engine was unable to authenticate the
-          attached payment receipt. Please ensure you upload a valid, unedited provider screenshot
-          to proceed with fulfillment.
+          Your payment screenshot could not be verified (Invalid or Fake Screenshot). Please
+          complete the real payment and upload a valid screenshot to receive your ID credentials.
         </p>
         <button type="button" className="btn security-notice-cta" onClick={onClose}>
-          Try Again
+          Upload Real Screenshot 🔄
         </button>
       </div>
     </div>,
