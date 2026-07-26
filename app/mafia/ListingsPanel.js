@@ -8,6 +8,7 @@ const emptyForm = {
   price: "",
   originalPrice: "",
   category: "",
+  gameUid: "",
   accountId: "",
   accountPassword: "",
 };
@@ -60,6 +61,7 @@ export default function ListingsPanel() {
       price: listing.price,
       originalPrice: listing.originalPrice || "",
       category: listing.category,
+      gameUid: listing.gameUid || "",
       accountId: listing.accountId,
       accountPassword: listing.accountPassword,
       status: listing.status,
@@ -127,6 +129,14 @@ export default function ListingsPanel() {
             onChange={(e) => setForm({ ...form, category: e.target.value })}
             placeholder="Free Fire / PUBG / ..."
             required
+          />
+        </div>
+        <div className="form-field">
+          <label>Game UID (optional)</label>
+          <input
+            value={form.gameUid}
+            onChange={(e) => setForm({ ...form, gameUid: e.target.value })}
+            placeholder="Public in-game ID shown to buyers, e.g. 2083601348"
           />
         </div>
         <div className="field-grid-2">
@@ -214,6 +224,14 @@ export default function ListingsPanel() {
                   <option value="sold">sold</option>
                 </select>
               </div>
+              <div className="form-field">
+                <label>Game UID (optional)</label>
+                <input
+                  value={editForm.gameUid}
+                  onChange={(e) => setEditForm({ ...editForm, gameUid: e.target.value })}
+                  placeholder="Public in-game ID shown to buyers"
+                />
+              </div>
               <div className="field-grid-2">
                 <div className="form-field">
                   <label>Account ID</label>
@@ -249,6 +267,7 @@ export default function ListingsPanel() {
                   )}{" "}
                   ₹{listing.price.toLocaleString("en-IN")}
                 </div>
+                {listing.gameUid && <div className="muted">Public Game UID: {listing.gameUid}</div>}
                 <div className="muted">Account ID: {listing.accountId}</div>
               </div>
               <div style={{ display: "flex", gap: "0.5rem" }}>

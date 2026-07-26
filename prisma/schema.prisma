@@ -19,6 +19,11 @@ model Listing {
   price           Int
   originalPrice   Int? // optional "was" price, shown struck through next to price when higher
   category        String
+  // Public in-game UID shown to buyers on the storefront card (e.g. a Free
+  // Fire UID) — purely informational, distinct from accountId/accountPassword
+  // below which stay private until purchase. Optional since existing listings
+  // predate this field.
+  gameUid         String?
   images          String // JSON array of file paths
   status          String   @default("available") // available | sold
   accountId       String

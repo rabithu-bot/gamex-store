@@ -51,6 +51,11 @@ export default function ListingCard({ listing }) {
         </div>
         <div className="card-body">
           <strong>{listing.title}</strong>
+          {listing.gameUid && (
+            <span className="card-uid">
+              ID <span className="card-uid-value">{listing.gameUid}</span>
+            </span>
+          )}
           <span className="card-price-row">
             {hasDiscount && (
               <span className="price-original price-original-sm">

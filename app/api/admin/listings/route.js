@@ -25,6 +25,7 @@ export async function POST(request) {
   const originalPriceRaw = formData.get("originalPrice");
   const originalPrice = originalPriceRaw ? Number(originalPriceRaw) : null;
   const category = String(formData.get("category") || "").trim();
+  const gameUid = String(formData.get("gameUid") || "").trim() || null;
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const imageFiles = formData.getAll("images").filter((f) => typeof f !== "string");
@@ -49,6 +50,7 @@ export async function POST(request) {
       // source avoids a listing quietly claiming a "discount" that's not one.
       originalPrice: originalPrice && originalPrice > price ? originalPrice : null,
       category,
+      gameUid,
       accountId,
       accountPassword,
       images: JSON.stringify(imagePaths),

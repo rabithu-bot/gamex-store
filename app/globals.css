@@ -326,6 +326,25 @@ select:focus-visible {
   gap: 0.4rem;
 }
 
+.card-uid {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+}
+
+.card-uid-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--foreground);
+  opacity: 1;
+}
+
 .card-price-row {
   display: flex;
   align-items: baseline;
@@ -3136,17 +3155,15 @@ select:focus-visible {
 }
 
 /* =========================================================================
-   Distinct mobile experience — a native-app-like list/tab layout instead of
-   just a shrunk desktop grid. Desktop keeps the tilt-card grid + hover chrome
-   above this breakpoint untouched.
+   Distinct mobile experience — same full-width vertical card as desktop
+   (image on top, details below), just stacked one per row instead of
+   gridded, so the category badge and title always have room to breathe.
    ========================================================================= */
 
 @media (max-width: 640px) {
-  /* Listings read as a compact horizontal list, like a marketplace app,
-     instead of a vertical card grid. */
   .listing-grid {
     grid-template-columns: 1fr;
-    gap: 0.6rem;
+    gap: 0.85rem;
   }
 
   .card {
@@ -3157,61 +3174,22 @@ select:focus-visible {
     transform: none;
   }
 
-  /* .card's only direct child is .tilt-card-inner (a plain block div) — the
-     row layout has to live here, not on .card, or it never reaches the
-     image/body underneath. */
-  .tilt-card-inner {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .card-image-wrap {
-    width: 108px;
-    height: 108px;
-    aspect-ratio: 1 / 1;
-    flex-shrink: 0;
-  }
-
   .card:hover .card-image {
     transform: none;
   }
 
-  /* The 108px box is too narrow for a full-length category name and the
-     sold badge to both sit at full size without colliding. */
-  .card-image-badge {
-    max-width: 44px;
-    padding: 0.12rem 0.3rem;
-    font-size: 0.55rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .sold-badge {
-    border-width: 2px;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.58rem;
-    border-radius: 5px;
-    letter-spacing: 0.06em;
+  .card-image-wrap {
+    aspect-ratio: 16 / 11;
   }
 
   .card-body {
-    padding: 0.7rem 0.8rem;
-    justify-content: center;
-    gap: 0.25rem;
-    min-width: 0;
+    padding: 0.8rem 0.9rem;
   }
 
   .card-body strong {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .badge {
-    font-size: 0.62rem;
-    padding: 0.1rem 0.4rem;
   }
 
   body {

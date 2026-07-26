@@ -25,6 +25,9 @@ export async function PUT(request, { params }) {
   const originalPriceRaw = formData.get("originalPrice");
   const originalPrice = originalPriceRaw ? Number(originalPriceRaw) : null;
   const category = String(formData.get("category") || "").trim();
+  // Blank clears it (like originalPrice) rather than falling back to the
+  // existing value — an admin removing the UID needs that to actually stick.
+  const gameUid = String(formData.get("gameUid") || "").trim() || null;
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const status = String(formData.get("status") || existing.status);
@@ -45,6 +48,7 @@ export async function PUT(request, { params }) {
       price: finalPrice,
       originalPrice: originalPrice && originalPrice > finalPrice ? originalPrice : null,
       category: category || existing.category,
+      gameUid,
       accountId: accountId || existing.accountId,
       accountPassword: accountPassword || existing.accountPassword,
       status,
