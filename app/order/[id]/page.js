@@ -8,7 +8,6 @@ import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
-import SecurityNoticeModal from "./SecurityNoticeModal";
 import AccessDeniedNotice from "./AccessDeniedNotice";
 import FacebookLogo from "./FacebookLogo";
 
@@ -34,7 +33,6 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
-  const [showDeclineNotice, setShowDeclineNotice] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [accessDenied, setAccessDenied] = useState(false);
 
@@ -58,16 +56,33 @@ export default function OrderPage() {
     return () => clearInterval(interval);
   }, [fetchOrder]);
 
-  useEffect(() => {
-    setShowDeclineNotice(order?.status === "declined");
-  }, [order?.status]);
-
   // Verification-in-progress now lives on its own page so the buyer isn't
   // stuck watching a spinner inline — hand off as soon as we see the status
   // flip, whether that's from this page's own submit or a later poll tick.
   useEffect(() => {
     if (order?.status === "pending_verification") {
       router.push(`/order/${id}/confirming`);
+    }
+  }, [order?.status, id, router]);
+
+  // Declined also gets its own full page, but unlike confirming there's a
+  // real path back to THIS page while still "declined" (the notice page's
+  // own "Upload Real Screenshot" button) — a naive redirect-on-status effect
+  // would bounce the buyer straight back to the notice in an infinite loop.
+  // sessionStorage remembers "already shown" per order so it only fires once
+  // per decline, and clears again once the status moves on (e.g. a fresh
+  // resubmission goes to pending_verification), so a second decline still
+  // gets its own fresh notice.
+  useEffect(() => {
+    if (!order?.status || !id) return;
+    const key = `gamex-decline-seen-${id}`;
+    if (order.status === "declined") {
+      if (sessionStorage.getItem(key) !== "1") {
+        sessionStorage.setItem(key, "1");
+        router.push(`/order/${id}/declined`);
+      }
+    } else {
+      sessionStorage.removeItem(key);
     }
   }, [order?.status, id, router]);
 
@@ -153,10 +168,6 @@ export default function OrderPage() {
         <p className="price">₹{order.listing.price.toLocaleString("en-IN")}</p>
 
         <OrderSteps status={order.status} hasProof={order.proofSubmitted} />
-
-        {showDeclineNotice && (
-          <SecurityNoticeModal onClose={() => setShowDeclineNotice(false)} />
-        )}
 
         {isExpired && (
           <div className="panel expired-notice">
