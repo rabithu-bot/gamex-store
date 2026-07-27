@@ -252,14 +252,12 @@ export default function OrderPage() {
           </div>
         )}
 
-        {order.status === "confirmed" && (
-          <div className="panel" style={{ textAlign: "center" }}>
-            <Link href={`/order/${order.id}/support`} className="btn secondary">
-              <MessageCircle size={16} />
-              Contact Support
-            </Link>
-          </div>
-        )}
+        <div className="panel" style={{ textAlign: "center" }}>
+          <Link href={`/order/${order.id}/support`} className="btn secondary">
+            <MessageCircle size={16} />
+            Contact Support
+          </Link>
+        </div>
       </main>
     </>
   );

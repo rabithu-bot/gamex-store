@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, MessageCircle } from "lucide-react";
 
 export default function DeclinedNotice({ orderId }) {
   return (
@@ -14,6 +14,14 @@ export default function DeclinedNotice({ orderId }) {
       </p>
       <Link href={`/order/${orderId}`} className="btn security-notice-cta">
         Upload Real Screenshot 🔄
+      </Link>
+      <Link
+        href={`/order/${orderId}/support`}
+        className="btn secondary"
+        style={{ marginTop: "0.6rem" }}
+      >
+        <MessageCircle size={16} />
+        Contact Support
       </Link>
     </div>
   );

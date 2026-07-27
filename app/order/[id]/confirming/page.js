@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
@@ -50,6 +52,13 @@ export default function ConfirmingPaymentPage() {
         <p className="muted">{order.listing.title}</p>
         <div className="checkout-panel">
           <ConfirmingPayment />
+        </div>
+
+        <div className="panel" style={{ textAlign: "center" }}>
+          <Link href={`/order/${order.id}/support`} className="btn secondary">
+            <MessageCircle size={16} />
+            Contact Support
+          </Link>
         </div>
       </main>
     </>
