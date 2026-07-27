@@ -10,6 +10,10 @@ export async function PATCH(request) {
   const body = await request.json().catch(() => ({}));
   const upiId = typeof body.upiId === "string" ? body.upiId.trim() : "";
   const payeeName = typeof body.payeeName === "string" ? body.payeeName.trim() : "";
+  // Optional — a second VPA on a different bank to fall back to if the
+  // primary one starts declining payments (e.g. a payments bank like Airtel
+  // Payments Bank enforcing its own transaction/balance caps). Blank clears it.
+  const secondaryUpiId = typeof body.secondaryUpiId === "string" ? body.secondaryUpiId.trim() : "";
 
   if (!upiId || !payeeName) {
     return NextResponse.json({ error: "UPI ID and payee name are both required" }, { status: 400 });
@@ -26,7 +30,12 @@ export async function PATCH(request) {
       update: { value: payeeName },
       create: { key: "upiPayeeName", value: payeeName },
     }),
+    prisma.setting.upsert({
+      where: { key: "upiIdSecondary" },
+      update: { value: secondaryUpiId },
+      create: { key: "upiIdSecondary", value: secondaryUpiId },
+    }),
   ]);
 
-  return NextResponse.json({ upiId, payeeName });
+  return NextResponse.json({ upiId, payeeName, secondaryUpiId: secondaryUpiId || null });
 }

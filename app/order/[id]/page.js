@@ -211,9 +211,9 @@ export default function OrderPage() {
 
             <UpiPayButtons
               upiId={upiDetails?.upiId}
+              secondaryUpiId={upiDetails?.secondaryUpiId}
               payeeName={upiDetails?.payeeName}
               amount={order.listing.price}
-              orderId={order.id}
             />
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>

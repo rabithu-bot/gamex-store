@@ -12,6 +12,7 @@ export default function SettingsPanel() {
 
   const [upiId, setUpiId] = useState("");
   const [payeeName, setPayeeName] = useState("");
+  const [secondaryUpiId, setSecondaryUpiId] = useState("");
   const [upiError, setUpiError] = useState("");
   const [upiSaved, setUpiSaved] = useState(false);
   const [upiSubmitting, setUpiSubmitting] = useState(false);
@@ -27,6 +28,7 @@ export default function SettingsPanel() {
       const data = await res.json();
       setUpiId(data.upiId || "");
       setPayeeName(data.payeeName || "");
+      setSecondaryUpiId(data.secondaryUpiId || "");
     }
   }, []);
 
@@ -90,7 +92,11 @@ export default function SettingsPanel() {
     const res = await fetch("/api/admin/settings/upi-details", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ upiId: upiId.trim(), payeeName: payeeName.trim() }),
+      body: JSON.stringify({
+        upiId: upiId.trim(),
+        payeeName: payeeName.trim(),
+        secondaryUpiId: secondaryUpiId.trim(),
+      }),
     });
     setUpiSubmitting(false);
     if (!res.ok) {
@@ -135,6 +141,24 @@ export default function SettingsPanel() {
               placeholder="Your Name"
             />
           </div>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="upi-id-secondary">Backup UPI ID (optional)</label>
+          <input
+            id="upi-id-secondary"
+            value={secondaryUpiId}
+            onChange={(e) => {
+              setSecondaryUpiId(e.target.value);
+              setUpiSaved(false);
+            }}
+            placeholder="yourname@ybl — a regular bank VPA to fall back to"
+          />
+          <p className="muted" style={{ fontSize: "0.78rem", marginTop: "0.3rem" }}>
+            Shown to buyers as a &quot;Try alternate UPI ID&quot; option if the primary one starts
+            declining payments — useful if your primary is a payments bank (e.g. Airtel Payments
+            Bank) that enforces its own transaction limits.
+          </p>
         </div>
 
         {upiError && <p className="error-text">{upiError}</p>}
