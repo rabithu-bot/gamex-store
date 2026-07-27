@@ -5,7 +5,6 @@ import { MessageCircle, Paperclip, X, BadgeCheck } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
 export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName }) {
-  const [opened, setOpened] = useState(messages.length > 0);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [text, setText] = useState("");
@@ -38,41 +37,29 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
     setSavingName(true);
     await onSaveName(nameInput.trim());
     setSavingName(false);
-    setOpened(true);
   }
 
-  if (!opened) {
-    if (!buyerName) {
-      return (
-        <div className="panel">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <MessageCircle size={18} />
-            Contact Support
-          </h3>
-          <p className="muted">What&apos;s your name? We&apos;ll use it to address you in chat.</p>
-          <form onSubmit={handleSaveName} style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Your name"
-              autoFocus
-              style={{ flex: 1 }}
-            />
-            <button className="btn" type="submit" disabled={savingName || !nameInput.trim()}>
-              {savingName ? "Saving..." : "Continue"}
-            </button>
-          </form>
-        </div>
-      );
-    }
-
+  if (!buyerName) {
     return (
-      <div className="panel" style={{ textAlign: "center" }}>
-        <button className="btn secondary" onClick={() => setOpened(true)}>
-          <MessageCircle size={16} />
+      <div className="panel">
+        <h3 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <MessageCircle size={18} />
           Contact Support
-        </button>
+        </h3>
+        <p className="muted">What&apos;s your name? We&apos;ll use it to address you in chat.</p>
+        <form onSubmit={handleSaveName} style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
+          <input
+            type="text"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            placeholder="Your name"
+            autoFocus
+            style={{ flex: 1 }}
+          />
+          <button className="btn" type="submit" disabled={savingName || !nameInput.trim()}>
+            {savingName ? "Saving..." : "Continue"}
+          </button>
+        </form>
       </div>
     );
   }

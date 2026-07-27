@@ -17,6 +17,7 @@ export default function ConfirmingPayment() {
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeLabel = `${minutes}:${String(seconds).padStart(2, "0")}`;
+  const timedOut = secondsLeft === 0;
 
   return (
     <div className="confirming-payment">
@@ -28,8 +29,9 @@ export default function ConfirmingPayment() {
         </div>
       </div>
       <p className="muted confirming-instruction">
-        Your payment proof is under review. Credentials will automatically unlock once confirmed
-        by our verification team.
+        {timedOut
+          ? "Verification is taking a little longer than usual. Kindly wait and check back in a few minutes — this page will update automatically."
+          : "Your payment proof is under review. Credentials will automatically unlock once confirmed by our verification team."}
       </p>
     </div>
   );

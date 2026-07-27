@@ -587,6 +587,37 @@ select:focus-visible {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.credentials-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.6rem;
+  font-family: var(--font-geist-sans);
+}
+
+/* Amber against the box's green tint so the actual sensitive values pop
+   instead of blending into the surrounding monospace text. */
+.credentials-value {
+  color: #fbbf24;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.order-support-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.75;
+  margin-bottom: 0.75rem;
+}
+
+.order-support-back:hover {
+  opacity: 1;
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;

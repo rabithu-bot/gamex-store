@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
-import SupportChat from "./SupportChat";
-import ConfirmingPayment from "./ConfirmingPayment";
 import SecurityNoticeModal from "./SecurityNoticeModal";
 import AccessDeniedNotice from "./AccessDeniedNotice";
+import FacebookLogo from "./FacebookLogo";
 
-const PAYMENT_STEP_STATUSES = ["pending", "pending_verification", "declined"];
+// pending_verification is deliberately excluded here — that status now has
+// its own dedicated /order/[id]/confirming page (see the redirect effect
+// below), so this page never needs to render a body for it.
+const PAYMENT_STEP_STATUSES = ["pending", "declined"];
 const POLL_INTERVAL_MS = 1500;
 
 function formatCountdown(ms) {
@@ -24,6 +27,7 @@ function formatCountdown(ms) {
 
 export default function OrderPage() {
   const { id } = useParams();
+  const router = useRouter();
   const toast = useToast();
   const [order, setOrder] = useState(null);
   const [screenshot, setScreenshot] = useState(null);
@@ -58,17 +62,21 @@ export default function OrderPage() {
     setShowDeclineNotice(order?.status === "declined");
   }, [order?.status]);
 
+  // Verification-in-progress now lives on its own page so the buyer isn't
+  // stuck watching a spinner inline — hand off as soon as we see the status
+  // flip, whether that's from this page's own submit or a later poll tick.
+  useEffect(() => {
+    if (order?.status === "pending_verification") {
+      router.push(`/order/${id}/confirming`);
+    }
+  }, [order?.status, id, router]);
+
   useEffect(() => {
     fetch("/api/settings/payment-qr", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => data.url && setQrUrl(data.url))
       .catch(() => {});
   }, []);
-
-  // Driven by the order's own status rather than a local flag, so a decline
-  // (which needs a fresh screenshot) correctly brings the upload form back
-  // instead of leaving the buyer stuck on the "confirming" spinner forever.
-  const submitted = order?.status === "pending_verification";
 
   // Ticks down locally so the buyer sees 00:00 the instant the window closes,
   // instead of waiting up to 4s for the next poll to confirm the server-side
@@ -107,32 +115,6 @@ export default function OrderPage() {
     setScreenshot(null);
     toast("Payment screenshot submitted");
     fetchOrder();
-  }
-
-  async function handleSendMessage(text, file) {
-    const formData = new FormData();
-    formData.set("body", text);
-    if (file) formData.set("attachment", file);
-
-    const res = await fetch(`/api/orders/${id}/messages`, {
-      method: "POST",
-      body: formData,
-    });
-    if (res.ok) fetchOrder();
-    else if (res.status === 403) setAccessDenied(true);
-  }
-
-  async function handleSaveName(name) {
-    const res = await fetch(`/api/orders/${id}/name`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ buyerName: name }),
-    });
-    if (res.status === 403) {
-      setAccessDenied(true);
-      return;
-    }
-    await fetchOrder();
   }
 
   if (accessDenied) {
@@ -211,59 +193,61 @@ export default function OrderPage() {
             </div>
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
-            {submitted ? (
-              <ConfirmingPayment />
-            ) : (
-              <form onSubmit={handleSubmitProof}>
-                {order.status === "declined" && (
-                  <p className="error-text" style={{ marginBottom: "0.75rem" }}>
-                    Your previous screenshot couldn&apos;t be verified — please attach a new one to
-                    try again.
-                  </p>
-                )}
-                <div className="form-field">
-                  <label htmlFor="screenshot">Payment screenshot</label>
-                  <input
-                    id="screenshot"
-                    type="file"
-                    accept="image/*"
-                    required
-                    onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                  />
-                </div>
-                {submitError && <p className="error-text">{submitError}</p>}
-                <button className="btn" type="submit" disabled={submitting}>
-                  {submitting ? "Submitting..." : "I've paid"}
-                </button>
-              </form>
-            )}
+            <form onSubmit={handleSubmitProof}>
+              {order.status === "declined" && (
+                <p className="error-text" style={{ marginBottom: "0.75rem" }}>
+                  Your previous screenshot couldn&apos;t be verified — please attach a new one to
+                  try again.
+                </p>
+              )}
+              <div className="form-field">
+                <label htmlFor="screenshot">Payment screenshot</label>
+                <input
+                  id="screenshot"
+                  type="file"
+                  accept="image/*"
+                  required
+                  onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
+                />
+              </div>
+              {submitError && <p className="error-text">{submitError}</p>}
+              <button className="btn" type="submit" disabled={submitting}>
+                {submitting ? "Submitting..." : "I've paid"}
+              </button>
+            </form>
           </div>
         )}
 
         {order.status === "confirmed" && order.account && (
           <div className="credentials-box">
-            <p style={{ marginBottom: "0.6rem" }}>
-              <strong>Payment confirmed!</strong> Here are your account details:
+            <p className="credentials-heading">
+              <FacebookLogo size={20} />
+              <span>
+                <strong>Payment confirmed!</strong> Here are your Facebook account details:
+              </span>
             </p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
-              <span style={{ minWidth: 0, wordBreak: "break-all" }}>Account ID: {order.account.accountId}</span>
+              <span style={{ minWidth: 0, wordBreak: "break-all" }}>
+                Account ID: <span className="credentials-value">{order.account.accountId}</span>
+              </span>
               <CopyButton value={order.account.accountId} label="Copy" />
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.4rem" }}>
-              <span style={{ minWidth: 0, wordBreak: "break-all" }}>Password: {order.account.accountPassword}</span>
+              <span style={{ minWidth: 0, wordBreak: "break-all" }}>
+                Password: <span className="credentials-value">{order.account.accountPassword}</span>
+              </span>
               <CopyButton value={order.account.accountPassword} label="Copy" />
             </div>
           </div>
         )}
 
         {order.status === "confirmed" && (
-          <SupportChat
-            orderId={order.id}
-            messages={order.messages}
-            buyerName={order.buyerName}
-            onSend={handleSendMessage}
-            onSaveName={handleSaveName}
-          />
+          <div className="panel" style={{ textAlign: "center" }}>
+            <Link href={`/order/${order.id}/support`} className="btn secondary">
+              <MessageCircle size={16} />
+              Contact Support
+            </Link>
+          </div>
         )}
       </main>
     </>
