@@ -10,6 +10,7 @@ import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
 import FacebookLogo from "./FacebookLogo";
+import UpiPayButtons from "./UpiPayButtons";
 
 // pending_verification is deliberately excluded here — that status now has
 // its own dedicated /order/[id]/confirming page (see the redirect effect
@@ -33,6 +34,7 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
+  const [upiDetails, setUpiDetails] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [accessDenied, setAccessDenied] = useState(false);
 
@@ -90,6 +92,10 @@ export default function OrderPage() {
     fetch("/api/settings/payment-qr", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => data.url && setQrUrl(data.url))
+      .catch(() => {});
+    fetch("/api/settings/upi-details", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => setUpiDetails(data))
       .catch(() => {});
   }, []);
 
@@ -202,6 +208,13 @@ export default function OrderPage() {
                 <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
               </span>
             </div>
+
+            <UpiPayButtons
+              upiId={upiDetails?.upiId}
+              payeeName={upiDetails?.payeeName}
+              amount={order.listing.price}
+              orderId={order.id}
+            />
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
             <form onSubmit={handleSubmitProof}>

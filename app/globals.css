@@ -3558,3 +3558,154 @@ select:focus-visible {
 .admin-light .dm-context-popover-cancel:hover {
   background: rgba(124, 58, 237, 0.08);
 }
+
+/* =========================================================================
+   Instagram/Facebook in-app-browser breakout banner. Deliberately NOT
+   fixed/sticky — it sits in normal document flow at the very top of <body>
+   so it can't collide with SiteHeader's own `position: sticky; top: 0`.
+   It's the first thing visible on load either way, which is what "highly
+   visible" actually requires here.
+   ========================================================================= */
+
+.iab-banner {
+  position: relative;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.28), rgba(217, 70, 239, 0.28));
+  border-bottom: 1px solid rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+  animation: iab-banner-in 0.3s ease-out both;
+}
+
+@keyframes iab-banner-in {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile-first: a simple vertical stack avoids the overflow/wrap juggling
+   that a single-row layout would need at narrow widths. Widens into a row
+   once there's actually room for text + button side by side. */
+.iab-banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.iab-banner-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.iab-banner-cta {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.iab-banner-ios {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+@media (min-width: 561px) {
+  .iab-banner-content {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .iab-banner-ios {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+.iab-banner-ios-hint {
+  font-size: 0.8rem;
+  color: #fff;
+  opacity: 0.9;
+}
+
+.iab-banner-copy {
+  flex-shrink: 0;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.iab-banner-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.iab-banner-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iab-banner {
+    animation: none;
+  }
+}
+
+/* ---- 1-tap UPI app buttons (mobile-only; desktop keeps the QR code) ---- */
+
+.upi-pay-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.upi-pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.upi-pay-btn:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.upi-pay-btn:active {
+  transform: scale(0.97);
+}
+
+.upi-pay-btn svg {
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+@media (min-width: 641px) {
+  .upi-pay-buttons {
+    display: none;
+  }
+}
