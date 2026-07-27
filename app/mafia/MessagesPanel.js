@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Check, Pencil } from "lucide-react";
+import CustomerTagBadge from "./CustomerTagBadge";
 
 function truncate(text, max) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -129,7 +130,10 @@ export default function MessagesPanel() {
                 <span className="dm-avatar">{initials(customerName(order))}</span>
                 <span className="dm-list-body">
                   <span className="dm-list-top">
-                    <strong>{customerName(order)}</strong>
+                    <span className="dm-list-name-group">
+                      <strong>{customerName(order)}</strong>
+                      {order.tag && <CustomerTagBadge tag={order.tag} />}
+                    </span>
                     <span className="dm-time">{relativeTime(last.createdAt)}</span>
                   </span>
                   <span className="muted dm-preview-listing">{order.listingTitle}</span>

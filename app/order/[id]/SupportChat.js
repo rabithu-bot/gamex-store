@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Paperclip, X, BadgeCheck } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
+const TYPING_PING_INTERVAL_MS = 2000;
+
 export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName }) {
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -13,12 +15,36 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
   const fileInputRef = useRef(null);
+  const lastTypingPingRef = useRef(0);
 
   useEffect(() => {
     fetch("/api/settings/support-name")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.name && setSupportName(data.name));
   }, []);
+
+  // This component only mounts once the buyer has actually opened Contact
+  // Support, so "rendered with something unread" already means "viewing" —
+  // marks admin's messages read so the admin side can show a "seen" tick.
+  useEffect(() => {
+    if (messages.some((m) => m.sender === "admin" && !m.readAt)) {
+      fetch(`/api/orders/${orderId}/read`, { method: "POST" }).catch(() => {});
+    }
+  }, [orderId, messages]);
+
+  function pingTyping() {
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
+    lastTypingPingRef.current = now;
+    fetch(`/api/orders/${orderId}/typing`, { method: "POST" }).catch(() => {});
+  }
+
+  function quotePreview(message) {
+    if (!message) return null;
+    if (message.attachmentType === "audio") return "🎤 Voice message";
+    if (message.attachmentPath && !message.body) return "📷 Photo";
+    return message.body;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -74,29 +100,45 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
 
       {messages.length > 0 && (
         <div className="chat-thread">
-          {messages.map((m) => (
-            <div key={m.id} className={`chat-bubble ${m.sender}`}>
-              <span className="chat-sender">
-                {m.sender === "admin" ? (
-                  <>
-                    {supportName} <BadgeCheck size={13} className="verified-badge" />
-                  </>
-                ) : (
-                  "You"
+          {messages.map((m) => {
+            const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
+            return (
+              <div key={m.id} className={`chat-bubble ${m.sender}`}>
+                <span className="chat-sender">
+                  {m.sender === "admin" ? (
+                    <>
+                      {supportName} <BadgeCheck size={13} className="verified-badge" />
+                    </>
+                  ) : (
+                    "You"
+                  )}
+                </span>
+                {original && (
+                  <div className="chat-quote-block">
+                    <span className="chat-quote-sender">
+                      {original.sender === "admin" ? supportName : "You"}
+                    </span>
+                    <span className="chat-quote-text">{quotePreview(original)}</span>
+                  </div>
                 )}
-              </span>
-              {m.attachmentPath && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.attachmentPath}
-                  alt="Attachment"
-                  className="chat-attachment"
-                  onClick={() => setZoomSrc(m.attachmentPath)}
-                />
-              )}
-              {m.body && <p>{m.body}</p>}
-            </div>
-          ))}
+                {m.attachmentPath && m.attachmentType === "audio" ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <audio controls src={m.attachmentPath} className="chat-audio-attachment" />
+                ) : (
+                  m.attachmentPath && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.attachmentPath}
+                      alt="Attachment"
+                      className="chat-attachment"
+                      onClick={() => setZoomSrc(m.attachmentPath)}
+                    />
+                  )
+                )}
+                {m.body && <p>{m.body}</p>}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -128,7 +170,10 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
         <input
           type="text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            pingTyping();
+          }}
           placeholder="Type your message..."
           autoFocus
         />

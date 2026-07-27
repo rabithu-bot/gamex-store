@@ -34,6 +34,9 @@ export async function GET(request, { params }) {
       sender: m.sender,
       body: m.body,
       attachmentPath: m.attachmentPath,
+      attachmentType: m.attachmentType,
+      replyToId: m.replyToId,
+      readAt: m.readAt,
       createdAt: m.createdAt,
     })),
     listing: {

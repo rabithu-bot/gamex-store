@@ -72,20 +72,43 @@ model Order {
   createdAt       DateTime  @default(now())
   confirmedAt     DateTime?
   messages        Message[]
+  // Admin-set customer label shown as a colored badge in the messages list
+  // and chat header, e.g. "booked" | "vip" | "priority". Free text at the
+  // schema level, but the admin UI only ever offers a fixed preset.
+  tag             String?
+  // Updated (debounced) by the buyer's client on every keystroke in the
+  // support chat input; admin's UI treats it as "stale" after a few seconds
+  // to render a "Customer is typing..." indicator despite this app using
+  // polling rather than a live socket connection.
+  buyerTypingAt   DateTime?
 
   @@index([sessionId])
 }
 
 model Message {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   orderId        String
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   sender         String // buyer | admin
   body           String
   attachmentPath String?
-  createdAt      DateTime @default(now())
+  // "image" | "audio" — null for text-only messages (and for legacy image
+  // attachments predating this field, which the UI falls back to treating
+  // as images since that was the only attachment type before voice notes).
+  attachmentType String?
+  // Self-relation for swipe-to-reply/quote — the message this one is a
+  // reply to. SetNull rather than Cascade so unsending the original message
+  // doesn't take down every reply to it, just drops the quote.
+  replyToId      Int?
+  replyTo        Message?  @relation("MessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[] @relation("MessageReply")
+  // Set when the message's non-sender has viewed the thread — lets the
+  // sender's UI show a "seen" tick the way a real chat app would.
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([orderId])
+  @@index([replyToId])
 }
 
 model QuickReply {

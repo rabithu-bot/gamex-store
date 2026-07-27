@@ -2,14 +2,29 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Paperclip, X, Trash2, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  Paperclip,
+  X,
+  Trash2,
+  Send,
+  Mic,
+  Square,
+  CornerUpLeft,
+  Check,
+  CheckCheck,
+} from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import QuickRepliesMenu from "@/app/mafia/QuickRepliesMenu";
 import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
+import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 
 const POLL_INTERVAL_MS = 1500;
 const LONG_PRESS_MS = 2000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
+const SWIPE_TRIGGER_PX = 50;
+const SWIPE_MAX_PX = 72;
+const TYPING_STALE_MS = 4000;
 
 function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
@@ -24,6 +39,12 @@ function formatTime(iso) {
   });
 }
 
+function formatSeconds(total) {
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 const MAX_SUGGESTIONS = 5;
 
 export default function ChatThread({ orderId }) {
@@ -31,16 +52,26 @@ export default function ChatThread({ orderId }) {
   const [notFound, setNotFound] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyFile, setReplyFile] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [sending, setSending] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [quickReplies, setQuickReplies] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
+  const [swipeState, setSwipeState] = useState(null); // { id, offset }
+  const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef(null);
   const bottomRef = useRef(null);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
+  const swipeStartRef = useRef(null);
   const lastPointerTypeRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
@@ -63,11 +94,25 @@ export default function ChatThread({ orderId }) {
     return () => clearInterval(interval);
   }, [fetchOrder, fetchQuickReplies]);
 
+  // Drives the typing indicator's staleness check between poll ticks — the
+  // order data itself only refreshes every 1.5s, but "is this still recent
+  // enough to count as typing" needs to keep re-evaluating every second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
+  useEffect(() => () => clearInterval(recordingIntervalRef.current), []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [order?.messages?.length]);
+
+  const isBuyerTyping = useMemo(() => {
+    if (!order?.buyerTypingAt) return false;
+    return now - new Date(order.buyerTypingAt).getTime() < TYPING_STALE_MS;
+  }, [order?.buyerTypingAt, now]);
 
   const suggestions = useMemo(() => {
     const q = replyText.trim().toLowerCase();
@@ -77,14 +122,21 @@ export default function ChatThread({ orderId }) {
 
   async function handleReply(e) {
     e.preventDefault();
-    if ((!replyText.trim() && !replyFile) || !order) return;
+    if ((!replyText.trim() && !replyFile && !audioBlob) || !order) return;
     setSending(true);
     const formData = new FormData();
     formData.set("body", replyText.trim());
-    if (replyFile) formData.set("attachment", replyFile);
+    if (audioBlob) {
+      formData.set("attachment", audioBlob, `voice-${Date.now()}.webm`);
+    } else if (replyFile) {
+      formData.set("attachment", replyFile);
+    }
+    if (replyTarget) formData.set("replyToId", String(replyTarget.id));
     await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
     setReplyText("");
     setReplyFile(null);
+    setAudioBlob(null);
+    setReplyTarget(null);
     setShowSuggestions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     await fetchOrder();
@@ -117,21 +169,48 @@ export default function ChatThread({ orderId }) {
     setActiveMenu({ messageId, x, y });
   }
 
-  function handleBubblePointerDown(e, messageId) {
+  function startReply(message) {
+    setReplyTarget(message);
+  }
+
+  function handleBubblePointerDown(e, message) {
     lastPointerTypeRef.current = e.pointerType;
-    if (e.pointerType === "mouse") return; // desktop uses the right-click/context-menu path instead
+    if (e.pointerType === "mouse") return; // desktop uses right-click (menu) + the hover reply icon instead
+    swipeStartRef.current = { x: e.clientX, y: e.clientY, id: message.id };
     longPressStartRef.current = { x: e.clientX, y: e.clientY };
     clearLongPressTimer();
     longPressTimerRef.current = setTimeout(() => {
-      openMenuAt(messageId, e.clientX, e.clientY);
+      openMenuAt(message.id, e.clientX, e.clientY);
+      swipeStartRef.current = null;
+      setSwipeState(null);
     }, LONG_PRESS_MS);
   }
 
   function handleBubblePointerMove(e) {
-    if (!longPressTimerRef.current || !longPressStartRef.current) return;
-    const dx = e.clientX - longPressStartRef.current.x;
-    const dy = e.clientY - longPressStartRef.current.y;
-    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_CANCEL_PX) clearLongPressTimer();
+    if (longPressTimerRef.current && longPressStartRef.current) {
+      const dx0 = e.clientX - longPressStartRef.current.x;
+      const dy0 = e.clientY - longPressStartRef.current.y;
+      if (Math.hypot(dx0, dy0) > LONG_PRESS_MOVE_CANCEL_PX) clearLongPressTimer();
+    }
+    if (!swipeStartRef.current) return;
+    const dx = e.clientX - swipeStartRef.current.x;
+    const dy = e.clientY - swipeStartRef.current.y;
+    if (dx <= 4 || Math.abs(dy) > Math.abs(dx)) {
+      setSwipeState(null);
+      return;
+    }
+    setSwipeState({ id: swipeStartRef.current.id, offset: Math.min(dx, SWIPE_MAX_PX) });
+  }
+
+  function handleBubblePointerEnd(message) {
+    clearLongPressTimer();
+    setSwipeState((prev) => {
+      if (prev && prev.id === message.id && prev.offset >= SWIPE_TRIGGER_PX) {
+        startReply(message);
+      }
+      return null;
+    });
+    swipeStartRef.current = null;
   }
 
   function handleBubbleContextMenu(e, messageId) {
@@ -143,6 +222,37 @@ export default function ChatThread({ orderId }) {
     if (e.button === 2 || lastPointerTypeRef.current === "mouse") {
       openMenuAt(messageId, e.clientX, e.clientY);
     }
+  }
+
+  async function handleStartRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        setAudioBlob(blob);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setReplyFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingIntervalRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    } catch {
+      alert("Microphone access is needed to record a voice message.");
+    }
+  }
+
+  function handleStopRecording() {
+    mediaRecorderRef.current?.stop();
+    clearInterval(recordingIntervalRef.current);
+    setRecording(false);
   }
 
   async function handleDeleteConversation() {
@@ -186,6 +296,13 @@ export default function ChatThread({ orderId }) {
 
   const customerName = order.buyerName || "Buyer";
 
+  function quotePreview(message) {
+    if (!message) return null;
+    if (message.attachmentType === "audio") return "🎤 Voice message";
+    if (message.attachmentPath && !message.body) return "📷 Photo";
+    return message.body;
+  }
+
   return (
     <div className="admin-chat-page">
       <div className="admin-chat-header">
@@ -200,6 +317,11 @@ export default function ChatThread({ orderId }) {
             {order.listingTitle} • Order #{order.id}
           </span>
         </div>
+        <CustomerTagPicker
+          orderId={order.id}
+          tag={order.tag}
+          onChanged={(tag) => setOrder((prev) => (prev ? { ...prev, tag } : prev))}
+        />
         <button
           type="button"
           className="dm-delete-conversation"
@@ -216,36 +338,93 @@ export default function ChatThread({ orderId }) {
             No messages yet.
           </p>
         )}
-        {order.messages.map((m) => (
-          <div
-            key={m.id}
-            className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}
-          >
-            <div
-              className={`admin-chat-bubble ${m.sender === "admin" ? "sent" : "received"}`}
-              onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
-              onPointerMove={handleBubblePointerMove}
-              onPointerUp={clearLongPressTimer}
-              onPointerLeave={clearLongPressTimer}
-              onPointerCancel={clearLongPressTimer}
-              onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
-            >
-              {m.attachmentPath && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.attachmentPath}
-                  alt="Attachment"
-                  className="chat-attachment"
-                  onClick={() => setZoomSrc(m.attachmentPath)}
-                />
+        {order.messages.map((m) => {
+          const original = m.replyToId ? order.messages.find((msg) => msg.id === m.replyToId) : null;
+          const dragging = swipeState?.id === m.id;
+          return (
+            <div key={m.id} className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}>
+              {!dragging && (
+                <button
+                  type="button"
+                  className="chat-reply-hover-btn"
+                  aria-label="Reply"
+                  onClick={() => startReply(m)}
+                >
+                  <CornerUpLeft size={14} />
+                </button>
               )}
-              {m.body && <p>{m.body}</p>}
+              <div
+                className={`admin-chat-bubble ${m.sender === "admin" ? "sent" : "received"}`}
+                style={{
+                  transform: dragging ? `translateX(${swipeState.offset}px)` : undefined,
+                  transition: dragging ? "none" : undefined,
+                }}
+                onPointerDown={(e) => handleBubblePointerDown(e, m)}
+                onPointerMove={handleBubblePointerMove}
+                onPointerUp={() => handleBubblePointerEnd(m)}
+                onPointerLeave={() => handleBubblePointerEnd(m)}
+                onPointerCancel={() => handleBubblePointerEnd(m)}
+                onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
+              >
+                {original && (
+                  <div className="chat-quote-block">
+                    <span className="chat-quote-sender">{original.sender === "admin" ? "You" : customerName}</span>
+                    <span className="chat-quote-text">{quotePreview(original)}</span>
+                  </div>
+                )}
+                {m.attachmentPath && m.attachmentType === "audio" ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <audio controls src={m.attachmentPath} className="chat-audio-attachment" />
+                ) : (
+                  m.attachmentPath && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.attachmentPath}
+                      alt="Attachment"
+                      className="chat-attachment"
+                      onClick={() => setZoomSrc(m.attachmentPath)}
+                    />
+                  )
+                )}
+                {m.body && <p>{m.body}</p>}
+              </div>
+              <span className="admin-chat-timestamp">
+                {formatTime(m.createdAt)}
+                {m.sender === "admin" && (
+                  <span className={`chat-read-tick${m.readAt ? " seen" : ""}`} title={m.readAt ? "Seen" : "Sent"}>
+                    {m.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
+                  </span>
+                )}
+              </span>
             </div>
-            <span className="admin-chat-timestamp">{formatTime(m.createdAt)}</span>
+          );
+        })}
+        {isBuyerTyping && (
+          <div className="admin-chat-bubble-row received">
+            <div className="admin-chat-bubble received chat-typing-bubble">
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+            </div>
           </div>
-        ))}
+        )}
         <div ref={bottomRef} />
       </div>
+
+      {replyTarget && (
+        <div className="chat-reply-preview">
+          <div className="chat-reply-preview-bar" />
+          <div className="chat-reply-preview-content">
+            <span className="chat-reply-preview-label">
+              Replying to {replyTarget.sender === "admin" ? "yourself" : customerName}
+            </span>
+            <span className="chat-reply-preview-text">{quotePreview(replyTarget)}</span>
+          </div>
+          <button type="button" onClick={() => setReplyTarget(null)} aria-label="Cancel reply">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {replyFile && (
         <div className="chat-attachment-preview">
@@ -257,6 +436,16 @@ export default function ChatThread({ orderId }) {
               if (fileInputRef.current) fileInputRef.current.value = "";
             }}
           >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {audioBlob && !recording && (
+        <div className="chat-attachment-preview">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls src={URL.createObjectURL(audioBlob)} style={{ height: 32, flex: 1 }} />
+          <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
             <X size={14} />
           </button>
         </div>
@@ -281,51 +470,80 @@ export default function ChatThread({ orderId }) {
           </div>
         )}
 
-        <form onSubmit={handleReply} className="admin-chat-dock">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => setReplyFile(e.target.files?.[0] || null)}
-          />
-          <button
-            type="button"
-            className="chat-attach-btn"
-            aria-label="Attach image"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Paperclip size={16} />
-          </button>
-          <QuickRepliesMenu
-            replies={quickReplies}
-            onAdd={handleAddQuickReply}
-            onDelete={handleDeleteQuickReply}
-            onPick={(text) => {
-              setReplyText(text);
-              setShowSuggestions(false);
-            }}
-          />
-          <input
-            type="text"
-            className="admin-chat-input"
-            value={replyText}
-            onChange={(e) => {
-              setReplyText(e.target.value);
-              setShowSuggestions(true);
-            }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            placeholder="Message..."
-          />
-          <button
-            className="admin-chat-send"
-            type="submit"
-            disabled={sending || (!replyText.trim() && !replyFile)}
-            aria-label="Send"
-          >
-            <Send size={16} />
-          </button>
-        </form>
+        {recording ? (
+          <div className="admin-chat-dock chat-recording-dock">
+            <span className="chat-recording-dot" />
+            <span className="chat-recording-timer">{formatSeconds(recordingSeconds)}</span>
+            <span className="muted" style={{ flex: 1 }}>
+              Recording voice message...
+            </span>
+            <button
+              type="button"
+              className="admin-chat-send"
+              aria-label="Stop recording"
+              onClick={handleStopRecording}
+            >
+              <Square size={15} fill="currentColor" />
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleReply} className="admin-chat-dock">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                setReplyFile(e.target.files?.[0] || null);
+                setAudioBlob(null);
+              }}
+            />
+            <button
+              type="button"
+              className="chat-attach-btn"
+              aria-label="Attach image"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={16} />
+            </button>
+            <button
+              type="button"
+              className="chat-attach-btn"
+              aria-label="Record voice message"
+              onClick={handleStartRecording}
+            >
+              <Mic size={16} />
+            </button>
+            <QuickRepliesMenu
+              replies={quickReplies}
+              onAdd={handleAddQuickReply}
+              onDelete={handleDeleteQuickReply}
+              onPick={(text) => {
+                setReplyText(text);
+                setShowSuggestions(false);
+              }}
+            />
+            <input
+              type="text"
+              className="admin-chat-input"
+              value={replyText}
+              onChange={(e) => {
+                setReplyText(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder="Message..."
+            />
+            <button
+              className="admin-chat-send"
+              type="submit"
+              disabled={sending || (!replyText.trim() && !replyFile && !audioBlob)}
+              aria-label="Send"
+            >
+              <Send size={16} />
+            </button>
+          </form>
+        )}
       </div>
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}

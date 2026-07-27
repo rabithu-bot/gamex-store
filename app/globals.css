@@ -3665,3 +3665,340 @@ select:focus-visible {
     animation: none;
   }
 }
+
+/* =========================================================================
+   Admin chat: voice notes, swipe/hover reply, read ticks, typing indicator,
+   customer tags.
+   ========================================================================= */
+
+.admin-chat-bubble-row {
+  position: relative;
+}
+
+/* Desktop-only reply affordance — touch devices use the swipe gesture on
+   the bubble itself instead, so this stays fully hidden there rather than
+   fighting for the same gesture space. */
+@media (hover: hover) and (pointer: fine) {
+  .chat-reply-hover-btn {
+    position: absolute;
+    top: 0.35rem;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-solid);
+    color: inherit;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.85;
+    z-index: 2;
+  }
+
+  .admin-chat-bubble-row:hover .chat-reply-hover-btn {
+    display: flex;
+  }
+
+  .admin-chat-bubble-row.sent .chat-reply-hover-btn {
+    left: -32px;
+  }
+
+  .admin-chat-bubble-row.received .chat-reply-hover-btn {
+    right: -32px;
+  }
+
+  .chat-reply-hover-btn:hover {
+    opacity: 1;
+    border-color: var(--accent);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .chat-reply-hover-btn {
+    display: none;
+  }
+}
+
+.chat-quote-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.35rem;
+  border-left: 3px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+.chat-quote-sender {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.chat-quote-text {
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+.chat-audio-attachment {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: 36px;
+  margin-bottom: 0.3rem;
+}
+
+.chat-read-tick {
+  display: inline-flex;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  opacity: 0.55;
+}
+
+.chat-read-tick.seen {
+  color: #60a5fa;
+  opacity: 0.95;
+}
+
+.chat-typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.65rem 0.9rem;
+}
+
+.chat-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  animation: chat-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.chat-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chat-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.chat-reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.75rem;
+  border-radius: 10px 10px 0 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.chat-reply-preview-bar {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.chat-reply-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-reply-preview-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.chat-reply-preview-text {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-reply-preview button {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  display: flex;
+}
+
+.chat-reply-preview button:hover {
+  opacity: 1;
+}
+
+.chat-recording-dock {
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.chat-recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: chat-recording-pulse 1s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes chat-recording-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.chat-recording-timer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-typing-dot,
+  .chat-recording-dot {
+    animation: none;
+  }
+}
+
+/* ---- Customer tags ---- */
+
+.customer-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--tag-color, #c4b5fd);
+  background: var(--tag-bg, var(--accent-soft));
+  border: 1px solid var(--tag-border, var(--border));
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.dm-list-name-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dm-list-name-group strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-tag-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.customer-tag-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--tag-border, var(--border));
+  background: var(--tag-bg, transparent);
+  color: var(--tag-color, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.customer-tag-popover {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 0.35rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  animation: quick-replies-in 0.15s ease both;
+}
+
+.customer-tag-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.customer-tag-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.customer-tag-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tag-color);
+  flex-shrink: 0;
+}
+
+.customer-tag-remove {
+  border-top: 1px solid var(--border);
+  margin-top: 0.2rem;
+  padding-top: 0.6rem;
+  opacity: 0.75;
+}
+
+/* The preset hex colors above are tuned for a dark background — darken
+   them for readability now that /mafia runs the light admin theme. */
+.admin-light [data-tag="booked"] {
+  color: #dc2626;
+}
+
+.admin-light [data-tag="vip"] {
+  color: #b45309;
+}
+
+.admin-light [data-tag="priority"] {
+  color: #2563eb;
+}
+
+.admin-light .chat-reply-hover-btn {
+  background: #ffffff;
+}
