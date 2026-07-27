@@ -46,9 +46,11 @@ export default function DeclinedPaymentPage() {
     <>
       <SiteHeader />
       <main className="container" style={{ maxWidth: 560 }}>
-        <h1>Order #{order.id}</h1>
-        <p className="muted">{order.listing.title}</p>
-        <DeclinedNotice orderId={order.id} />
+        <DeclinedNotice
+          orderId={order.id}
+          declineReason={order.declineReason}
+          declineNote={order.declineNote}
+        />
       </main>
     </>
   );

@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
+import DeclineOrderModal from "./DeclineOrderModal";
 import Lightbox from "@/app/components/Lightbox";
+import { declineReasonLabel } from "@/app/lib/declineReasons";
 
 const FILTERS = ["all", "pending_verification", "pending"];
 const FILTER_LABELS = {
@@ -18,6 +20,7 @@ export default function OrdersPanel() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [zoomedProof, setZoomedProof] = useState(null);
+  const [declineTarget, setDeclineTarget] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
@@ -139,7 +142,7 @@ export default function OrdersPanel() {
                       <button
                         className="btn decline"
                         disabled={busyId === order.id}
-                        onClick={() => handleAction(order.id, "decline")}
+                        onClick={() => setDeclineTarget(order)}
                       >
                         Decline &amp; Flag Screenshot
                       </button>
@@ -158,7 +161,14 @@ export default function OrdersPanel() {
                     )
                   )}
 
-                  {order.status === "declined" && <span className="muted">Awaiting new screenshot</span>}
+                  {order.status === "declined" && (
+                    <div>
+                      {order.declineReason && (
+                        <div className="decline-reason-inline">{declineReasonLabel(order.declineReason)}</div>
+                      )}
+                      <span className="muted">Awaiting new screenshot</span>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -169,6 +179,17 @@ export default function OrdersPanel() {
 
       {zoomedProof && (
         <Lightbox src={zoomedProof} alt="Payment proof" onClose={() => setZoomedProof(null)} />
+      )}
+
+      {declineTarget && (
+        <DeclineOrderModal
+          order={declineTarget}
+          onClose={() => setDeclineTarget(null)}
+          onDeclined={async () => {
+            setDeclineTarget(null);
+            await fetchOrders();
+          }}
+        />
       )}
     </div>
   );

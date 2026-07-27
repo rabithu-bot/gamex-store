@@ -59,6 +59,12 @@ model Order {
   buyerName       String?
   screenshotPath  String?
   status          String    @default("pending") // pending | pending_verification | confirmed | declined | expired
+  // Set together whenever an admin declines a payment (see
+  // app/lib/declineReasons.js for the canonical preset key list). Both are
+  // cleared back to null on a fresh screenshot resubmission so a stale
+  // reason never lingers past the decline it belonged to.
+  declineReason   String?
+  declineNote     String?
   // Ties this order to the buyer's gamex_session_id cookie so "My Orders" can
   // find it with no login and no manually-copied order link. Nullable because
   // orders created before this field existed have none.
