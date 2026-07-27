@@ -54,7 +54,9 @@ export async function POST(request, { params }) {
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { screenshotPath, status: "pending_verification" },
+    // A fresh screenshot supersedes any prior decline — clear it so the
+    // declined page/reason can't resurface stale for this new attempt.
+    data: { screenshotPath, status: "pending_verification", declineReason: null, declineNote: null },
   });
 
   return NextResponse.json({ ok: true });

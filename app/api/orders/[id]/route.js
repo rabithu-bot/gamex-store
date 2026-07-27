@@ -50,5 +50,10 @@ export async function GET(request, { params }) {
     };
   }
 
+  if (order.status === "declined") {
+    response.declineReason = order.declineReason;
+    response.declineNote = order.declineNote;
+  }
+
   return NextResponse.json(response);
 }
