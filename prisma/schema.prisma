@@ -81,6 +81,14 @@ model Order {
   // to render a "Customer is typing..." indicator despite this app using
   // polling rather than a live socket connection.
   buyerTypingAt   DateTime?
+  // Razorpay order created lazily when the buyer opens the checkout — null
+  // until then, and null forever for orders paid via the QR/screenshot flow
+  // (kept indefinitely as a fallback when Razorpay isn't configured).
+  razorpayOrderId   String? @unique
+  // Set once the webhook confirms payment.captured — the authoritative
+  // signal this order was actually paid; the client-side checkout callback
+  // is never trusted on its own to flip status to confirmed.
+  razorpayPaymentId String? @unique
 
   @@index([sessionId])
 }
