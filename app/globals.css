@@ -2957,6 +2957,13 @@ select:focus-visible {
   text-align: center;
 }
 
+.quick-reply-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
 /* ---- Full-screen Instagram-DM style admin chat ---- */
 
 .admin-chat-page {

@@ -15,7 +15,6 @@ import {
   CheckCheck,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
-import QuickRepliesMenu from "@/app/mafia/QuickRepliesMenu";
 import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 
@@ -120,25 +119,65 @@ export default function ChatThread({ orderId }) {
     return quickReplies.filter((r) => r.text.toLowerCase().includes(q)).slice(0, MAX_SUGGESTIONS);
   }, [replyText, quickReplies, showSuggestions]);
 
+  // Drives the mic <-> send morph on the composer's trailing button — mic
+  // while there's nothing to send yet, send the moment there's text or an
+  // attachment queued up.
+  const hasComposerContent = Boolean(replyText.trim() || replyFile || audioBlob);
+
   async function handleReply(e) {
-    e.preventDefault();
-    if ((!replyText.trim() && !replyFile && !audioBlob) || !order) return;
-    setSending(true);
+    e?.preventDefault();
+    const trimmed = replyText.trim();
+    if ((!trimmed && !replyFile && !audioBlob) || !order || sending) return;
+
     const formData = new FormData();
-    formData.set("body", replyText.trim());
+    formData.set("body", trimmed);
+    let optimisticAttachmentPath = null;
+    let optimisticAttachmentType = null;
     if (audioBlob) {
       formData.set("attachment", audioBlob, `voice-${Date.now()}.webm`);
+      optimisticAttachmentPath = URL.createObjectURL(audioBlob);
+      optimisticAttachmentType = "audio";
     } else if (replyFile) {
       formData.set("attachment", replyFile);
+      optimisticAttachmentPath = URL.createObjectURL(replyFile);
+      optimisticAttachmentType = "image";
     }
-    if (replyTarget) formData.set("replyToId", String(replyTarget.id));
-    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
+    const replyToId = replyTarget?.id ?? null;
+    if (replyToId) formData.set("replyToId", String(replyToId));
+
+    // Optimistic insert — the bubble appears and the composer clears
+    // instantly instead of waiting on the round trip + a full refetch. The
+    // next poll tick swaps this placeholder out for the real row (it never
+    // sticks around since fetchOrder() replaces the whole messages array).
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                id: -Date.now(),
+                sender: "admin",
+                body: trimmed,
+                attachmentPath: optimisticAttachmentPath,
+                attachmentType: optimisticAttachmentType,
+                replyToId,
+                readAt: null,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }
+        : prev
+    );
     setReplyText("");
     setReplyFile(null);
     setAudioBlob(null);
     setReplyTarget(null);
     setShowSuggestions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+
+    setSending(true);
+    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
     await fetchOrder();
     setSending(false);
   }
@@ -260,20 +299,6 @@ export default function ChatThread({ orderId }) {
     if (!confirm("Delete this entire conversation? This cannot be undone.")) return;
     await fetch(`/api/admin/orders/${order.id}/messages`, { method: "DELETE" });
     window.location.href = "/mafia/messages";
-  }
-
-  async function handleAddQuickReply(text) {
-    await fetch("/api/admin/quick-replies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    fetchQuickReplies();
-  }
-
-  async function handleDeleteQuickReply(id) {
-    await fetch(`/api/admin/quick-replies/${id}`, { method: "DELETE" });
-    fetchQuickReplies();
   }
 
   if (notFound) {
@@ -498,31 +523,6 @@ export default function ChatThread({ orderId }) {
                 setAudioBlob(null);
               }}
             />
-            <button
-              type="button"
-              className="chat-attach-btn"
-              aria-label="Attach image"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip size={16} />
-            </button>
-            <button
-              type="button"
-              className="chat-attach-btn"
-              aria-label="Record voice message"
-              onClick={handleStartRecording}
-            >
-              <Mic size={16} />
-            </button>
-            <QuickRepliesMenu
-              replies={quickReplies}
-              onAdd={handleAddQuickReply}
-              onDelete={handleDeleteQuickReply}
-              onPick={(text) => {
-                setReplyText(text);
-                setShowSuggestions(false);
-              }}
-            />
             <input
               type="text"
               className="admin-chat-input"
@@ -531,17 +531,37 @@ export default function ChatThread({ orderId }) {
                 setReplyText(e.target.value);
                 setShowSuggestions(true);
               }}
+              onKeyDown={(e) => {
+                // Sending is a deliberate action (the Send button) — Enter on
+                // the mobile keyboard shouldn't fire the form's native submit.
+                if (e.key === "Enter") e.preventDefault();
+              }}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Message..."
+              enterKeyHint="enter"
             />
             <button
-              className="admin-chat-send"
-              type="submit"
-              disabled={sending || (!replyText.trim() && !replyFile && !audioBlob)}
-              aria-label="Send"
+              type="button"
+              className="chat-attach-btn"
+              aria-label="Attach image"
+              onClick={() => fileInputRef.current?.click()}
             >
-              <Send size={16} />
+              <Paperclip size={16} />
             </button>
+            {hasComposerContent ? (
+              <button className="admin-chat-send" type="submit" disabled={sending} aria-label="Send">
+                <Send size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="admin-chat-send"
+                aria-label="Record voice message"
+                onClick={handleStartRecording}
+              >
+                <Mic size={16} />
+              </button>
+            )}
           </form>
         )}
       </div>
