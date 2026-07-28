@@ -3094,11 +3094,15 @@ select:focus-visible {
   flex: 1;
   min-width: 0;
   padding: 0.6rem 1rem;
-  border-radius: 999px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.05);
   color: inherit;
   font: inherit;
+  resize: none;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .admin-chat-send {
@@ -3752,12 +3756,71 @@ select:focus-visible {
   max-width: 240px;
 }
 
-.chat-audio-attachment {
-  display: block;
-  width: 220px;
+/* ---- Voice message player (Telegram/Instagram-style, not the native
+   <audio controls> bar) ---- */
+
+.voice-player {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 200px;
   max-width: 100%;
-  height: 36px;
-  margin-bottom: 0.3rem;
+  padding: 0.2rem 0;
+}
+
+.voice-player-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.voice-player-bars {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+}
+
+.voice-player-bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.voice-player-bar.filled {
+  background: currentColor;
+}
+
+.voice-player-time {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* Sent bubbles stay solid purple with white text in both themes, so their
+   white-based bar/button colors are already correct — only received
+   bubbles switch to a light tint + dark text under the admin light theme,
+   and need matching dark-based decoration colors there. */
+.admin-light .admin-chat-bubble.received .voice-player-btn {
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.admin-light .admin-chat-bubble.received .voice-player-bar {
+  background: rgba(124, 58, 237, 0.25);
 }
 
 .chat-read-tick {

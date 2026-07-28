@@ -15,6 +15,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
+import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 
@@ -63,6 +64,7 @@ export default function ChatThread({ orderId }) {
   const [swipeState, setSwipeState] = useState(null); // { id, offset }
   const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   const bottomRef = useRef(null);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
@@ -104,9 +106,29 @@ export default function ChatThread({ orderId }) {
   useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
   useEffect(() => () => clearInterval(recordingIntervalRef.current), []);
 
+  // Instagram/WhatsApp-style auto-growing composer — runs on every text
+  // change (typing, a quick-reply suggestion filling it in, or clearing
+  // after send) rather than just on keystrokes.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [replyText]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [order?.messages?.length]);
+
+  // One object URL per recorded blob, revoked whenever it's replaced or the
+  // component unmounts — recreating it on every render would both leak
+  // memory and reset the player's playback state each time.
+  const audioBlobUrl = useMemo(() => (audioBlob ? URL.createObjectURL(audioBlob) : null), [audioBlob]);
+  useEffect(() => {
+    return () => {
+      if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+    };
+  }, [audioBlobUrl]);
 
   const isBuyerTyping = useMemo(() => {
     if (!order?.buyerTypingAt) return false;
@@ -398,8 +420,7 @@ export default function ChatThread({ orderId }) {
                   </div>
                 )}
                 {m.attachmentPath && m.attachmentType === "audio" ? (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption
-                  <audio controls src={m.attachmentPath} className="chat-audio-attachment" />
+                  <VoiceMessagePlayer src={m.attachmentPath} />
                 ) : (
                   m.attachmentPath && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -468,8 +489,7 @@ export default function ChatThread({ orderId }) {
 
       {audioBlob && !recording && (
         <div className="chat-attachment-preview">
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <audio controls src={URL.createObjectURL(audioBlob)} style={{ height: 32, flex: 1 }} />
+          <VoiceMessagePlayer src={audioBlobUrl} />
           <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
             <X size={14} />
           </button>
@@ -523,18 +543,14 @@ export default function ChatThread({ orderId }) {
                 setAudioBlob(null);
               }}
             />
-            <input
-              type="text"
+            <textarea
+              ref={textareaRef}
+              rows={1}
               className="admin-chat-input"
               value={replyText}
               onChange={(e) => {
                 setReplyText(e.target.value);
                 setShowSuggestions(true);
-              }}
-              onKeyDown={(e) => {
-                // Sending is a deliberate action (the Send button) — Enter on
-                // the mobile keyboard shouldn't fire the form's native submit.
-                if (e.key === "Enter") e.preventDefault();
               }}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Message..."

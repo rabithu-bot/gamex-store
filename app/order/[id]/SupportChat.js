@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Paperclip, X, BadgeCheck } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
+import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 
 const TYPING_PING_INTERVAL_MS = 2000;
 
@@ -122,8 +123,7 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
                   </div>
                 )}
                 {m.attachmentPath && m.attachmentType === "audio" ? (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption
-                  <audio controls src={m.attachmentPath} className="chat-audio-attachment" />
+                  <VoiceMessagePlayer src={m.attachmentPath} />
                 ) : (
                   m.attachmentPath && (
                     // eslint-disable-next-line @next/next/no-img-element
