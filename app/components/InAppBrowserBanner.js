@@ -46,7 +46,7 @@ export default function InAppBrowserBanner() {
     <div className="iab-banner" role="alert">
       <div className="iab-banner-content">
         <span className="iab-banner-text">
-          ⚡ For 1-Tap UPI Payments (GPay/PhonePe), open this site in {isIOS ? "Safari" : "Chrome"}!
+          Open this site in {isIOS ? "Safari" : "Chrome"}
         </span>
 
         <div className="iab-banner-ios">
