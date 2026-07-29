@@ -642,6 +642,10 @@ select:focus-visible {
   color: inherit;
   opacity: 0.75;
   margin-bottom: 0.75rem;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .order-support-back:hover {
