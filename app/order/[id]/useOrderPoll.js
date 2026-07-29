@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 const POLL_INTERVAL_MS = 1500;
 
@@ -15,11 +16,7 @@ export function useOrderPoll(id) {
     return res;
   }, [id]);
 
-  useEffect(() => {
-    refetch();
-    const interval = setInterval(refetch, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [refetch]);
+  useVisiblePolling(refetch, POLL_INTERVAL_MS);
 
   return { order, setOrder, accessDenied, setAccessDenied, refetch };
 }

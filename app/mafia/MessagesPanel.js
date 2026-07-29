@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Check, Pencil } from "lucide-react";
 import CustomerTagBadge from "./CustomerTagBadge";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 function truncate(text, max) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -41,12 +42,11 @@ export default function MessagesPanel() {
     if (res.ok) setSupportName((await res.json()).name);
   }, []);
 
+  useVisiblePolling(fetchOrders, 4000);
+
   useEffect(() => {
-    fetchOrders();
     fetchSupportName();
-    const interval = setInterval(fetchOrders, 4000);
-    return () => clearInterval(interval);
-  }, [fetchOrders, fetchSupportName]);
+  }, [fetchSupportName]);
 
   function startEditingName() {
     setNameInput(supportName);
@@ -109,7 +109,24 @@ export default function MessagesPanel() {
     </div>
   );
 
-  if (!orders) return <p className="muted">Loading messages...</p>;
+  if (!orders) {
+    return (
+      <div>
+        {supportNameControl}
+        <div className="panel-skeleton-list">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="panel-skeleton-row avatar">
+              <div className="skeleton panel-skeleton-circle" />
+              <div className="panel-skeleton-lines">
+                <div className="skeleton panel-skeleton-line short" />
+                <div className="skeleton panel-skeleton-line" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -120,7 +137,7 @@ export default function MessagesPanel() {
         <div className="messages-list">
           {conversations.map((order) => {
             const last = order.messages[order.messages.length - 1];
-            const unread = last.sender === "buyer";
+            const unread = last.sender === "buyer" && !last.readAt;
             return (
               <Link
                 key={order.id}
@@ -142,7 +159,9 @@ export default function MessagesPanel() {
                     {last.attachmentPath && !last.body ? "📷 Photo" : truncate(last.body, 36)}
                   </span>
                 </span>
-                {unread && <span className="dm-unread-dot" />}
+                {unread && (
+                  <span className="dm-unread-dot" role="img" aria-label="Unread message" />
+                )}
               </Link>
             );
           })}

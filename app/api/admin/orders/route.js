@@ -10,7 +10,21 @@ export async function GET() {
   await expireStaleOrders();
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
-    include: { listing: true, messages: { orderBy: { createdAt: "asc" } } },
+    select: {
+      id: true,
+      buyerName: true,
+      listingTitle: true,
+      listingPrice: true,
+      screenshotPath: true,
+      status: true,
+      tag: true,
+      listing: { select: { id: true, status: true } },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { sender: true, body: true, attachmentPath: true, createdAt: true, readAt: true },
+      },
+    },
   });
   return NextResponse.json(orders);
 }

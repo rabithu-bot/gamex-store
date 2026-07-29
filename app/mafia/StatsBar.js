@@ -1,38 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { IndianRupee, PackageCheck, PackageX, MessageCircle } from "lucide-react";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 export default function StatsBar() {
   const [stats, setStats] = useState(null);
 
   const fetchStats = useCallback(async () => {
-    const [ordersRes, listingsRes] = await Promise.all([
-      fetch("/api/admin/orders", { cache: "no-store" }),
-      fetch("/api/admin/listings", { cache: "no-store" }),
-    ]);
-    if (!ordersRes.ok || !listingsRes.ok) return;
-    const orders = await ordersRes.json();
-    const listings = await listingsRes.json();
-
-    const revenue = orders
-      .filter((o) => o.status === "confirmed")
-      .reduce((sum, o) => sum + o.listingPrice, 0);
-    const available = listings.filter((l) => l.status === "available").length;
-    const sold = listings.filter((l) => l.status === "sold").length;
-    const unreadConvos = orders.filter((o) => {
-      if (o.messages.length === 0) return false;
-      return o.messages[o.messages.length - 1].sender === "buyer";
-    }).length;
-
-    setStats({ revenue, available, sold, unreadConvos });
+    const res = await fetch("/api/admin/stats", { cache: "no-store" });
+    if (!res.ok) return;
+    setStats(await res.json());
   }, []);
 
-  useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 6000);
-    return () => clearInterval(interval);
-  }, [fetchStats]);
+  useVisiblePolling(fetchStats, 6000);
 
   if (!stats) {
     return (

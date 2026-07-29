@@ -13,12 +13,14 @@ import {
   CornerUpLeft,
   Check,
   CheckCheck,
-  Sparkles,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
+import ConfirmDialog from "@/app/components/ConfirmDialog";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
+import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 
 const POLL_INTERVAL_MS = 1500;
 const LONG_PRESS_MS = 2000;
@@ -57,12 +59,13 @@ export default function ChatThread({ orderId }) {
   const [replyTarget, setReplyTarget] = useState(null);
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [micError, setMicError] = useState("");
   const [sending, setSending] = useState(false);
-  const [aiDrafting, setAiDrafting] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [quickReplies, setQuickReplies] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [swipeState, setSwipeState] = useState(null); // { id, offset }
   const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef(null);
@@ -73,16 +76,19 @@ export default function ChatThread({ orderId }) {
   const swipeStartRef = useRef(null);
   const lastPointerTypeRef = useRef(null);
   const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
+  const createdObjectUrlsRef = useRef(new Set());
 
   const fetchOrder = useCallback(async () => {
-    const res = await fetch("/api/admin/orders", { cache: "no-store" });
+    const res = await fetch(`/api/admin/orders/${orderId}`, { cache: "no-store" });
+    if (res.status === 404) {
+      setNotFound(true);
+      return;
+    }
     if (!res.ok) return;
-    const orders = await res.json();
-    const found = orders.find((o) => o.id === orderId);
-    if (found) setOrder(found);
-    else setNotFound(true);
+    setOrder(await res.json());
   }, [orderId]);
 
   const fetchQuickReplies = useCallback(async () => {
@@ -90,12 +96,21 @@ export default function ChatThread({ orderId }) {
     if (res.ok) setQuickReplies(await res.json());
   }, []);
 
+  useVisiblePolling(fetchOrder, POLL_INTERVAL_MS);
+
   useEffect(() => {
-    fetchOrder();
     fetchQuickReplies();
-    const interval = setInterval(fetchOrder, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchOrder, fetchQuickReplies]);
+  }, [fetchQuickReplies]);
+
+  // This screen only mounts once the admin has actually opened the
+  // conversation — mirrors the buyer's own /read call so the messages list
+  // can show "unread" based on whether the admin has viewed the buyer's
+  // messages, not just whether the admin has replied yet.
+  useEffect(() => {
+    if (order?.messages.some((m) => m.sender === "buyer" && !m.readAt)) {
+      fetch(`/api/admin/orders/${orderId}/read`, { method: "POST" }).catch(() => {});
+    }
+  }, [orderId, order?.messages]);
 
   // Drives the typing indicator's staleness check between poll ticks — the
   // order data itself only refreshes every 1.5s, but "is this still recent
@@ -107,6 +122,19 @@ export default function ChatThread({ orderId }) {
 
   useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
   useEffect(() => () => clearInterval(recordingIntervalRef.current), []);
+
+  // Guards against leaving the mic "on" (the browser's recording indicator
+  // stays lit) if the admin navigates away mid-recording — the client-side
+  // route change unmounts this component without ever reaching
+  // recorder.onstop, which is otherwise the only place the stream's tracks
+  // get stopped.
+  useEffect(
+    () => () => {
+      mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+      createdObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    },
+    []
+  );
 
   // Instagram/WhatsApp-style auto-growing composer — runs on every text
   // change (typing, a quick-reply suggestion filling it in, or clearing
@@ -137,10 +165,16 @@ export default function ChatThread({ orderId }) {
     return now - new Date(order.buyerTypingAt).getTime() < TYPING_STALE_MS;
   }, [order?.buyerTypingAt, now]);
 
+  // Instagram-style: matches only the specific saved keyword for the word
+  // currently being typed, not any substring of the reply's full body.
   const suggestions = useMemo(() => {
-    const q = replyText.trim().toLowerCase();
-    if (!q || !showSuggestions) return [];
-    return quickReplies.filter((r) => r.text.toLowerCase().includes(q)).slice(0, MAX_SUGGESTIONS);
+    if (!showSuggestions) return [];
+    const words = replyText.trim().toLowerCase().split(/\s+/);
+    const q = words[words.length - 1] || "";
+    if (!q) return [];
+    return quickReplies
+      .filter((r) => r.keyword && r.keyword.toLowerCase().startsWith(q))
+      .slice(0, MAX_SUGGESTIONS);
   }, [replyText, quickReplies, showSuggestions]);
 
   // Drives the mic <-> send morph on the composer's trailing button — mic
@@ -158,7 +192,8 @@ export default function ChatThread({ orderId }) {
     let optimisticAttachmentPath = null;
     let optimisticAttachmentType = null;
     if (audioBlob) {
-      formData.set("attachment", audioBlob, `voice-${Date.now()}.webm`);
+      const ext = extensionForMime(audioBlob.type);
+      formData.set("attachment", audioBlob, `voice-${Date.now()}.${ext}`);
       optimisticAttachmentPath = URL.createObjectURL(audioBlob);
       optimisticAttachmentType = "audio";
     } else if (replyFile) {
@@ -166,6 +201,7 @@ export default function ChatThread({ orderId }) {
       optimisticAttachmentPath = URL.createObjectURL(replyFile);
       optimisticAttachmentType = "image";
     }
+    if (optimisticAttachmentPath) createdObjectUrlsRef.current.add(optimisticAttachmentPath);
     const replyToId = replyTarget?.id ?? null;
     if (replyToId) formData.set("replyToId", String(replyToId));
 
@@ -232,25 +268,6 @@ export default function ChatThread({ orderId }) {
       body: JSON.stringify({ reaction: next }),
     });
     fetchOrder();
-  }
-
-  async function handleAiDraft() {
-    if (!order || aiDrafting) return;
-    setAiDrafting(true);
-    try {
-      const res = await fetch(`/api/admin/orders/${order.id}/ai-draft`, { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        // Fills the composer only — the admin still has to review and hit
-        // Send themselves, same as picking a saved-reply suggestion.
-        setReplyText(data.draft);
-        setShowSuggestions(false);
-      } else {
-        alert(data.error || "Couldn't generate a draft right now.");
-      }
-    } finally {
-      setAiDrafting(false);
-    }
   }
 
   function clearLongPressTimer() {
@@ -324,17 +341,28 @@ export default function ChatThread({ orderId }) {
   }
 
   async function handleStartRecording() {
+    setMicError("");
+    let stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMicError("Microphone access is needed to record a voice message.");
+      return;
+    }
+    mediaStreamRef.current = stream;
+    try {
+      const mimeType = pickSupportedRecordingMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       recordedChunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
         const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setAudioBlob(blob);
+        mediaRecorderRef.current = null;
       };
       recorder.start();
       mediaRecorderRef.current = recorder;
@@ -344,19 +372,32 @@ export default function ChatThread({ orderId }) {
       setRecordingSeconds(0);
       recordingIntervalRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
     } catch {
-      alert("Microphone access is needed to record a voice message.");
+      stream.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+      setMicError("Your browser doesn't support voice recording.");
     }
   }
 
   function handleStopRecording() {
-    mediaRecorderRef.current?.stop();
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {
+      // Already stopped/errored — the stream is still released via
+      // mediaStreamRef in the unmount cleanup effect regardless.
+    }
     clearInterval(recordingIntervalRef.current);
     setRecording(false);
   }
 
-  async function handleDeleteConversation() {
+  function handleDeleteConversation() {
     if (!order) return;
-    if (!confirm("Delete this entire conversation? This cannot be undone.")) return;
+    setDeleteConfirmOpen(true);
+  }
+
+  async function confirmDeleteConversation() {
+    if (!order) return;
     await fetch(`/api/admin/orders/${order.id}/messages`, { method: "DELETE" });
     window.location.href = "/mafia/messages";
   }
@@ -536,6 +577,15 @@ export default function ChatThread({ orderId }) {
       )}
 
       <div className="chat-form-wrap">
+        {micError && (
+          <div className="chat-mic-error">
+            {micError}
+            <button type="button" onClick={() => setMicError("")} aria-label="Dismiss">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {suggestions.length > 0 && (
           <div className="quick-reply-suggestions">
             {suggestions.map((s) => (
@@ -597,16 +647,6 @@ export default function ChatThread({ orderId }) {
             />
             <button
               type="button"
-              className={`chat-attach-btn${aiDrafting ? " chat-ai-draft-btn-loading" : ""}`}
-              aria-label="AI draft reply"
-              title="AI draft reply"
-              disabled={aiDrafting || order.messages.length === 0}
-              onClick={handleAiDraft}
-            >
-              <Sparkles size={16} />
-            </button>
-            <button
-              type="button"
               className="chat-attach-btn"
               aria-label="Attach image"
               onClick={() => fileInputRef.current?.click()}
@@ -647,6 +687,19 @@ export default function ChatThread({ orderId }) {
             setActiveMenu(null);
           }}
           onClose={() => setActiveMenu(null)}
+        />
+      )}
+
+      {deleteConfirmOpen && (
+        <ConfirmDialog
+          title="Delete this conversation?"
+          message="This cannot be undone — every message in this thread will be permanently deleted."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            setDeleteConfirmOpen(false);
+            confirmDeleteConversation();
+          }}
+          onCancel={() => setDeleteConfirmOpen(false)}
         />
       )}
     </div>

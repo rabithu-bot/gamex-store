@@ -1,16 +1,33 @@
 import { put } from "@vercel/blob";
 import path from "path";
 import crypto from "crypto";
+import sharp from "sharp";
 
 // Vercel's serverless functions run on a read-only filesystem, so uploads
 // can't be written to local disk the way they can in local dev — everything
 // goes to Vercel Blob instead, keyed by a random, unguessable path.
-async function saveFile(file, prefix) {
+async function saveFile(file, prefix, { maxDimension } = {}) {
   if (!file || typeof file.arrayBuffer !== "function" || file.size === 0) return null;
 
   const ext = path.extname(file.name || "").slice(0, 10);
   const key = `${prefix}/${Date.now()}-${crypto.randomUUID()}${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  let buffer = Buffer.from(await file.arrayBuffer());
+
+  // Best-effort downscale/recompress for image uploads — voice-note webm
+  // blobs and other non-image attachments pass through untouched. sharp
+  // throws on input it can't decode, so a failure here just falls back to
+  // the original buffer rather than blocking the upload.
+  if (maxDimension && (file.type || "").startsWith("image/")) {
+    try {
+      buffer = await sharp(buffer)
+        .rotate()
+        .resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+    } catch {
+      // Not decodable by sharp (or already fine) — ship the original bytes.
+    }
+  }
 
   const blob = await put(key, buffer, {
     access: "public",
@@ -24,20 +41,20 @@ async function saveFile(file, prefix) {
 // API responses (never sent to the buyer-facing order endpoint), so it stays
 // effectively private even though the underlying blob store is public.
 export function savePaymentScreenshot(file) {
-  return saveFile(file, "payment-screenshots");
+  return saveFile(file, "payment-screenshots", { maxDimension: 1600 });
 }
 
 // Listing photos: public, shown directly on the storefront.
 export function saveListingImage(file) {
-  return saveFile(file, "listings");
+  return saveFile(file, "listings", { maxDimension: 1600 });
 }
 
 // Chat attachments: public (both buyer and admin can view either side's uploads).
 export function saveMessageAttachment(file) {
-  return saveFile(file, "messages");
+  return saveFile(file, "messages", { maxDimension: 1280 });
 }
 
 // UPI payment QR: public, shown on every pending order's payment step.
 export function savePaymentQr(file) {
-  return saveFile(file, "payment-qr");
+  return saveFile(file, "payment-qr", { maxDimension: 800 });
 }

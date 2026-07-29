@@ -102,7 +102,7 @@ export default function ImageGallery({ images, alt }) {
               aria-label={`View photo ${i + 1}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`${alt} thumbnail ${i + 1}`} className="gallery-thumb-img" />
+              <img src={src} alt={`${alt} thumbnail ${i + 1}`} className="gallery-thumb-img" loading="lazy" />
             </button>
           ))}
         </div>

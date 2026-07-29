@@ -57,7 +57,15 @@ export default function OrdersPanel() {
     });
   }, [orders, filter, query]);
 
-  if (!orders) return <p className="muted">Loading orders...</p>;
+  if (!orders) {
+    return (
+      <div className="panel-skeleton-list">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="skeleton panel-skeleton-row" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -115,7 +123,7 @@ export default function OrdersPanel() {
                       onClick={() => setZoomedProof(order.screenshotPath)}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={order.screenshotPath} alt={`Payment proof for order #${order.id}`} />
+                      <img src={order.screenshotPath} alt={`Payment proof for order #${order.id}`} loading="lazy" />
                     </button>
                   ) : (
                     "—"

@@ -45,6 +45,7 @@ export default function ListingCard({ listing }) {
             className={`card-image${isSold ? " card-image-sold" : ""}`}
             src={images[0] || "/window.svg"}
             alt={listing.title}
+            loading="lazy"
           />
           <span className="badge card-image-badge">{listing.category}</span>
           {isSold && <span className="sold-badge">Sold Out</span>}
