@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Pencil } from "lucide-react";
 import CustomerTagBadge from "./CustomerTagBadge";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
+import { isBuyerOnline } from "@/app/lib/onlineStatus";
 
 function truncate(text, max) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -74,14 +75,15 @@ export default function MessagesPanel() {
     return orders
       .filter((o) => o.messages.length > 0)
       .sort((a, b) => {
-        // Tagged customers (VIP/Priority/Booked) always pin above untagged
-        // ones, regardless of who messaged most recently.
-        const aTagged = Boolean(a.tag);
-        const bTagged = Boolean(b.tag);
-        if (aTagged !== bTagged) return aTagged ? -1 : 1;
-        const aLast = a.messages[a.messages.length - 1].createdAt;
-        const bLast = b.messages[b.messages.length - 1].createdAt;
-        return new Date(bLast) - new Date(aLast);
+        const aLast = a.messages[a.messages.length - 1];
+        const bLast = b.messages[b.messages.length - 1];
+        // Only jumps above normal recency sorting while a tagged customer
+        // has a fresh, unread message waiting — once it's read/replied to,
+        // it settles back into its normal spot by recency like anyone else.
+        const aPriority = Boolean(a.tag) && aLast.sender === "buyer" && !aLast.readAt;
+        const bPriority = Boolean(b.tag) && bLast.sender === "buyer" && !bLast.readAt;
+        if (aPriority !== bPriority) return aPriority ? -1 : 1;
+        return new Date(bLast.createdAt) - new Date(aLast.createdAt);
       });
   }, [orders]);
 
@@ -149,7 +151,12 @@ export default function MessagesPanel() {
                 href={`/mafia/messages/${order.id}`}
                 className="messages-list-item"
               >
-                <span className="dm-avatar">{initials(customerName(order))}</span>
+                <span className="dm-avatar-wrap">
+                  <span className="dm-avatar">{initials(customerName(order))}</span>
+                  {isBuyerOnline(order.buyerLastSeenAt) && (
+                    <span className="dm-online-dot" role="img" aria-label="Online now" />
+                  )}
+                </span>
                 <span className="dm-list-body">
                   <span className="dm-list-top">
                     <span className="dm-list-name-group">

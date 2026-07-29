@@ -22,6 +22,7 @@ import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay } from "@/app/lib/chatDate";
+import { isBuyerOnline } from "@/app/lib/onlineStatus";
 
 const POLL_INTERVAL_MS = 1500;
 const LONG_PRESS_MS = 1000;
@@ -163,6 +164,11 @@ export default function ChatThread({ orderId }) {
     if (!order?.buyerTypingAt) return false;
     return now - new Date(order.buyerTypingAt).getTime() < TYPING_STALE_MS;
   }, [order?.buyerTypingAt, now]);
+
+  const buyerOnline = useMemo(
+    () => isBuyerOnline(order?.buyerLastSeenAt, now),
+    [order?.buyerLastSeenAt, now]
+  );
 
   // Instagram-style: matches only the specific saved keyword for the word
   // currently being typed, not any substring of the reply's full body.
@@ -481,12 +487,19 @@ export default function ChatThread({ orderId }) {
           <ArrowLeft size={18} />
           Back
         </Link>
-        <span className="dm-avatar">{initials(customerName)}</span>
+        <span className="dm-avatar-wrap">
+          <span className="dm-avatar">{initials(customerName)}</span>
+          {buyerOnline && <span className="dm-online-dot" role="img" aria-label="Online now" />}
+        </span>
         <div className="admin-chat-header-info">
           <strong>{customerName}</strong>
-          <span className="muted">
-            {order.listingTitle} • Order #{order.id}
-          </span>
+          {buyerOnline ? (
+            <span className="chat-online-text">Online</span>
+          ) : (
+            <span className="muted">
+              {order.listingTitle} • Order #{order.id}
+            </span>
+          )}
         </div>
         <CustomerTagPicker
           orderId={order.id}

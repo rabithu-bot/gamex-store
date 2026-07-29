@@ -16,6 +16,7 @@ export async function GET(_request, { params }) {
       listingTitle: true,
       tag: true,
       buyerTypingAt: true,
+      buyerLastSeenAt: true,
       messages: {
         orderBy: { createdAt: "asc" },
         select: {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { X, Globe, Copy, Check } from "lucide-react";
+import { X, Copy, Check } from "lucide-react";
 import { isInstagramBrowser, isIOSUserAgent } from "@/app/lib/inAppBrowser";
 
 const DISMISS_KEY = "gamex-iab-banner-dismissed";
@@ -31,15 +31,6 @@ export default function InAppBrowserBanner() {
     setVisible(false);
   }
 
-  function handleOpenChrome() {
-    const host = window.location.host;
-    const path = window.location.pathname + window.location.search;
-    // Chrome's own custom intent scheme — the only reliable way to force a
-    // real browser open from inside an Android WebView without the user
-    // having to know to tap the "..." menu themselves.
-    window.location.href = `intent://${host}${path}#Intent;scheme=https;package=com.android.chrome;end`;
-  }
-
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -58,22 +49,23 @@ export default function InAppBrowserBanner() {
           ⚡ For 1-Tap UPI Payments (GPay/PhonePe), open this site in {isIOS ? "Safari" : "Chrome"}!
         </span>
 
-        {isIOS ? (
-          <div className="iab-banner-ios">
-            <span className="iab-banner-ios-hint">
-              Tap <strong>•••</strong> at the top right → <strong>Open in Browser</strong>
-            </span>
-            <button type="button" className="btn secondary iab-banner-copy" onClick={handleCopyLink}>
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-          </div>
-        ) : (
-          <button type="button" className="btn iab-banner-cta" onClick={handleOpenChrome}>
-            <Globe size={15} />
-            Open in Chrome
+        <div className="iab-banner-ios">
+          <span className="iab-banner-ios-hint">
+            {isIOS ? (
+              <>
+                Tap <strong>•••</strong> at the top right → <strong>Open in Browser</strong>
+              </>
+            ) : (
+              <>
+                Tap <strong>⋮</strong> at the top right → <strong>Open in Chrome</strong>
+              </>
+            )}
+          </span>
+          <button type="button" className="btn secondary iab-banner-copy" onClick={handleCopyLink}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? "Copied!" : "Copy Link"}
           </button>
-        )}
+        </div>
       </div>
 
       <button type="button" className="iab-banner-close" aria-label="Dismiss" onClick={handleDismiss}>

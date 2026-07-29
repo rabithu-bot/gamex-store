@@ -22,6 +22,11 @@ export async function GET(request, { params }) {
     );
   }
 
+  // Piggybacks on the buyer's own 1.5s poll (useOrderPoll) rather than a
+  // dedicated ping endpoint — this route is already hit that often while
+  // any order-related page is open.
+  await prisma.order.update({ where: { id }, data: { buyerLastSeenAt: new Date() } });
+
   const response = {
     id: order.id,
     status: order.status,

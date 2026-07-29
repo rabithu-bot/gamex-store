@@ -1842,6 +1842,11 @@ select:focus-visible {
 
 /* ---- Instagram-DM style admin inbox ---- */
 
+.dm-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .dm-avatar {
   flex-shrink: 0;
   width: 38px;
@@ -1854,6 +1859,23 @@ select:focus-visible {
   font-weight: 700;
   color: white;
   background: linear-gradient(135deg, #c4b5fd, #8b5cf6 55%, #7c3aed);
+}
+
+.chat-online-text {
+  font-size: 0.78rem;
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.dm-online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #4ade80;
+  border: 2px solid var(--surface-solid);
 }
 
 .dm-list-body {
@@ -3875,13 +3897,6 @@ select:focus-visible {
   font-weight: 600;
   line-height: 1.35;
   color: #fff;
-}
-
-.iab-banner-cta {
-  flex-shrink: 0;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  white-space: nowrap;
 }
 
 .iab-banner-ios {

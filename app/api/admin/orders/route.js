@@ -18,6 +18,7 @@ export async function GET() {
       screenshotPath: true,
       status: true,
       tag: true,
+      buyerLastSeenAt: true,
       listing: { select: { id: true, status: true } },
       messages: {
         orderBy: { createdAt: "desc" },

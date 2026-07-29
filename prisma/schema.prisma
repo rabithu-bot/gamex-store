@@ -81,6 +81,11 @@ model Order {
   // to render a "Customer is typing..." indicator despite this app using
   // polling rather than a live socket connection.
   buyerTypingAt   DateTime?
+  // Touched on every GET the buyer's client makes for this order (the
+  // useOrderPoll hook hits this every 1.5s while any order-related page is
+  // open) — lets the admin see a live "online" indicator despite this app
+  // having no general-purpose buyer session/presence system.
+  buyerLastSeenAt DateTime?
   // Razorpay order created lazily when the buyer opens the checkout — null
   // until then, and null forever for orders paid via the QR/screenshot flow
   // (kept indefinitely as a fallback when Razorpay isn't configured).
