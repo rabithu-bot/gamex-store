@@ -37,6 +37,7 @@ export async function GET(request, { params }) {
       attachmentType: m.attachmentType,
       replyToId: m.replyToId,
       readAt: m.readAt,
+      reaction: m.reaction,
       createdAt: m.createdAt,
     })),
     listing: {

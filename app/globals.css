@@ -1674,11 +1674,17 @@ select:focus-visible {
 }
 
 .chat-bubble {
+  position: relative;
   max-width: 80%;
   padding: 0.5rem 0.8rem;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 .chat-bubble .chat-sender {
@@ -3169,6 +3175,49 @@ select:focus-visible {
 .dm-context-popover-unsend:hover,
 .dm-context-popover-cancel:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.dm-context-popover-reactions {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.25rem;
+}
+
+.dm-context-popover-emoji {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0.35rem 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.dm-context-popover-emoji:hover,
+.dm-context-popover-emoji.active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.15);
+}
+
+.dm-message-reaction {
+  position: absolute;
+  bottom: -10px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  z-index: 1;
 }
 
 /* ---- Quick reply autosuggest ---- */

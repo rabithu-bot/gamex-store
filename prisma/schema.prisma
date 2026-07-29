@@ -113,6 +113,10 @@ model Message {
   // Set when the message's non-sender has viewed the thread — lets the
   // sender's UI show a "seen" tick the way a real chat app would.
   readAt         DateTime?
+  // Single emoji reaction, settable by either side — a simplification of
+  // Instagram's per-person reactions (which can show one badge per person
+  // in a thread); here whoever reacts most recently is what's shown.
+  reaction       String?
   createdAt      DateTime  @default(now())
 
   @@index([orderId])

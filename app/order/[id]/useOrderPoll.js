@@ -21,5 +21,5 @@ export function useOrderPoll(id) {
     return () => clearInterval(interval);
   }, [refetch]);
 
-  return { order, accessDenied, setAccessDenied, refetch };
+  return { order, setOrder, accessDenied, setAccessDenied, refetch };
 }

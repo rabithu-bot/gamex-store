@@ -215,6 +215,23 @@ export default function ChatThread({ orderId }) {
     fetchOrder();
   }
 
+  async function handleReact(messageId, emoji) {
+    if (!order) return;
+    const current = order.messages.find((m) => m.id === messageId)?.reaction;
+    const next = current === emoji ? null : emoji; // tapping the same emoji again clears it
+    setOrder((prev) =>
+      prev
+        ? { ...prev, messages: prev.messages.map((m) => (m.id === messageId ? { ...m, reaction: next } : m)) }
+        : prev
+    );
+    await fetch(`/api/admin/orders/${order.id}/messages/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reaction: next }),
+    });
+    fetchOrder();
+  }
+
   function clearLongPressTimer() {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
@@ -433,6 +450,7 @@ export default function ChatThread({ orderId }) {
                   )
                 )}
                 {m.body && <p>{m.body}</p>}
+                {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
               </div>
               <span className="admin-chat-timestamp">
                 {formatTime(m.createdAt)}
@@ -588,6 +606,11 @@ export default function ChatThread({ orderId }) {
         <MessageUnsendMenu
           x={activeMenu.x}
           y={activeMenu.y}
+          currentReaction={order.messages.find((m) => m.id === activeMenu.messageId)?.reaction}
+          onReact={(emoji) => {
+            handleReact(activeMenu.messageId, emoji);
+            setActiveMenu(null);
+          }}
           onUnsend={() => {
             handleDeleteMessage(activeMenu.messageId);
             setActiveMenu(null);

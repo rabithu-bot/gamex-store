@@ -10,9 +10,35 @@ import SupportChat from "../SupportChat";
 
 export default function OrderSupportPage() {
   const { id } = useParams();
-  const { order, accessDenied, setAccessDenied, refetch } = useOrderPoll(id);
+  const { order, setOrder, accessDenied, setAccessDenied, refetch } = useOrderPoll(id);
 
   async function handleSendMessage(text, file) {
+    // Optimistic insert — same fix as the admin composer got: the bubble
+    // appears instantly instead of waiting on the POST + a full refetch
+    // before the buyer sees anything happen.
+    const optimisticAttachmentPath = file ? URL.createObjectURL(file) : null;
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                id: -Date.now(),
+                sender: "buyer",
+                body: text,
+                attachmentPath: optimisticAttachmentPath,
+                attachmentType: file ? "image" : null,
+                replyToId: null,
+                readAt: null,
+                reaction: null,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }
+        : prev
+    );
+
     const formData = new FormData();
     formData.set("body", text);
     if (file) formData.set("attachment", file);
@@ -23,6 +49,23 @@ export default function OrderSupportPage() {
     });
     if (res.ok) refetch();
     else if (res.status === 403) setAccessDenied(true);
+  }
+
+  async function handleReact(messageId, emoji) {
+    const current = order?.messages.find((m) => m.id === messageId)?.reaction;
+    const next = current === emoji ? null : emoji;
+    setOrder((prev) =>
+      prev
+        ? { ...prev, messages: prev.messages.map((m) => (m.id === messageId ? { ...m, reaction: next } : m)) }
+        : prev
+    );
+    const res = await fetch(`/api/orders/${id}/messages/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reaction: next }),
+    });
+    if (res.status === 403) setAccessDenied(true);
+    else refetch();
   }
 
   async function handleSaveName(name) {
@@ -74,6 +117,7 @@ export default function OrderSupportPage() {
           buyerName={order.buyerName}
           onSend={handleSendMessage}
           onSaveName={handleSaveName}
+          onReact={handleReact}
         />
       </main>
     </>

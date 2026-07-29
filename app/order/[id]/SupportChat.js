@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Paperclip, X, BadgeCheck } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
+import ReactionPicker from "@/app/components/ReactionPicker";
 
 const TYPING_PING_INTERVAL_MS = 2000;
+const LONG_PRESS_MS = 2000;
+const LONG_PRESS_MOVE_CANCEL_PX = 10;
 
-export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName }) {
+export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName, onReact }) {
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [text, setText] = useState("");
@@ -15,8 +18,11 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
   const [sending, setSending] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
+  const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
   const fileInputRef = useRef(null);
   const lastTypingPingRef = useRef(0);
+  const longPressTimerRef = useRef(null);
+  const longPressStartRef = useRef(null);
 
   useEffect(() => {
     fetch("/api/settings/support-name")
@@ -33,11 +39,48 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
     }
   }, [orderId, messages]);
 
+  useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
+
   function pingTyping() {
     const now = Date.now();
     if (now - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
     lastTypingPingRef.current = now;
     fetch(`/api/orders/${orderId}/typing`, { method: "POST" }).catch(() => {});
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function openMenuAt(messageId, clientX, clientY) {
+    const estimatedWidth = 160;
+    const estimatedHeight = 70;
+    const x = Math.max(8, Math.min(clientX, window.innerWidth - estimatedWidth - 8));
+    const y = Math.max(8, Math.min(clientY, window.innerHeight - estimatedHeight - 8));
+    setActiveMenu({ messageId, x, y });
+  }
+
+  function handleBubblePointerDown(e, messageId) {
+    longPressStartRef.current = { x: e.clientX, y: e.clientY };
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      openMenuAt(messageId, e.clientX, e.clientY);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleBubblePointerMove(e) {
+    if (!longPressTimerRef.current || !longPressStartRef.current) return;
+    const dx = e.clientX - longPressStartRef.current.x;
+    const dy = e.clientY - longPressStartRef.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_CANCEL_PX) clearLongPressTimer();
+  }
+
+  function handleBubbleContextMenu(e, messageId) {
+    e.preventDefault();
+    openMenuAt(messageId, e.clientX, e.clientY);
   }
 
   function quotePreview(message) {
@@ -104,7 +147,16 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
           {messages.map((m) => {
             const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
             return (
-              <div key={m.id} className={`chat-bubble ${m.sender}`}>
+              <div
+                key={m.id}
+                className={`chat-bubble ${m.sender}`}
+                onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
+                onPointerMove={handleBubblePointerMove}
+                onPointerUp={clearLongPressTimer}
+                onPointerLeave={clearLongPressTimer}
+                onPointerCancel={clearLongPressTimer}
+                onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
+              >
                 <span className="chat-sender">
                   {m.sender === "admin" ? (
                     <>
@@ -136,6 +188,7 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
                   )
                 )}
                 {m.body && <p>{m.body}</p>}
+                {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
               </div>
             );
           })}
@@ -183,6 +236,19 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
       </form>
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
+
+      {activeMenu && (
+        <ReactionPicker
+          x={activeMenu.x}
+          y={activeMenu.y}
+          currentReaction={messages.find((m) => m.id === activeMenu.messageId)?.reaction}
+          onReact={(emoji) => {
+            onReact(activeMenu.messageId, emoji);
+            setActiveMenu(null);
+          }}
+          onClose={() => setActiveMenu(null)}
+        />
+      )}
     </div>
   );
 }

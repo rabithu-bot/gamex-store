@@ -3,11 +3,9 @@
 import { useEffect, useRef } from "react";
 import { REACTION_EMOJIS } from "@/app/lib/reactions";
 
-// Reactions live in this same long-press popover rather than their own
-// gesture — the bubble already has a long-press (unsend) and a swipe
-// (reply) claimed, and stacking a third custom gesture on the same touch
-// target risks them fighting each other.
-export default function MessageUnsendMenu({ x, y, currentReaction, onReact, onUnsend, onClose }) {
+// Buyer-side counterpart to the admin's MessageUnsendMenu — same reaction
+// row, but no Unsend option since buyers can't delete messages.
+export default function ReactionPicker({ x, y, currentReaction, onReact, onClose }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -40,9 +38,6 @@ export default function MessageUnsendMenu({ x, y, currentReaction, onReact, onUn
           </button>
         ))}
       </div>
-      <button type="button" className="dm-context-popover-unsend" onClick={onUnsend}>
-        Unsend
-      </button>
       <button type="button" className="dm-context-popover-cancel" onClick={onClose}>
         Cancel
       </button>
