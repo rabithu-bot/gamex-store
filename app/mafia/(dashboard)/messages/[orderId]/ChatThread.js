@@ -13,6 +13,7 @@ import {
   CornerUpLeft,
   Check,
   CheckCheck,
+  Sparkles,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
@@ -57,6 +58,7 @@ export default function ChatThread({ orderId }) {
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [sending, setSending] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [quickReplies, setQuickReplies] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -230,6 +232,25 @@ export default function ChatThread({ orderId }) {
       body: JSON.stringify({ reaction: next }),
     });
     fetchOrder();
+  }
+
+  async function handleAiDraft() {
+    if (!order || aiDrafting) return;
+    setAiDrafting(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/ai-draft`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        // Fills the composer only — the admin still has to review and hit
+        // Send themselves, same as picking a saved-reply suggestion.
+        setReplyText(data.draft);
+        setShowSuggestions(false);
+      } else {
+        alert(data.error || "Couldn't generate a draft right now.");
+      }
+    } finally {
+      setAiDrafting(false);
+    }
   }
 
   function clearLongPressTimer() {
@@ -574,6 +595,16 @@ export default function ChatThread({ orderId }) {
               placeholder="Message..."
               enterKeyHint="enter"
             />
+            <button
+              type="button"
+              className={`chat-attach-btn${aiDrafting ? " chat-ai-draft-btn-loading" : ""}`}
+              aria-label="AI draft reply"
+              title="AI draft reply"
+              disabled={aiDrafting || order.messages.length === 0}
+              onClick={handleAiDraft}
+            >
+              <Sparkles size={16} />
+            </button>
             <button
               type="button"
               className="chat-attach-btn"
