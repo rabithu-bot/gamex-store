@@ -1,4 +1,4 @@
-import { ShieldCheck, ImageOff, BadgeCheck } from "lucide-react";
+import { ShieldCheck, ImageOff } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import SiteHeader from "@/app/components/SiteHeader";
 import ProofGallery from "./ProofGallery";
@@ -19,12 +19,6 @@ export default async function ProofsPage() {
           Proof
         </h1>
         <p className="muted">Real deliveries and payment confirmations from past customers.</p>
-        {proofs.length > 0 && (
-          <span className="checkout-verified-badge" style={{ marginTop: "0.6rem" }}>
-            <BadgeCheck size={13} />
-            {proofs.length} verified {proofs.length === 1 ? "delivery" : "deliveries"} shown below
-          </span>
-        )}
 
         {proofs.length === 0 ? (
           <div className="empty-state">

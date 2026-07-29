@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Trash2, Upload } from "lucide-react";
 
-const MAX_PROOFS = 40;
+const MAX_PROOFS = 150;
 
 export default function ProofsSettings() {
   const [proofs, setProofs] = useState(null);

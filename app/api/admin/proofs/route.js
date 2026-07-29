@@ -3,7 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { saveProofImage } from "@/app/lib/uploads";
 
-const MAX_PROOFS = 40;
+const MAX_PROOFS = 150;
 
 export async function GET() {
   if (!(await requireAdmin())) {

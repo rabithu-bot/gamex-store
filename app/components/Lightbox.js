@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const SWIPE_THRESHOLD = 28;
@@ -45,7 +46,7 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
 
   if (!activeSrc) return null;
 
-  return (
+  return createPortal(
     <div
       className="lightbox-backdrop"
       onClick={onClose}
@@ -94,6 +95,7 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
           </span>
         </>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

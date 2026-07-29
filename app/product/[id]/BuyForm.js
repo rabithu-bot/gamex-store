@@ -74,12 +74,12 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
     <div style={{ marginTop: "1.25rem" }}>
       {error && !modalOpen && <p className="error-text">{error}</p>}
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button className="btn" onClick={handleStart} disabled={checking}>
-          {checking ? "Loading..." : "Buy Now"}
-        </button>
         <Link href="/proofs" className="btn">
           Proof
         </Link>
+        <button className="btn" onClick={handleStart} disabled={checking}>
+          {checking ? "Loading..." : "Buy Now"}
+        </button>
       </div>
 
       {modalOpen &&
