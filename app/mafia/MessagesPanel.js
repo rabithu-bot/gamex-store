@@ -74,6 +74,11 @@ export default function MessagesPanel() {
     return orders
       .filter((o) => o.messages.length > 0)
       .sort((a, b) => {
+        // Tagged customers (VIP/Priority/Booked) always pin above untagged
+        // ones, regardless of who messaged most recently.
+        const aTagged = Boolean(a.tag);
+        const bTagged = Boolean(b.tag);
+        if (aTagged !== bTagged) return aTagged ? -1 : 1;
         const aLast = a.messages[a.messages.length - 1].createdAt;
         const bLast = b.messages[b.messages.length - 1].createdAt;
         return new Date(bLast) - new Date(aLast);

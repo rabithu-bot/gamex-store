@@ -56,21 +56,12 @@ export async function POST(request) {
   const accountId = String(formData.get("accountId") || "").trim();
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const imageFiles = formData.getAll("images").filter((f) => typeof f !== "string");
-  // Already-hosted image URLs from the Instagram-import flow — these were
-  // uploaded to blob storage at fetch time, so they're added as-is rather
-  // than re-uploaded here.
-  let importedImages = [];
-  try {
-    importedImages = JSON.parse(formData.get("importedImages") || "[]");
-  } catch {
-    importedImages = [];
-  }
 
   if (!title || !price || !category || !accountId || !accountPassword) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const imagePaths = [...importedImages.filter((u) => typeof u === "string" && u)];
+  const imagePaths = [];
   for (const file of imageFiles) {
     const savedPath = await saveListingImage(file);
     if (savedPath) imagePaths.push(savedPath);

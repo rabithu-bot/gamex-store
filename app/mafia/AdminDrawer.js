@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, ChevronDown, LogOut, QrCode, MessageSquareText } from "lucide-react";
+import { X, ChevronDown, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck } from "lucide-react";
 import SettingsPanel from "./SettingsPanel";
 import QuickRepliesSettings from "./QuickRepliesSettings";
+import AddListingPanel from "./AddListingPanel";
+import ProofsSettings from "./ProofsSettings";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
   const [qrExpanded, setQrExpanded] = useState(false);
   const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const [addListingExpanded, setAddListingExpanded] = useState(false);
+  const [proofsExpanded, setProofsExpanded] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -71,6 +75,32 @@ export default function AdminDrawer({ open, onClose }) {
         {repliesExpanded && (
           <div className="admin-drawer-qr">
             <QuickRepliesSettings />
+          </div>
+        )}
+
+        <button type="button" className="admin-drawer-row" onClick={() => setAddListingExpanded((v) => !v)}>
+          <span className="admin-drawer-row-label">
+            <PackagePlus size={16} />
+            Add New Listing
+          </span>
+          <ChevronDown size={16} className={`admin-drawer-chevron${addListingExpanded ? " open" : ""}`} />
+        </button>
+        {addListingExpanded && (
+          <div className="admin-drawer-qr">
+            <AddListingPanel />
+          </div>
+        )}
+
+        <button type="button" className="admin-drawer-row" onClick={() => setProofsExpanded((v) => !v)}>
+          <span className="admin-drawer-row-label">
+            <ShieldCheck size={16} />
+            Proofs
+          </span>
+          <ChevronDown size={16} className={`admin-drawer-chevron${proofsExpanded ? " open" : ""}`} />
+        </button>
+        {proofsExpanded && (
+          <div className="admin-drawer-qr">
+            <ProofsSettings />
           </div>
         )}
 

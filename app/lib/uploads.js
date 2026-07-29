@@ -58,3 +58,8 @@ export function saveMessageAttachment(file) {
 export function savePaymentQr(file) {
   return saveFile(file, "payment-qr", { maxDimension: 800 });
 }
+
+// Trust-building proof screenshots: public, shown on the /proofs page.
+export function saveProofImage(file) {
+  return saveFile(file, "proofs", { maxDimension: 1600 });
+}

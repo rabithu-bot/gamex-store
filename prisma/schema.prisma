@@ -140,6 +140,15 @@ model QuickReply {
   createdAt DateTime @default(now())
 }
 
+// Screenshots the admin uploads to build buyer trust (past deliveries,
+// payment confirmations, etc.) — shown publicly on the /proofs page linked
+// from the product page's "Proof" button.
+model ProofImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  createdAt DateTime @default(now())
+}
+
 model Setting {
   key   String @id
   value String

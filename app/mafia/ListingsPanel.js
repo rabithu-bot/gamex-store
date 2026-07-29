@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Link2, X } from "lucide-react";
+import { useState, useCallback } from "react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 const emptyForm = {
   title: "",
@@ -21,16 +21,8 @@ const emptyForm = {
 
 export default function ListingsPanel() {
   const [listings, setListings] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [images, setImages] = useState([]);
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
-  const [igUrl, setIgUrl] = useState("");
-  const [igLoading, setIgLoading] = useState(false);
-  const [igError, setIgError] = useState("");
-  const [importedImages, setImportedImages] = useState([]);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const fetchListings = useCallback(async () => {
@@ -38,63 +30,7 @@ export default function ListingsPanel() {
     if (res.ok) setListings(await res.json());
   }, []);
 
-  useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
-
-  async function handleCreate(e) {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.set(key, value));
-    images.forEach((file) => formData.append("images", file));
-    formData.set("importedImages", JSON.stringify(importedImages));
-
-    const res = await fetch("/api/admin/listings", { method: "POST", body: formData });
-    setSubmitting(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Something went wrong");
-      return;
-    }
-    setForm(emptyForm);
-    setImages([]);
-    setImportedImages([]);
-    e.target.reset();
-    fetchListings();
-  }
-
-  async function handleImportFromInstagram() {
-    if (!igUrl.trim() || igLoading) return;
-    setIgLoading(true);
-    setIgError("");
-    try {
-      const res = await fetch("/api/admin/instagram-fetch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: igUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setIgError(data.error || "Couldn't fetch that link");
-        return;
-      }
-      // Fills the form fields as a starting point only — whatever Instagram
-      // didn't publicly expose (price, account details, tier, etc.) is left
-      // for the admin to fill in manually, same as the rest of this form.
-      setForm((prev) => ({
-        ...prev,
-        description: data.caption || prev.description,
-        title: prev.title || data.title,
-      }));
-      if (data.imageUrl) setImportedImages((prev) => [...prev, data.imageUrl]);
-      setIgUrl("");
-    } finally {
-      setIgLoading(false);
-    }
-  }
+  useVisiblePolling(fetchListings, 5000);
 
   function startEdit(listing) {
     setEditingId(listing.id);
@@ -136,177 +72,6 @@ export default function ListingsPanel() {
 
   return (
     <div>
-      <div className="panel">
-        <h3>
-          <Link2 size={16} style={{ verticalAlign: "-3px", marginRight: "0.4rem" }} />
-          Import from Instagram
-        </h3>
-        <p className="muted" style={{ marginTop: "-0.25rem" }}>
-          Paste one post link at a time — fills caption + a photo below. Anything Instagram
-          doesn't publicly show (price, account details, etc.) still needs to be filled in manually.
-        </p>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <input
-            value={igUrl}
-            onChange={(e) => setIgUrl(e.target.value)}
-            placeholder="https://www.instagram.com/p/..."
-            style={{ flex: 1 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleImportFromInstagram();
-              }
-            }}
-          />
-          <button type="button" className="btn secondary" onClick={handleImportFromInstagram} disabled={igLoading}>
-            {igLoading ? "Fetching..." : "Fetch"}
-          </button>
-        </div>
-        {igError && <p className="error-text">{igError}</p>}
-        {importedImages.length > 0 && (
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
-            {importedImages.map((url, i) => (
-              <div key={url} style={{ position: "relative" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt="Imported from Instagram"
-                  style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8 }}
-                  loading="lazy"
-                />
-                <button
-                  type="button"
-                  className="image-remove-btn"
-                  onClick={() => setImportedImages((prev) => prev.filter((_, idx) => idx !== i))}
-                  aria-label="Remove imported image"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={handleCreate} className="panel">
-        <h3>Add a new listing</h3>
-        <div className="form-field">
-          <label>Title</label>
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-        </div>
-        <div className="form-field">
-          <label>Description</label>
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </div>
-        <div className="field-grid-2">
-          <div className="form-field">
-            <label>Price (₹)</label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-field">
-            <label>Original Price (₹, optional)</label>
-            <input
-              type="number"
-              value={form.originalPrice}
-              onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
-              placeholder="Shows struck through if higher than price"
-            />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Category</label>
-          <input
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            placeholder="Free Fire / PUBG / ..."
-            required
-          />
-        </div>
-        <div className="form-field">
-          <label>Game UID (optional)</label>
-          <input
-            value={form.gameUid}
-            onChange={(e) => setForm({ ...form, gameUid: e.target.value })}
-            placeholder="Public in-game ID shown to buyers, e.g. 2083601348"
-          />
-        </div>
-        <div className="field-grid-2">
-          <div className="form-field">
-            <label>Tier badge (optional)</label>
-            <input
-              value={form.tier}
-              onChange={(e) => setForm({ ...form, tier: e.target.value })}
-              placeholder="Premium / Standard / ..."
-            />
-          </div>
-          <div className="form-field">
-            <label>Level (optional)</label>
-            <input
-              type="number"
-              value={form.level}
-              onChange={(e) => setForm({ ...form, level: e.target.value })}
-            />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Server (optional)</label>
-          <input
-            value={form.server}
-            onChange={(e) => setForm({ ...form, server: e.target.value })}
-            placeholder="India / Asia / Global / ..."
-          />
-        </div>
-        <div className="form-field">
-          <label>Rare items included (optional)</label>
-          <input
-            value={form.rareItems}
-            onChange={(e) => setForm({ ...form, rareItems: e.target.value })}
-            placeholder="Comma-separated, e.g. 3 EVO MAX, PRIME 7, 1500 Diamonds Available"
-          />
-        </div>
-        <div className="field-grid-2">
-          <div className="form-field">
-            <label>Account ID</label>
-            <input
-              value={form.accountId}
-              onChange={(e) => setForm({ ...form, accountId: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-field">
-            <label>Account Password</label>
-            <input
-              value={form.accountPassword}
-              onChange={(e) => setForm({ ...form, accountPassword: e.target.value })}
-              required
-            />
-          </div>
-        </div>
-        <div className="form-field">
-          <label>Images</label>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setImages(Array.from(e.target.files || []))}
-          />
-        </div>
-        {error && <p className="error-text">{error}</p>}
-        <button className="btn" type="submit" disabled={submitting}>
-          {submitting ? "Saving..." : "Add listing"}
-        </button>
-      </form>
-
-      <h3 style={{ marginTop: "2rem" }}>Existing listings</h3>
       {!listings && (
         <div className="panel-skeleton-list">
           {Array.from({ length: 3 }).map((_, i) => (
