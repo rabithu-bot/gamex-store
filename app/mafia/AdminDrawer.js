@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, ChevronDown, LogOut, QrCode } from "lucide-react";
+import { X, ChevronDown, LogOut, QrCode, MessageSquareText } from "lucide-react";
 import SettingsPanel from "./SettingsPanel";
+import QuickRepliesSettings from "./QuickRepliesSettings";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
   const [qrExpanded, setQrExpanded] = useState(false);
+  const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -49,13 +51,26 @@ export default function AdminDrawer({ open, onClose }) {
         <button type="button" className="admin-drawer-row" onClick={() => setQrExpanded((v) => !v)}>
           <span className="admin-drawer-row-label">
             <QrCode size={16} />
-            View Current UPI QR Code
+            Payment QR Code
           </span>
           <ChevronDown size={16} className={`admin-drawer-chevron${qrExpanded ? " open" : ""}`} />
         </button>
         {qrExpanded && (
           <div className="admin-drawer-qr">
             <SettingsPanel />
+          </div>
+        )}
+
+        <button type="button" className="admin-drawer-row" onClick={() => setRepliesExpanded((v) => !v)}>
+          <span className="admin-drawer-row-label">
+            <MessageSquareText size={16} />
+            Saved Replies
+          </span>
+          <ChevronDown size={16} className={`admin-drawer-chevron${repliesExpanded ? " open" : ""}`} />
+        </button>
+        {repliesExpanded && (
+          <div className="admin-drawer-qr">
+            <QuickRepliesSettings />
           </div>
         )}
 

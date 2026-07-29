@@ -25,12 +25,26 @@ export async function POST(request) {
     );
   }
 
-  const { text } = await request.json();
+  const { text, keyword } = await request.json();
   const trimmed = String(text || "").trim();
+  // Instagram-style: the keyword is what the admin actually types to
+  // trigger the suggestion, so it's required and kept short/single-word —
+  // spaces would never match anything typed into the composer anyway.
+  const trimmedKeyword = String(keyword || "").trim().toLowerCase().replace(/\s+/g, "");
   if (!trimmed) {
     return NextResponse.json({ error: "Quick reply text can't be empty" }, { status: 400 });
   }
+  if (!trimmedKeyword) {
+    return NextResponse.json({ error: "A trigger keyword is required" }, { status: 400 });
+  }
 
-  const reply = await prisma.quickReply.create({ data: { text: trimmed } });
-  return NextResponse.json(reply);
+  try {
+    const reply = await prisma.quickReply.create({ data: { text: trimmed, keyword: trimmedKeyword } });
+    return NextResponse.json(reply);
+  } catch (err) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ error: "That keyword is already used by another saved reply" }, { status: 400 });
+    }
+    throw err;
+  }
 }

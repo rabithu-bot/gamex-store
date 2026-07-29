@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -11,12 +12,19 @@ import SupportChat from "../SupportChat";
 export default function OrderSupportPage() {
   const { id } = useParams();
   const { order, setOrder, accessDenied, setAccessDenied, refetch } = useOrderPoll(id);
+  const createdObjectUrlsRef = useRef(new Set());
+
+  useEffect(
+    () => () => createdObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)),
+    []
+  );
 
   async function handleSendMessage(text, file) {
     // Optimistic insert — same fix as the admin composer got: the bubble
     // appears instantly instead of waiting on the POST + a full refetch
     // before the buyer sees anything happen.
     const optimisticAttachmentPath = file ? URL.createObjectURL(file) : null;
+    if (optimisticAttachmentPath) createdObjectUrlsRef.current.add(optimisticAttachmentPath);
     setOrder((prev) =>
       prev
         ? {
@@ -28,7 +36,7 @@ export default function OrderSupportPage() {
                 sender: "buyer",
                 body: text,
                 attachmentPath: optimisticAttachmentPath,
-                attachmentType: file ? "image" : null,
+                attachmentType: file ? (file.type?.startsWith("audio/") ? "audio" : "image") : null,
                 replyToId: null,
                 readAt: null,
                 reaction: null,

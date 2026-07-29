@@ -29,9 +29,13 @@ export async function POST(request, { params }) {
   }
 
   const attachmentPath = hasAttachment ? await saveMessageAttachment(attachment) : null;
+  // Voice notes are recorded client-side and uploaded with a real audio
+  // MIME type; anything else with an attachment keeps the pre-existing
+  // image behavior.
+  const attachmentType = hasAttachment ? (attachment.type?.startsWith("audio/") ? "audio" : "image") : null;
 
   await prisma.message.create({
-    data: { orderId, sender: "buyer", body: text, attachmentPath },
+    data: { orderId, sender: "buyer", body: text, attachmentPath, attachmentType },
   });
 
   return NextResponse.json({ ok: true });

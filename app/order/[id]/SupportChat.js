@@ -1,20 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Paperclip, X, BadgeCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MessageCircle, Paperclip, X, BadgeCheck, Mic, Square } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import ReactionPicker from "@/app/components/ReactionPicker";
+import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 
 const TYPING_PING_INTERVAL_MS = 2000;
 const LONG_PRESS_MS = 2000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
+
+function formatSeconds(total) {
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName, onReact }) {
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [micError, setMicError] = useState("");
   const [sending, setSending] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
@@ -23,6 +34,26 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
   const lastTypingPingRef = useRef(0);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
+  // One object URL per recorded blob, revoked whenever it's replaced or the
+  // component unmounts — recreating it on every render would both leak
+  // memory and reset the player's playback state each time.
+  const audioBlobUrl = useMemo(() => (audioBlob ? URL.createObjectURL(audioBlob) : null), [audioBlob]);
+  useEffect(() => {
+    return () => {
+      if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+    };
+  }, [audioBlobUrl]);
+
+  // Releases the mic if the buyer navigates away mid-recording — without
+  // this, leaving the page unmounts the component without ever reaching
+  // recorder.onstop, and the browser's mic indicator stays lit.
+  useEffect(() => () => mediaStreamRef.current?.getTracks().forEach((t) => t.stop()), []);
+  useEffect(() => () => clearInterval(recordingIntervalRef.current), []);
 
   useEffect(() => {
     fetch("/api/settings/support-name")
@@ -90,13 +121,70 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
     return message.body;
   }
 
+  async function handleStartRecording() {
+    setMicError("");
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMicError("Microphone access is needed to record a voice message.");
+      return;
+    }
+    mediaStreamRef.current = stream;
+    try {
+      const mimeType = pickSupportedRecordingMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        setAudioBlob(blob);
+        mediaRecorderRef.current = null;
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingIntervalRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    } catch {
+      stream.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+      setMicError("Your browser doesn't support voice recording.");
+    }
+  }
+
+  function handleStopRecording() {
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {
+      // Already stopped/errored — the stream is still released via
+      // mediaStreamRef in the unmount cleanup effect regardless.
+    }
+    clearInterval(recordingIntervalRef.current);
+    setRecording(false);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if ((!text.trim() && !file) || sending) return;
+    const attachment = audioBlob
+      ? new File([audioBlob], `voice-${Date.now()}.${extensionForMime(audioBlob.type)}`, {
+          type: audioBlob.type || "audio/webm",
+        })
+      : file;
+    if ((!text.trim() && !attachment) || sending) return;
     setSending(true);
-    await onSend(text.trim(), file);
+    await onSend(text.trim(), attachment);
     setText("");
     setFile(null);
+    setAudioBlob(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setSending(false);
   }
@@ -204,36 +292,85 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="chat-form">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: "none" }}
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-        />
-        <button
-          type="button"
-          className="chat-attach-btn"
-          aria-label="Attach image"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip size={16} />
-        </button>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            pingTyping();
-          }}
-          placeholder="Type your message..."
-          autoFocus
-        />
-        <button className="btn" type="submit" disabled={sending || (!text.trim() && !file)}>
-          Send
-        </button>
-      </form>
+      {audioBlob && !recording && (
+        <div className="chat-attachment-preview">
+          <VoiceMessagePlayer src={audioBlobUrl} />
+          <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {micError && (
+        <div className="chat-mic-error">
+          {micError}
+          <button type="button" onClick={() => setMicError("")} aria-label="Dismiss">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {recording ? (
+        <div className="chat-form chat-recording-dock">
+          <span className="chat-recording-dot" />
+          <span className="chat-recording-timer">{formatSeconds(recordingSeconds)}</span>
+          <span className="muted" style={{ flex: 1 }}>
+            Recording voice message...
+          </span>
+          <button
+            type="button"
+            className="chat-attach-btn"
+            aria-label="Stop recording"
+            onClick={handleStopRecording}
+          >
+            <Square size={15} fill="currentColor" />
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="chat-form">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              setFile(e.target.files?.[0] || null);
+              setAudioBlob(null);
+            }}
+          />
+          <button
+            type="button"
+            className="chat-attach-btn"
+            aria-label="Attach image"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip size={16} />
+          </button>
+          {!text.trim() && !file && !audioBlob && (
+            <button
+              type="button"
+              className="chat-attach-btn"
+              aria-label="Record voice message"
+              onClick={handleStartRecording}
+            >
+              <Mic size={16} />
+            </button>
+          )}
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              pingTyping();
+            }}
+            placeholder="Type your message..."
+            autoFocus
+          />
+          <button className="btn" type="submit" disabled={sending || (!text.trim() && !file && !audioBlob)}>
+            Send
+          </button>
+        </form>
+      )}
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
 

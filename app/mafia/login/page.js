@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, KeyRound, User } from "lucide-react";
 
@@ -11,9 +11,15 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const submittingRef = useRef(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
+    // Some mobile keyboards fire two submit events for a single Enter tap —
+    // the `loading` state alone doesn't catch that since both events can
+    // land before the first setState commit. A synchronous ref does.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError("");
     setLoading(true);
     const res = await fetch("/api/admin/login", {
@@ -23,6 +29,7 @@ export default function AdminLoginPage() {
     });
     setLoading(false);
     if (!res.ok) {
+      submittingRef.current = false;
       const data = await res.json();
       setError(data.error || "Access denied");
       setShake(true);

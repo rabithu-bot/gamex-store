@@ -126,6 +126,11 @@ model Message {
 model QuickReply {
   id        Int      @id @default(autoincrement())
   text      String
+  // Instagram-style shortcut trigger — the suggestion only shows up while
+  // typing a word that matches this, not on any substring of the reply body.
+  // Nullable + unique so replies saved before this field existed keep
+  // working (they just never surface as a suggestion until edited).
+  keyword   String?  @unique
   createdAt DateTime @default(now())
 }
 

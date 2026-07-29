@@ -13,7 +13,14 @@ export async function confirmOrder(orderId) {
   await prisma.$transaction([
     prisma.order.update({
       where: { id: orderId },
-      data: { status: "confirmed", confirmedAt: new Date() },
+      // Confirmed buyers are worth flagging for faster support turnaround —
+      // only set when the admin hasn't already picked a different tag, so
+      // this never clobbers an existing "vip"/"booked" label.
+      data: {
+        status: "confirmed",
+        confirmedAt: new Date(),
+        ...(order.tag ? {} : { tag: "priority" }),
+      },
     }),
     ...(order.listingId
       ? [prisma.listing.update({ where: { id: order.listingId }, data: { status: "sold" } })]

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, AlertCircle } from "lucide-react";
 
 const BAR_COUNT = 28;
+
+// Telegram/WhatsApp only ever play one voice note at a time — starting a
+// new one pauses whatever else was playing across the whole page, not just
+// within one thread. Module-level so it's shared across every mounted
+// player instance without prop-drilling a shared player context through
+// two different chat components (admin + buyer).
+let currentlyPlayingAudio = null;
 
 function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -20,9 +27,11 @@ function formatDuration(seconds) {
 // up front, which isn't worth it just to look like Telegram).
 export default function VoiceMessagePlayer({ src }) {
   const audioRef = useRef(null);
+  const fixingDurationRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [errored, setErrored] = useState(false);
 
   const bars = useMemo(
     () => Array.from({ length: BAR_COUNT }, (_, i) => 30 + Math.round(Math.abs(Math.sin(i * 12.9898)) * 70)),
@@ -38,11 +47,13 @@ export default function VoiceMessagePlayer({ src }) {
       // .duration reports Infinity/NaN until playback is forced past the
       // end once — seek-to-end-then-back-to-zero is the standard workaround.
       if (!Number.isFinite(audio.duration)) {
+        fixingDurationRef.current = true;
         audio.currentTime = 1e101;
         const onTimeUpdate = () => {
           audio.removeEventListener("timeupdate", onTimeUpdate);
           setDuration(audio.duration);
           audio.currentTime = 0;
+          fixingDurationRef.current = false;
         };
         audio.addEventListener("timeupdate", onTimeUpdate);
       } else {
@@ -51,36 +62,67 @@ export default function VoiceMessagePlayer({ src }) {
     }
 
     function onTimeUpdate() {
+      // The duration-detection seek above also fires this same listener —
+      // skip it so the elapsed-time label doesn't flash a bogus huge value
+      // before snapping back to 0.
+      if (fixingDurationRef.current) return;
       setCurrentTime(audio.currentTime);
     }
     function onEnded() {
       setPlaying(false);
       setCurrentTime(0);
     }
+    function onError() {
+      setErrored(true);
+      setPlaying(false);
+    }
+    function onPause() {
+      setPlaying(false);
+    }
 
     audio.addEventListener("loadedmetadata", readDuration);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
+    audio.addEventListener("pause", onPause);
     return () => {
       audio.removeEventListener("loadedmetadata", readDuration);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
+      audio.removeEventListener("pause", onPause);
+      if (currentlyPlayingAudio === audio) currentlyPlayingAudio = null;
     };
   }, []);
 
   function togglePlay() {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || errored) return;
     if (playing) {
       audio.pause();
       setPlaying(false);
-    } else {
-      audio.play();
-      setPlaying(true);
+      return;
     }
+    if (currentlyPlayingAudio && currentlyPlayingAudio !== audio) {
+      currentlyPlayingAudio.pause();
+    }
+    currentlyPlayingAudio = audio;
+    audio
+      .play()
+      .then(() => setPlaying(true))
+      .catch(() => setErrored(true));
   }
 
   const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
+
+  if (errored) {
+    return (
+      <div className="voice-player voice-player-error">
+        <AlertCircle size={15} />
+        <span className="voice-player-time">Couldn&apos;t play this voice message</span>
+      </div>
+    );
+  }
 
   return (
     <div className="voice-player">

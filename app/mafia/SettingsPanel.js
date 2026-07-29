@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import QuickRepliesSettings from "./QuickRepliesSettings";
 
 export default function SettingsPanel() {
   const [qrUrl, setQrUrl] = useState(null);
@@ -97,8 +96,6 @@ export default function SettingsPanel() {
           {submitting ? "Uploading..." : "Save QR code"}
         </button>
       </form>
-
-      <QuickRepliesSettings />
     </div>
   );
 }

@@ -7,7 +7,9 @@ const MAX_QUICK_REPLIES = 20;
 
 export default function QuickRepliesSettings() {
   const [replies, setReplies] = useState(null);
+  const [newKeyword, setNewKeyword] = useState("");
   const [newText, setNewText] = useState("");
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchReplies = useCallback(async () => {
@@ -21,15 +23,22 @@ export default function QuickRepliesSettings() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!newText.trim() || (replies && replies.length >= MAX_QUICK_REPLIES) || saving) return;
+    if (!newText.trim() || !newKeyword.trim() || (replies && replies.length >= MAX_QUICK_REPLIES) || saving) return;
+    setError("");
     setSaving(true);
-    await fetch("/api/admin/quick-replies", {
+    const res = await fetch("/api/admin/quick-replies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: newText.trim() }),
+      body: JSON.stringify({ text: newText.trim(), keyword: newKeyword.trim() }),
     });
-    setNewText("");
     setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Couldn't save that reply");
+      return;
+    }
+    setNewKeyword("");
+    setNewText("");
     fetchReplies();
   }
 
@@ -42,14 +51,16 @@ export default function QuickRepliesSettings() {
     <div className="panel">
       <h3>Saved Replies</h3>
       <p className="muted" style={{ marginTop: "0.3rem" }}>
-        Quick canned replies that show up as suggestions while typing in a chat — start typing a
-        matching word and it'll appear above the message box.
+        Instagram-style saved replies — set a keyword for each one, and its suggestion only shows
+        up while you're typing that exact keyword in the message box, not any random matching word.
       </p>
 
       {!replies ? (
-        <p className="muted" style={{ marginTop: "1rem" }}>
-          Loading...
-        </p>
+        <div className="panel-skeleton-list">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton panel-skeleton-row" style={{ height: 36 }} />
+          ))}
+        </div>
       ) : (
         <>
           <div className="quick-reply-settings-list">
@@ -60,6 +71,7 @@ export default function QuickRepliesSettings() {
             )}
             {replies.map((r) => (
               <div key={r.id} className="quick-reply-item">
+                {r.keyword && <span className="quick-reply-keyword">{r.keyword}</span>}
                 <span className="quick-reply-text">{r.text}</span>
                 <button
                   type="button"
@@ -73,15 +85,25 @@ export default function QuickRepliesSettings() {
             ))}
           </div>
 
+          {error && <p className="error-text">{error}</p>}
+
           {replies.length < MAX_QUICK_REPLIES ? (
             <form onSubmit={handleAdd} className="quick-reply-add" style={{ marginTop: "0.75rem" }}>
+              <input
+                type="text"
+                placeholder="keyword"
+                value={newKeyword}
+                onChange={(e) => setNewKeyword(e.target.value)}
+                className="quick-reply-keyword-input"
+                maxLength={20}
+              />
               <input
                 type="text"
                 placeholder="Save a new quick reply..."
                 value={newText}
                 onChange={(e) => setNewText(e.target.value)}
               />
-              <button type="submit" className="btn secondary" disabled={saving || !newText.trim()}>
+              <button type="submit" className="btn secondary" disabled={saving || !newText.trim() || !newKeyword.trim()}>
                 <Plus size={14} />
               </button>
             </form>

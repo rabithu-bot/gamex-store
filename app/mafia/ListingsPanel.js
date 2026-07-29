@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Link2, X } from "lucide-react";
+import ConfirmDialog from "@/app/components/ConfirmDialog";
 
 const emptyForm = {
   title: "",
@@ -25,6 +27,11 @@ export default function ListingsPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
+  const [igUrl, setIgUrl] = useState("");
+  const [igLoading, setIgLoading] = useState(false);
+  const [igError, setIgError] = useState("");
+  const [importedImages, setImportedImages] = useState([]);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const fetchListings = useCallback(async () => {
     const res = await fetch("/api/admin/listings", { cache: "no-store" });
@@ -43,6 +50,7 @@ export default function ListingsPanel() {
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.set(key, value));
     images.forEach((file) => formData.append("images", file));
+    formData.set("importedImages", JSON.stringify(importedImages));
 
     const res = await fetch("/api/admin/listings", { method: "POST", body: formData });
     setSubmitting(false);
@@ -53,8 +61,39 @@ export default function ListingsPanel() {
     }
     setForm(emptyForm);
     setImages([]);
+    setImportedImages([]);
     e.target.reset();
     fetchListings();
+  }
+
+  async function handleImportFromInstagram() {
+    if (!igUrl.trim() || igLoading) return;
+    setIgLoading(true);
+    setIgError("");
+    try {
+      const res = await fetch("/api/admin/instagram-fetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: igUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setIgError(data.error || "Couldn't fetch that link");
+        return;
+      }
+      // Fills the form fields as a starting point only — whatever Instagram
+      // didn't publicly expose (price, account details, tier, etc.) is left
+      // for the admin to fill in manually, same as the rest of this form.
+      setForm((prev) => ({
+        ...prev,
+        description: data.caption || prev.description,
+        title: prev.title || data.title,
+      }));
+      if (data.imageUrl) setImportedImages((prev) => [...prev, data.imageUrl]);
+      setIgUrl("");
+    } finally {
+      setIgLoading(false);
+    }
   }
 
   function startEdit(listing) {
@@ -88,14 +127,67 @@ export default function ListingsPanel() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm("Delete this listing? This cannot be undone.")) return;
+  async function confirmDelete() {
+    const id = deleteTargetId;
+    setDeleteTargetId(null);
     await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
     fetchListings();
   }
 
   return (
     <div>
+      <div className="panel">
+        <h3>
+          <Link2 size={16} style={{ verticalAlign: "-3px", marginRight: "0.4rem" }} />
+          Import from Instagram
+        </h3>
+        <p className="muted" style={{ marginTop: "-0.25rem" }}>
+          Paste one post link at a time — fills caption + a photo below. Anything Instagram
+          doesn't publicly show (price, account details, etc.) still needs to be filled in manually.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <input
+            value={igUrl}
+            onChange={(e) => setIgUrl(e.target.value)}
+            placeholder="https://www.instagram.com/p/..."
+            style={{ flex: 1 }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleImportFromInstagram();
+              }
+            }}
+          />
+          <button type="button" className="btn secondary" onClick={handleImportFromInstagram} disabled={igLoading}>
+            {igLoading ? "Fetching..." : "Fetch"}
+          </button>
+        </div>
+        {igError && <p className="error-text">{igError}</p>}
+        {importedImages.length > 0 && (
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+            {importedImages.map((url, i) => (
+              <div key={url} style={{ position: "relative" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt="Imported from Instagram"
+                  style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8 }}
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  className="image-remove-btn"
+                  onClick={() => setImportedImages((prev) => prev.filter((_, idx) => idx !== i))}
+                  aria-label="Remove imported image"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleCreate} className="panel">
         <h3>Add a new listing</h3>
         <div className="form-field">
@@ -215,7 +307,13 @@ export default function ListingsPanel() {
       </form>
 
       <h3 style={{ marginTop: "2rem" }}>Existing listings</h3>
-      {!listings && <p className="muted">Loading...</p>}
+      {!listings && (
+        <div className="panel-skeleton-list">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton panel-skeleton-row" style={{ height: 96 }} />
+          ))}
+        </div>
+      )}
       {listings && listings.length === 0 && <p className="muted">No listings yet.</p>}
 
       {listings?.map((listing) => (
@@ -361,7 +459,7 @@ export default function ListingsPanel() {
                 <button className="btn secondary" onClick={() => startEdit(listing)}>
                   Edit
                 </button>
-                <button className="btn danger" onClick={() => handleDelete(listing.id)}>
+                <button className="btn danger" onClick={() => setDeleteTargetId(listing.id)}>
                   Delete
                 </button>
               </div>
@@ -369,6 +467,16 @@ export default function ListingsPanel() {
           )}
         </div>
       ))}
+
+      {deleteTargetId !== null && (
+        <ConfirmDialog
+          title="Delete this listing?"
+          message="This cannot be undone. Existing orders for this listing keep their own copy of its details."
+          confirmLabel="Delete"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTargetId(null)}
+        />
+      )}
     </div>
   );
 }
