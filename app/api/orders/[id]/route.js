@@ -38,6 +38,7 @@ export async function GET(request, { params }) {
       replyToId: m.replyToId,
       readAt: m.readAt,
       reaction: m.reaction,
+      editedAt: m.editedAt,
       createdAt: m.createdAt,
     })),
     listing: {

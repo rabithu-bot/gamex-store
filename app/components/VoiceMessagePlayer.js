@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Play, Pause, AlertCircle } from "lucide-react";
 
 const BAR_COUNT = 28;
+const PLAYBACK_RATES = [1, 1.5, 2];
 
 // Telegram/WhatsApp only ever play one voice note at a time — starting a
 // new one pauses whatever else was playing across the whole page, not just
@@ -32,6 +33,8 @@ export default function VoiceMessagePlayer({ src }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [errored, setErrored] = useState(false);
+  const [rateIndex, setRateIndex] = useState(0);
+  const playbackRate = PLAYBACK_RATES[rateIndex];
 
   const bars = useMemo(
     () => Array.from({ length: BAR_COUNT }, (_, i) => 30 + Math.round(Math.abs(Math.sin(i * 12.9898)) * 70)),
@@ -95,6 +98,14 @@ export default function VoiceMessagePlayer({ src }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = playbackRate;
+  }, [playbackRate]);
+
+  function cycleRate() {
+    setRateIndex((i) => (i + 1) % PLAYBACK_RATES.length);
+  }
+
   function togglePlay() {
     const audio = audioRef.current;
     if (!audio || errored) return;
@@ -148,6 +159,14 @@ export default function VoiceMessagePlayer({ src }) {
       <span className="voice-player-time">
         {formatDuration(currentTime)} / {formatDuration(duration)}
       </span>
+      <button
+        type="button"
+        className="voice-player-rate"
+        onClick={cycleRate}
+        aria-label={`Playback speed ${playbackRate}x — tap to change`}
+      >
+        {playbackRate}x
+      </button>
     </div>
   );
 }

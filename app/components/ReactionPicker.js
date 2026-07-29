@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Copy, Pencil } from "lucide-react";
 import { REACTION_EMOJIS } from "@/app/lib/reactions";
 
 // Buyer-side counterpart to the admin's MessageUnsendMenu — same reaction
 // row, but no Unsend option since buyers can't delete messages.
-export default function ReactionPicker({ x, y, currentReaction, onReact, onClose }) {
+export default function ReactionPicker({ x, y, currentReaction, canEdit, onReact, onEdit, onCopy, onClose }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -38,6 +39,16 @@ export default function ReactionPicker({ x, y, currentReaction, onReact, onClose
           </button>
         ))}
       </div>
+      <button type="button" className="dm-context-popover-action" onClick={onCopy}>
+        <Copy size={14} />
+        Copy
+      </button>
+      {canEdit && (
+        <button type="button" className="dm-context-popover-action" onClick={onEdit}>
+          <Pencil size={14} />
+          Edit
+        </button>
+      )}
       <button type="button" className="dm-context-popover-cancel" onClick={onClose}>
         Cancel
       </button>

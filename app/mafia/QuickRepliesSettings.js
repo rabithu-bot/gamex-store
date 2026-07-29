@@ -52,7 +52,7 @@ export default function QuickRepliesSettings() {
       <h3>Saved Replies</h3>
       <p className="muted" style={{ marginTop: "0.3rem" }}>
         Instagram-style saved replies — set a keyword for each one, and its suggestion only shows
-        up while you're typing that exact keyword in the message box, not any random matching word.
+        up while you&apos;re typing that exact keyword in the message box, not any random matching word.
       </p>
 
       {!replies ? (

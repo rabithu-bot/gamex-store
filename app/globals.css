@@ -3079,12 +3079,14 @@ select:focus-visible {
 
 .quick-reply-add {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.6rem;
 }
 
 .quick-reply-add input {
   flex: 1;
+  min-width: 0;
   padding: 0.45rem 0.6rem;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -3095,6 +3097,7 @@ select:focus-visible {
 }
 
 .quick-reply-add .btn {
+  flex-shrink: 0;
   padding: 0.45rem 0.7rem;
 }
 
@@ -3185,6 +3188,21 @@ select:focus-visible {
   align-items: flex-start;
 }
 
+.chat-day-divider {
+  align-self: center;
+  margin: 0.4rem 0;
+}
+
+.chat-day-divider span {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(241, 238, 252, 0.6);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .admin-chat-bubble {
   position: relative;
   padding: 0.5rem 1rem;
@@ -3222,6 +3240,14 @@ select:focus-visible {
   font-size: 0.68rem;
   opacity: 0.5;
   padding: 0 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.chat-edited-label,
+.chat-bubble-edited-label {
+  font-style: italic;
 }
 
 .admin-chat-dock {
@@ -3296,7 +3322,11 @@ select:focus-visible {
 }
 
 .dm-context-popover-unsend,
-.dm-context-popover-cancel {
+.dm-context-popover-cancel,
+.dm-context-popover-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.55rem 0.75rem;
   border-radius: 10px;
   border: none;
@@ -3314,7 +3344,8 @@ select:focus-visible {
 }
 
 .dm-context-popover-unsend:hover,
-.dm-context-popover-cancel:hover {
+.dm-context-popover-cancel:hover,
+.dm-context-popover-action:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -3347,7 +3378,7 @@ select:focus-visible {
 .dm-message-reaction {
   position: absolute;
   bottom: -10px;
-  right: 6px;
+  left: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3999,6 +4030,24 @@ select:focus-visible {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   opacity: 0.75;
   white-space: nowrap;
+}
+
+.voice-player-rate {
+  flex-shrink: 0;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  cursor: pointer;
+}
+
+.admin-light .admin-chat-bubble.received .voice-player-rate {
+  border-color: rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 .voice-player-error {

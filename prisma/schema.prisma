@@ -117,6 +117,12 @@ model Message {
   // Instagram's per-person reactions (which can show one badge per person
   // in a thread); here whoever reacts most recently is what's shown.
   reaction       String?
+  // Set whenever the message's own sender edits its body. Buyer edits show
+  // a small "edited" label to the admin (Telegram/Instagram-style
+  // transparency); admin edits are deliberately silent to the buyer, so
+  // whether to surface this is a per-viewer UI decision, not something
+  // this field encodes on its own.
+  editedAt       DateTime?
   createdAt      DateTime  @default(now())
 
   @@index([orderId])

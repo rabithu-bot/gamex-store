@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Paperclip, X, BadgeCheck, Mic, Square } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import ReactionPicker from "@/app/components/ReactionPicker";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
+import { formatDayDivider, isNewDay } from "@/app/lib/chatDate";
 
 const TYPING_PING_INTERVAL_MS = 2000;
-const LONG_PRESS_MS = 2000;
+const LONG_PRESS_MS = 1000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
 
 function formatSeconds(total) {
@@ -17,10 +18,11 @@ function formatSeconds(total) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName, onReact }) {
+export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName, onReact, onEditMessage }) {
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [text, setText] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const [file, setFile] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [recording, setRecording] = useState(false);
@@ -172,8 +174,34 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
     setRecording(false);
   }
 
+  function startEditMessage(message) {
+    if (!message) return;
+    setEditingMessageId(message.id);
+    setText(message.body || "");
+    setFile(null);
+    setAudioBlob(null);
+  }
+
+  function cancelEdit() {
+    setEditingMessageId(null);
+    setText("");
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (editingMessageId) {
+      const trimmed = text.trim();
+      if (!trimmed || sending) return;
+      const idToEdit = editingMessageId;
+      setEditingMessageId(null);
+      setText("");
+      setSending(true);
+      await onEditMessage(idToEdit, trimmed);
+      setSending(false);
+      return;
+    }
+
     const attachment = audioBlob
       ? new File([audioBlob], `voice-${Date.now()}.${extensionForMime(audioBlob.type)}`, {
           type: audioBlob.type || "audio/webm",
@@ -232,11 +260,17 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
 
       {messages.length > 0 && (
         <div className="chat-thread">
-          {messages.map((m) => {
+          {messages.map((m, i) => {
             const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
+            const showDayDivider = isNewDay(m.createdAt, messages[i - 1]?.createdAt);
             return (
+              <Fragment key={m.id}>
+              {showDayDivider && (
+                <div className="chat-day-divider">
+                  <span>{formatDayDivider(m.createdAt)}</span>
+                </div>
+              )}
               <div
-                key={m.id}
                 className={`chat-bubble ${m.sender}`}
                 onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
                 onPointerMove={handleBubblePointerMove}
@@ -276,10 +310,26 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
                   )
                 )}
                 {m.body && <p>{m.body}</p>}
+                {m.editedAt && m.sender === "buyer" && (
+                  <span className="chat-edited-label chat-bubble-edited-label">edited</span>
+                )}
                 {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
               </div>
+              </Fragment>
             );
           })}
+        </div>
+      )}
+
+      {editingMessageId && (
+        <div className="chat-reply-preview">
+          <div className="chat-reply-preview-bar" />
+          <div className="chat-reply-preview-content">
+            <span className="chat-reply-preview-label">Editing message</span>
+          </div>
+          <button type="button" onClick={cancelEdit} aria-label="Cancel edit">
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -338,15 +388,17 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
               setAudioBlob(null);
             }}
           />
-          <button
-            type="button"
-            className="chat-attach-btn"
-            aria-label="Attach image"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Paperclip size={16} />
-          </button>
-          {!text.trim() && !file && !audioBlob && (
+          {!editingMessageId && (
+            <button
+              type="button"
+              className="chat-attach-btn"
+              aria-label="Attach image"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={16} />
+            </button>
+          )}
+          {!editingMessageId && !text.trim() && !file && !audioBlob && (
             <button
               type="button"
               className="chat-attach-btn"
@@ -379,8 +431,18 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
           x={activeMenu.x}
           y={activeMenu.y}
           currentReaction={messages.find((m) => m.id === activeMenu.messageId)?.reaction}
+          canEdit={messages.find((m) => m.id === activeMenu.messageId)?.sender === "buyer"}
           onReact={(emoji) => {
             onReact(activeMenu.messageId, emoji);
+            setActiveMenu(null);
+          }}
+          onCopy={() => {
+            const target = messages.find((m) => m.id === activeMenu.messageId);
+            if (target?.body) navigator.clipboard?.writeText(target.body);
+            setActiveMenu(null);
+          }}
+          onEdit={() => {
+            startEditMessage(messages.find((m) => m.id === activeMenu.messageId));
             setActiveMenu(null);
           }}
           onClose={() => setActiveMenu(null)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { Fragment, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -21,9 +21,10 @@ import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
+import { formatDayDivider, isNewDay } from "@/app/lib/chatDate";
 
 const POLL_INTERVAL_MS = 1500;
-const LONG_PRESS_MS = 2000;
+const LONG_PRESS_MS = 1000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
 const SWIPE_TRIGGER_PX = 50;
 const SWIPE_MAX_PX = 72;
@@ -33,13 +34,10 @@ function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
 }
 
+// Time only — which day this is shows once as a divider above the day's
+// first message instead of being repeated under every bubble.
 function formatTime(iso) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return new Date(iso).toLocaleString("en-IN", { hour: "numeric", minute: "2-digit" });
 }
 
 function formatSeconds(total) {
@@ -57,6 +55,7 @@ export default function ChatThread({ orderId }) {
   const [replyFile, setReplyFile] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [replyTarget, setReplyTarget] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [micError, setMicError] = useState("");
@@ -171,7 +170,9 @@ export default function ChatThread({ orderId }) {
     if (!showSuggestions) return [];
     const words = replyText.trim().toLowerCase().split(/\s+/);
     const q = words[words.length - 1] || "";
-    if (!q) return [];
+    // Only match within the first 7 letters of the keyword being typed —
+    // once you're past that, it's clearly not a shortcut anymore.
+    if (!q || q.length > 7) return [];
     return quickReplies
       .filter((r) => r.keyword && r.keyword.toLowerCase().startsWith(q))
       .slice(0, MAX_SUGGESTIONS);
@@ -182,10 +183,54 @@ export default function ChatThread({ orderId }) {
   // attachment queued up.
   const hasComposerContent = Boolean(replyText.trim() || replyFile || audioBlob);
 
+  function startEditMessage(message) {
+    if (!message) return;
+    setEditingMessageId(message.id);
+    setReplyText(message.body || "");
+    setReplyFile(null);
+    setAudioBlob(null);
+    setReplyTarget(null);
+    setShowSuggestions(false);
+    textareaRef.current?.focus();
+  }
+
+  function cancelEdit() {
+    setEditingMessageId(null);
+    setReplyText("");
+  }
+
   async function handleReply(e) {
     e?.preventDefault();
     const trimmed = replyText.trim();
-    if ((!trimmed && !replyFile && !audioBlob) || !order || sending) return;
+    if (!order || sending) return;
+
+    if (editingMessageId) {
+      if (!trimmed) return;
+      const idToEdit = editingMessageId;
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === idToEdit ? { ...m, body: trimmed, editedAt: new Date().toISOString() } : m
+              ),
+            }
+          : prev
+      );
+      setEditingMessageId(null);
+      setReplyText("");
+      setSending(true);
+      await fetch(`/api/admin/orders/${order.id}/messages/${idToEdit}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: trimmed }),
+      });
+      await fetchOrder();
+      setSending(false);
+      return;
+    }
+
+    if (!trimmed && !replyFile && !audioBlob) return;
 
     const formData = new FormData();
     formData.set("body", trimmed);
@@ -464,11 +509,18 @@ export default function ChatThread({ orderId }) {
             No messages yet.
           </p>
         )}
-        {order.messages.map((m) => {
+        {order.messages.map((m, i) => {
           const original = m.replyToId ? order.messages.find((msg) => msg.id === m.replyToId) : null;
           const dragging = swipeState?.id === m.id;
+          const showDayDivider = isNewDay(m.createdAt, order.messages[i - 1]?.createdAt);
           return (
-            <div key={m.id} className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}>
+            <Fragment key={m.id}>
+            {showDayDivider && (
+              <div className="chat-day-divider">
+                <span>{formatDayDivider(m.createdAt)}</span>
+              </div>
+            )}
+            <div className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}>
               {!dragging && (
                 <button
                   type="button"
@@ -515,6 +567,9 @@ export default function ChatThread({ orderId }) {
                 {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
               </div>
               <span className="admin-chat-timestamp">
+                {/* Admin's own edits stay silent — only surface the "edited"
+                    label when the buyer edited their own message. */}
+                {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
                 {formatTime(m.createdAt)}
                 {m.sender === "admin" && (
                   <span className={`chat-read-tick${m.readAt ? " seen" : ""}`} title={m.readAt ? "Seen" : "Sent"}>
@@ -523,6 +578,7 @@ export default function ChatThread({ orderId }) {
                 )}
               </span>
             </div>
+            </Fragment>
           );
         })}
         {isBuyerTyping && (
@@ -536,6 +592,18 @@ export default function ChatThread({ orderId }) {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {editingMessageId && (
+        <div className="chat-reply-preview">
+          <div className="chat-reply-preview-bar" />
+          <div className="chat-reply-preview-content">
+            <span className="chat-reply-preview-label">Editing message</span>
+          </div>
+          <button type="button" onClick={cancelEdit} aria-label="Cancel edit">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {replyTarget && (
         <div className="chat-reply-preview">
@@ -645,15 +713,17 @@ export default function ChatThread({ orderId }) {
               placeholder="Message..."
               enterKeyHint="enter"
             />
-            <button
-              type="button"
-              className="chat-attach-btn"
-              aria-label="Attach image"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip size={16} />
-            </button>
-            {hasComposerContent ? (
+            {!editingMessageId && (
+              <button
+                type="button"
+                className="chat-attach-btn"
+                aria-label="Attach image"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip size={16} />
+              </button>
+            )}
+            {hasComposerContent || editingMessageId ? (
               <button className="admin-chat-send" type="submit" disabled={sending} aria-label="Send">
                 <Send size={16} />
               </button>
@@ -678,8 +748,18 @@ export default function ChatThread({ orderId }) {
           x={activeMenu.x}
           y={activeMenu.y}
           currentReaction={order.messages.find((m) => m.id === activeMenu.messageId)?.reaction}
+          canEdit={order.messages.find((m) => m.id === activeMenu.messageId)?.sender === "admin"}
           onReact={(emoji) => {
             handleReact(activeMenu.messageId, emoji);
+            setActiveMenu(null);
+          }}
+          onCopy={() => {
+            const target = order.messages.find((m) => m.id === activeMenu.messageId);
+            if (target?.body) navigator.clipboard?.writeText(target.body);
+            setActiveMenu(null);
+          }}
+          onEdit={() => {
+            startEditMessage(order.messages.find((m) => m.id === activeMenu.messageId));
             setActiveMenu(null);
           }}
           onUnsend={() => {

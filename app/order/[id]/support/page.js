@@ -76,6 +76,26 @@ export default function OrderSupportPage() {
     else refetch();
   }
 
+  async function handleEditMessage(messageId, body) {
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === messageId ? { ...m, body, editedAt: new Date().toISOString() } : m
+            ),
+          }
+        : prev
+    );
+    const res = await fetch(`/api/orders/${id}/messages/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+    if (res.status === 403) setAccessDenied(true);
+    else refetch();
+  }
+
   async function handleSaveName(name) {
     const res = await fetch(`/api/orders/${id}/name`, {
       method: "POST",
@@ -126,6 +146,7 @@ export default function OrderSupportPage() {
           onSend={handleSendMessage}
           onSaveName={handleSaveName}
           onReact={handleReact}
+          onEditMessage={handleEditMessage}
         />
       </main>
     </>

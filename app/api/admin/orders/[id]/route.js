@@ -27,6 +27,7 @@ export async function GET(_request, { params }) {
           replyToId: true,
           readAt: true,
           reaction: true,
+          editedAt: true,
           createdAt: true,
         },
       },
