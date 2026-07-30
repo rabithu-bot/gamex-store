@@ -154,6 +154,22 @@ model ProofImage {
   createdAt DateTime @default(now())
 }
 
+// Web Push subscriptions — one row per browser/device that's granted
+// notification permission. "admin" subscriptions get pinged when a tagged
+// customer messages; "buyer" subscriptions are scoped to a single order and
+// get pinged when the admin replies while that buyer isn't currently online.
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  role      String // "admin" | "buyer"
+  orderId   String? // set only for role = "buyer"
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
 model Setting {
   key   String @id
   value String

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { saveMessageAttachment } from "@/app/lib/uploads";
+import { notifyBuyerOfReply } from "@/app/lib/push";
+import { isBuyerOnline } from "@/app/lib/onlineStatus";
 
 export async function POST(request, { params }) {
   if (!(await requireAdmin())) {
@@ -43,6 +45,16 @@ export async function POST(request, { params }) {
       replyToId: Number.isInteger(replyToId) ? replyToId : null,
     },
   });
+
+  // Only worth pinging the buyer's phone if they're not already looking at
+  // the page — isBuyerOnline reuses the same threshold the "Online" badge
+  // in the admin panel is based on.
+  if (!isBuyerOnline(order.buyerLastSeenAt)) {
+    await notifyBuyerOfReply({
+      orderId,
+      body: attachmentType === "audio" ? "🎤 Voice message" : attachmentPath && !text ? "📷 Photo" : text,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }

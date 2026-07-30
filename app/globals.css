@@ -1861,6 +1861,19 @@ select:focus-visible {
   background: linear-gradient(135deg, #c4b5fd, #8b5cf6 55%, #7c3aed);
 }
 
+.enable-notifications-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.enable-notifications-denied {
+  font-size: 0.8rem;
+}
+
 .chat-online-text {
   font-size: 0.78rem;
   color: #4ade80;
@@ -2430,6 +2443,19 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.admin-drawer-notifications {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 600;
 }
 
 .admin-drawer-chevron {
@@ -4235,6 +4261,10 @@ select:focus-visible {
 .chat-recording-dock {
   align-items: center;
   gap: 0.6rem;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
 }
 
 .chat-recording-dot {
@@ -4255,6 +4285,7 @@ select:focus-visible {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 700;
   font-size: 0.9rem;
+  color: #ef4444;
   flex-shrink: 0;
 }
 

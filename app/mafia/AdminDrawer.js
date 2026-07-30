@@ -7,6 +7,7 @@ import SettingsPanel from "./SettingsPanel";
 import QuickRepliesSettings from "./QuickRepliesSettings";
 import AddListingPanel from "./AddListingPanel";
 import ProofsSettings from "./ProofsSettings";
+import EnableNotifications from "@/app/components/EnableNotifications";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
@@ -50,6 +51,14 @@ export default function AdminDrawer({ open, onClose }) {
           <button type="button" className="admin-drawer-close" aria-label="Close settings" onClick={onClose}>
             <X size={18} />
           </button>
+        </div>
+
+        <div className="admin-drawer-notifications">
+          <span className="admin-drawer-row-label">
+            <MessageSquareText size={16} />
+            Message Notifications
+          </span>
+          <EnableNotifications apiPath="/api/admin/push/subscribe" label="Enable" />
         </div>
 
         <button type="button" className="admin-drawer-row" onClick={() => setQrExpanded((v) => !v)}>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { saveMessageAttachment } from "@/app/lib/uploads";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
+import { notifyAdminsOfTaggedMessage } from "@/app/lib/push";
 
 export async function POST(request, { params }) {
   const { id } = await params;
@@ -37,6 +38,18 @@ export async function POST(request, { params }) {
   await prisma.message.create({
     data: { orderId, sender: "buyer", body: text, attachmentPath, attachmentType },
   });
+
+  if (order.tag) {
+    // Awaited (rather than fire-and-forget) since a serverless function can
+    // be torn down the moment the response is sent, before an un-awaited
+    // promise gets to finish.
+    await notifyAdminsOfTaggedMessage({
+      orderId,
+      buyerName: order.buyerName,
+      tag: order.tag,
+      body: attachmentType === "audio" ? "🎤 Voice message" : attachmentPath && !text ? "📷 Photo" : text,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }

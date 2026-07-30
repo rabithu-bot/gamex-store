@@ -6,6 +6,7 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
+import EnableNotifications from "@/app/components/EnableNotifications";
 import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
@@ -301,6 +302,12 @@ export default function OrderPage() {
             <MessageCircle size={16} />
             Contact Support
           </Link>
+          <div style={{ marginTop: "0.75rem" }}>
+            <EnableNotifications
+              apiPath={`/api/orders/${order.id}/push/subscribe`}
+              label="Get notified about order updates"
+            />
+          </div>
         </div>
       </main>
     </>
