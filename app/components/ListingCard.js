@@ -44,7 +44,7 @@ export default function ListingCard({ listing }) {
           <img
             className={`card-image${isSold ? " card-image-sold" : ""}`}
             src={images[0] || "/window.svg"}
-            alt={listing.title}
+            alt={`${listing.title} - GameX Store`}
             loading="lazy"
           />
           <span className="badge card-image-badge">{listing.category}</span>

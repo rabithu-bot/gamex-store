@@ -21,7 +21,7 @@ import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
-import { formatDayDivider, isNewDay } from "@/app/lib/chatDate";
+import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
 
 const POLL_INTERVAL_MS = 1500;
@@ -33,12 +33,6 @@ const TYPING_STALE_MS = 4000;
 
 function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
-}
-
-// Time only — which day this is shows once as a divider above the day's
-// first message instead of being repeated under every bubble.
-function formatTime(iso) {
-  return new Date(iso).toLocaleString("en-IN", { hour: "numeric", minute: "2-digit" });
 }
 
 function formatSeconds(total) {
@@ -578,18 +572,18 @@ export default function ChatThread({ orderId }) {
                 )}
                 {m.body && <p>{m.body}</p>}
                 {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
+                <span className="admin-chat-timestamp">
+                  {/* Admin's own edits stay silent — only surface the "edited"
+                      label when the buyer edited their own message. */}
+                  {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
+                  {formatTime(m.createdAt)}
+                  {m.sender === "admin" && (
+                    <span className={`chat-read-tick${m.readAt ? " seen" : ""}`} title={m.readAt ? "Seen" : "Sent"}>
+                      {m.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
+                    </span>
+                  )}
+                </span>
               </div>
-              <span className="admin-chat-timestamp">
-                {/* Admin's own edits stay silent — only surface the "edited"
-                    label when the buyer edited their own message. */}
-                {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
-                {formatTime(m.createdAt)}
-                {m.sender === "admin" && (
-                  <span className={`chat-read-tick${m.readAt ? " seen" : ""}`} title={m.readAt ? "Seen" : "Sent"}>
-                    {m.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
-                  </span>
-                )}
-              </span>
             </div>
             </Fragment>
           );

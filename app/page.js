@@ -5,17 +5,36 @@ import ListingCard from "@/app/components/ListingCard";
 
 export const dynamic = "force-dynamic";
 
+// Groups the (already price-sorted) listings by category while preserving
+// both the order categories first appear in and the price order within each
+// — lets the homepage render a keyword-relevant "<h3>{category} Accounts</h3>"
+// subheading per game instead of one flat grid.
+function groupByCategory(listings) {
+  const groups = [];
+  const indexByCategory = new Map();
+  for (const listing of listings) {
+    const category = listing.category || "Other";
+    if (!indexByCategory.has(category)) {
+      indexByCategory.set(category, groups.length);
+      groups.push({ category, items: [] });
+    }
+    groups[indexByCategory.get(category)].items.push(listing);
+  }
+  return groups;
+}
+
 export default async function HomePage() {
   // Cheapest accounts surface first for buyers browsing the storefront.
   const listings = await prisma.listing.findMany({
     orderBy: { price: "asc" },
   });
+  const categoryGroups = groupByCategory(listings);
 
   return (
     <>
       <SiteHeader />
       <main className="container">
-        <h2>Available Accounts</h2>
+        <h2>Available Gaming Accounts</h2>
         <p className="muted">Verified accounts, sold directly by the store owner.</p>
 
         {listings.length === 0 && (
@@ -30,16 +49,21 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="listing-grid">
-          {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
+        {categoryGroups.map(({ category, items }) => (
+          <section key={category} style={{ marginTop: "1.5rem" }}>
+            <h3 style={{ marginBottom: "0.75rem" }}>{category} Accounts</h3>
+            <div className="listing-grid">
+              {items.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          </section>
+        ))}
 
         <section className="hero" style={{ marginTop: "3rem" }}>
           <span className="eyebrow">Trusted Seller</span>
           <h1>
-            Grow &amp; Trust With <span className="accent-text">GAMEX STORE</span>
+            GameX Store - <span className="accent-text">Verified Gaming Accounts Marketplace</span>
           </h1>
           <p>
             Buy verified gaming accounts directly from the owner — pay securely on this

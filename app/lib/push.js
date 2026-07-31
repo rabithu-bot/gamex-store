@@ -34,12 +34,14 @@ async function sendToSubscriptions(subscriptions, payload) {
   );
 }
 
-// Pinged when a buyer sends a message on a tagged order — every admin
-// browser that's granted notification permission gets one.
-export async function notifyAdminsOfTaggedMessage({ orderId, buyerName, tag, body }) {
+// Pinged when a buyer sends a message on any order — every admin browser
+// that's granted notification permission gets one. `tag` is optional and
+// just dresses up the title when the order happens to have one.
+export async function notifyAdminsOfMessage({ orderId, buyerName, tag, body }) {
   const subs = await prisma.pushSubscription.findMany({ where: { role: "admin" } });
+  const prefix = tag ? `${tag[0].toUpperCase() + tag.slice(1)} customer` : "New message";
   await sendToSubscriptions(subs, {
-    title: `${tag[0].toUpperCase() + tag.slice(1)} customer: ${buyerName || "Buyer"}`,
+    title: `${prefix}: ${buyerName || "Buyer"}`,
     body: body || "Sent a new message",
     url: `/mafia/messages/${orderId}`,
     tag: `order-${orderId}`,

@@ -58,7 +58,7 @@ export default function AdminDrawer({ open, onClose }) {
             <MessageSquareText size={16} />
             Message Notifications
           </span>
-          <EnableNotifications apiPath="/api/admin/push/subscribe" label="Enable" />
+          <EnableNotifications apiPath="/api/admin/push/subscribe" />
         </div>
 
         <button type="button" className="admin-drawer-row" onClick={() => setQrExpanded((v) => !v)}>

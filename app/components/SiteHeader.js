@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Logo from "./Logo";
 
 export default function SiteHeader() {
   return (
     <header className="site-header">
       <Link href="/" className="brand">
-        GAMEX STORE
+        <Logo size={28} />
+        Game<span className="brand-x">X</span> Store
       </Link>
       <nav className="site-header-nav-desktop">
         <Link href="/orders">My Orders</Link>

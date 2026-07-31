@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ShieldCheck, Zap, Headset, Star, Server, Hash, Gem } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
+import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
 import ListingCard from "@/app/components/ListingCard";
 import BuyForm from "./BuyForm";
@@ -9,6 +10,40 @@ import ImageGallery from "./ImageGallery";
 export const dynamic = "force-dynamic";
 
 const SIMILAR_LIMIT = 8;
+
+// Without this, every product page would inherit the homepage's title/
+// description/canonical from the root layout — Google would then treat every
+// listing as a duplicate of the homepage instead of indexing it individually.
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const listing = await prisma.listing.findUnique({ where: { id: Number(id) } });
+  if (!listing) return {};
+
+  const title = `${listing.title} - GameX Store`;
+  const description =
+    listing.description?.slice(0, 155) ||
+    `Buy ${listing.title} safely on GameX Store — verified account, secure payment, instant delivery.`;
+  const url = `${SITE_URL}/product/${listing.id}`;
+  const images = JSON.parse(listing.images || "[]");
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      images: images[0] ? [{ url: images[0] }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: images[0] ? [images[0]] : undefined,
+    },
+  };
+}
 
 async function getSimilarListings(listing) {
   const sameCategory = await prisma.listing.findMany({
@@ -52,7 +87,7 @@ export default async function ProductPage({ params }) {
       <main className="container product-page-main">
         <div className="product-layout">
           <div>
-            <ImageGallery images={images} alt={listing.title} />
+            <ImageGallery images={images} alt={`${listing.title} - GameX Store`} />
           </div>
           <div className="product-info">
             <div className="product-badge-row">

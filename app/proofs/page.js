@@ -1,10 +1,24 @@
 import { ShieldCheck, ImageOff } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
+import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
 import ProofGallery from "./ProofGallery";
 import ProofsBackButton from "./ProofsBackButton";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Delivery Proofs - GameX Store",
+  description:
+    "Real payment confirmations and account deliveries from GameX Store customers — proof of safe, verified transactions.",
+  alternates: { canonical: `${SITE_URL}/proofs` },
+  openGraph: {
+    title: "Delivery Proofs - GameX Store",
+    description:
+      "Real payment confirmations and account deliveries from GameX Store customers — proof of safe, verified transactions.",
+    url: `${SITE_URL}/proofs`,
+  },
+};
 
 export default async function ProofsPage() {
   const proofs = await prisma.proofImage.findMany({ orderBy: { createdAt: "desc" } });

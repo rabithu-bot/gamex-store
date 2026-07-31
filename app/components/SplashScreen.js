@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Logo from "./Logo";
 
 const SESSION_KEY = "gamex-splash-shown";
 const EXIT_AT_MS = 1500;
@@ -40,7 +41,9 @@ export default function SplashScreen() {
       onClick={() => setPhase("exit")}
     >
       <div className="splash-content">
-        <div className="splash-mark">GX</div>
+        <div className="splash-mark">
+          <Logo size={36} withBackground={false} />
+        </div>
         <div className="splash-wordmark">
           <span className="splash-word splash-word-1">GAMEX</span>
           <span className="splash-word splash-word-2">STORE</span>

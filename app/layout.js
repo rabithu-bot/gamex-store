@@ -5,6 +5,7 @@ import AuroraBackground from "./components/AuroraBackground";
 import SplashScreen from "./components/SplashScreen";
 import MobileTabBar from "./components/MobileTabBar";
 import InAppBrowserBanner from "./components/InAppBrowserBanner";
+import { SITE_URL } from "./lib/siteUrl";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,18 +25,70 @@ const rajdhani = Rajdhani({
   weight: ["600", "700"],
 });
 
+const SITE_TITLE = "GameX Store - Official Gaming Accounts Marketplace | Buy & Sell";
+const SITE_DESCRIPTION =
+  "Buy verified Free Fire, PUBG, and mobile gaming accounts safely on GameX Store. 100% secure transactions directly with verified owners.";
+
 export const metadata = {
-  title: "GAMEX STORE",
-  description: "Buy verified gaming accounts directly from the owner, pay securely on-site.",
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: `${SITE_URL}/`,
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: `${SITE_URL}/`,
+    siteName: "GameX Store",
+    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "GameX Store" }],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/icon.svg"],
+  },
   icons: {
     icon: "/icon.svg",
   },
+};
+
+// Organization + WebSite JSON-LD — trains Google's Knowledge Graph on the
+// exact brand name/alternateName so "GameX Store" / "GameXStore" searches
+// resolve to this site with a proper sitelinks search box entry.
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "GameX Store",
+      alternateName: "GameXStore",
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.svg`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "GameX Store",
+      alternateName: "GameXStore",
+      url: SITE_URL,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+  ],
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         <AuroraBackground />
         <SplashScreen />
         <InAppBrowserBanner />

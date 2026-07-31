@@ -6,7 +6,7 @@ import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import ReactionPicker from "@/app/components/ReactionPicker";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
-import { formatDayDivider, isNewDay } from "@/app/lib/chatDate";
+import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 
 const TYPING_PING_INTERVAL_MS = 2000;
 const LONG_PRESS_MS = 1000;
@@ -310,10 +310,11 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
                   )
                 )}
                 {m.body && <p>{m.body}</p>}
-                {m.editedAt && m.sender === "buyer" && (
-                  <span className="chat-edited-label chat-bubble-edited-label">edited</span>
-                )}
                 {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
+                <span className="chat-timestamp">
+                  {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
+                  {formatTime(m.createdAt)}
+                </span>
               </div>
               </Fragment>
             );

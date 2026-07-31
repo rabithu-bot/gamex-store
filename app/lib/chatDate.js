@@ -26,3 +26,9 @@ export function isNewDay(iso, prevIso) {
   if (!prevIso) return true;
   return !isSameDay(new Date(iso), new Date(prevIso));
 }
+
+// Time only — which day this is shows once as a divider above the day's
+// first message instead of being repeated under every bubble.
+export function formatTime(iso) {
+  return new Date(iso).toLocaleString("en-IN", { hour: "numeric", minute: "2-digit" });
+}

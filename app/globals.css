@@ -76,9 +76,16 @@ select:focus-visible {
 }
 
 .site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 800;
   font-size: 1.15rem;
   letter-spacing: 0.01em;
+  color: var(--foreground);
+}
+
+.site-header .brand-x {
   background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1795,6 +1802,16 @@ select:focus-visible {
   align-self: flex-start;
 }
 
+.chat-timestamp {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  opacity: 0.6;
+}
+
 .chat-form {
   display: flex;
   gap: 0.5rem;
@@ -1861,17 +1878,57 @@ select:focus-visible {
   background: linear-gradient(135deg, #c4b5fd, #8b5cf6 55%, #7c3aed);
 }
 
-.enable-notifications-done {
-  display: inline-flex;
+.enable-notifications-denied {
+  font-size: 0.8rem;
+}
+
+.notif-toggle-row {
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  color: #4ade80;
+  gap: 0.6rem;
+}
+
+.notif-toggle-label {
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-.enable-notifications-denied {
-  font-size: 0.8rem;
+.notif-toggle {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.notif-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notif-toggle.on {
+  background: var(--accent);
+}
+
+.notif-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.notif-toggle.on .notif-toggle-thumb {
+  transform: translateX(18px);
 }
 
 .chat-online-text {
@@ -3331,17 +3388,16 @@ select:focus-visible {
 }
 
 .admin-chat-timestamp {
-  margin-top: 0.25rem;
-  font-size: 0.68rem;
-  opacity: 0.5;
-  padding: 0 0.3rem;
-  display: inline-flex;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.3rem;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  opacity: 0.7;
 }
 
-.chat-edited-label,
-.chat-bubble-edited-label {
+.chat-edited-label {
   font-style: italic;
 }
 

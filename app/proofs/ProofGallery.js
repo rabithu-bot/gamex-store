@@ -18,7 +18,7 @@ export default function ProofGallery({ images }) {
             aria-label="View proof image"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="Proof" loading="lazy" />
+            <img src={url} alt={`Delivery Proof ${i + 1} - GameX Store`} loading="lazy" />
           </button>
         ))}
       </div>
@@ -27,7 +27,7 @@ export default function ProofGallery({ images }) {
         <Lightbox
           images={images}
           index={index}
-          alt="Proof"
+          alt="Delivery Proof - GameX Store"
           onNavigate={setIndex}
           onClose={() => setIndex(null)}
         />

@@ -45,3 +45,33 @@ export async function subscribeToPush(apiPath, extra = {}) {
   });
   return { ok: res.ok };
 }
+
+// Unsubscribes the browser's push subscription and tells the server to drop
+// the matching row. The endpoint itself (not role/orderId) is what the server
+// uses to find the row, so this one route works for both admin and buyer.
+export async function unsubscribeFromPush() {
+  if (!isPushSupported()) return { ok: false };
+
+  const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return { ok: true };
+
+  const endpoint = subscription.endpoint;
+  await subscription.unsubscribe().catch(() => {});
+  await fetch("/api/push/unsubscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  }).catch(() => {});
+  return { ok: true };
+}
+
+// Whether this browser currently has an active push subscription — used to
+// decide whether the toggle should render on or off on first paint, since
+// permission being "granted" doesn't guarantee a subscription still exists.
+export async function hasActivePushSubscription() {
+  if (!isPushSupported() || Notification.permission !== "granted") return false;
+  const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+  const subscription = await registration?.pushManager.getSubscription();
+  return Boolean(subscription);
+}
