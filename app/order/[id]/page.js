@@ -11,19 +11,12 @@ import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
 import FacebookLogo from "./FacebookLogo";
-import UroPayCheckout from "./UroPayCheckout";
 
 // pending_verification is deliberately excluded here — that status now has
 // its own dedicated /order/[id]/confirming page (see the redirect effect
 // below), so this page never needs to render a body for it.
 const PAYMENT_STEP_STATUSES = ["pending", "declined"];
 const POLL_INTERVAL_MS = 1500;
-// Inlined at build time — the QR/screenshot flow stays as the only option
-// until this is explicitly turned on. The UroPay integration is still
-// scaffolding (placeholder API URL/field names, see /api/create-uropay-order),
-// so this must not flip on until you've actually confirmed it works, or real
-// buyers lose the ability to check out at all.
-const UROPAY_ENABLED = process.env.NEXT_PUBLIC_UROPAY_ENABLED === "true";
 
 function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -189,78 +182,51 @@ export default function OrderPage() {
 
         {!isExpired && PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="checkout-panel">
-            {UROPAY_ENABLED ? (
-              <>
-                <h3>Pay for your order</h3>
-                {order.status === "pending" && msRemaining !== null && (
-                  <p className="checkout-countdown">
-                    ⏱️ Time remaining: <strong>{formatCountdown(msRemaining)}</strong>
-                  </p>
-                )}
-                {order.status === "declined" && (
-                  <p className="error-text" style={{ marginBottom: "0.75rem" }}>
-                    Your previous payment couldn&apos;t be verified — please try again.
-                  </p>
-                )}
-                <div className="payable-badge-row">
-                  <span className="payable-badge">
-                    <span>Total Payable</span>
-                    <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
-                  </span>
-                </div>
-                <div style={{ marginTop: "1rem", textAlign: "center" }}>
-                  <UroPayCheckout orderId={id} onAccessDenied={() => setAccessDenied(true)} />
-                </div>
-              </>
-            ) : (
-              <>
-                <h3>1. Pay via UPI</h3>
-                {order.status === "pending" && msRemaining !== null && (
-                  <p className="checkout-countdown">
-                    ⏱️ Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
-                  </p>
-                )}
-                <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
-                  Scan this QR with any UPI app, then enter the amount below yourself.
-                </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qrUrl}
-                  alt="UPI payment QR code"
-                  style={{ width: 220, margin: "0.5rem auto", display: "block", borderRadius: 12 }}
-                />
-                <div className="payable-badge-row">
-                  <span className="payable-badge">
-                    <span>Total Payable</span>
-                    <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
-                  </span>
-                </div>
-
-                <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
-                <form onSubmit={handleSubmitProof}>
-                  {order.status === "declined" && (
-                    <p className="error-text" style={{ marginBottom: "0.75rem" }}>
-                      Your previous screenshot couldn&apos;t be verified — please attach a new one
-                      to try again.
-                    </p>
-                  )}
-                  <div className="form-field">
-                    <label htmlFor="screenshot">Payment screenshot</label>
-                    <input
-                      id="screenshot"
-                      type="file"
-                      accept="image/*"
-                      required
-                      onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                    />
-                  </div>
-                  {submitError && <p className="error-text">{submitError}</p>}
-                  <button className="btn" type="submit" disabled={submitting}>
-                    {submitting ? "Submitting..." : "I've paid"}
-                  </button>
-                </form>
-              </>
+            <h3>1. Pay via UPI</h3>
+            {order.status === "pending" && msRemaining !== null && (
+              <p className="checkout-countdown">
+                ⏱️ Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
+              </p>
             )}
+            <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
+              Scan this QR with any UPI app, then enter the amount below yourself.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrUrl}
+              alt="UPI payment QR code"
+              style={{ width: 220, margin: "0.5rem auto", display: "block", borderRadius: 12 }}
+            />
+            <div className="payable-badge-row">
+              <span className="payable-badge">
+                <span>Total Payable</span>
+                <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
+              </span>
+            </div>
+
+            <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
+            <form onSubmit={handleSubmitProof}>
+              {order.status === "declined" && (
+                <p className="error-text" style={{ marginBottom: "0.75rem" }}>
+                  Your previous screenshot couldn&apos;t be verified — please attach a new one
+                  to try again.
+                </p>
+              )}
+              <div className="form-field">
+                <label htmlFor="screenshot">Payment screenshot</label>
+                <input
+                  id="screenshot"
+                  type="file"
+                  accept="image/*"
+                  required
+                  onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
+                />
+              </div>
+              {submitError && <p className="error-text">{submitError}</p>}
+              <button className="btn" type="submit" disabled={submitting}>
+                {submitting ? "Submitting..." : "I've paid"}
+              </button>
+            </form>
           </div>
         )}
 
