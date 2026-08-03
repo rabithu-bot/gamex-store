@@ -46,3 +46,6 @@ next-env.d.ts
 # local sqlite db + uploaded files (photos, payment screenshots)
 /dev.db
 /storage
+
+.vercel
+.env*
