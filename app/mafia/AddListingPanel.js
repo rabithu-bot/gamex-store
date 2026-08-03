@@ -17,7 +17,7 @@ const emptyForm = {
   accountPassword: "",
 };
 
-// Lives in the settings drawer rather than the Listings page itself — that
+// Lives on its own settings page rather than the Listings page itself — that
 // page is for managing what already exists; adding new inventory is a
 // settings-level action, alongside Payment QR and Saved Replies. The
 // Listings page picks up newly-added listings on its own poll, so this

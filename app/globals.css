@@ -2502,29 +2502,8 @@ select:focus-visible {
   gap: 0.5rem;
 }
 
-.admin-drawer-notifications {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-weight: 600;
-}
-
 .admin-drawer-chevron {
-  transition: transform 0.15s ease;
-}
-
-.admin-drawer-chevron.open {
-  transform: rotate(180deg);
-}
-
-.admin-drawer-qr {
-  padding: 0.25rem 0.1rem 0.5rem;
+  opacity: 0.5;
 }
 
 .admin-drawer-signout {

@@ -86,14 +86,13 @@ model Order {
   // open) — lets the admin see a live "online" indicator despite this app
   // having no general-purpose buyer session/presence system.
   buyerLastSeenAt DateTime?
-  // Razorpay order created lazily when the buyer opens the checkout — null
-  // until then, and null forever for orders paid via the QR/screenshot flow
-  // (kept indefinitely as a fallback when Razorpay isn't configured).
-  razorpayOrderId   String? @unique
-  // Set once the webhook confirms payment.captured — the authoritative
-  // signal this order was actually paid; the client-side checkout callback
-  // is never trusted on its own to flip status to confirmed.
-  razorpayPaymentId String? @unique
+  // UroPay order reference — created lazily when the buyer opens checkout
+  // (see /api/create-uropay-order) and echoed back by the webhook to find
+  // this row again. SCAFFOLDING: field name/shape is a guess pending
+  // UroPay's actual API docs — see app/api/webhooks/uropay/route.ts.
+  uroPayOrderId   String? @unique
+  // Set once the webhook confirms a successful payment.
+  uroPayPaymentId String? @unique
 
   @@index([sessionId])
 }

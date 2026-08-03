@@ -11,7 +11,7 @@ import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
 import FacebookLogo from "./FacebookLogo";
-import RazorpayCheckoutButton from "./RazorpayCheckoutButton";
+import UroPayCheckout from "./UroPayCheckout";
 
 // pending_verification is deliberately excluded here — that status now has
 // its own dedicated /order/[id]/confirming page (see the redirect effect
@@ -19,10 +19,11 @@ import RazorpayCheckoutButton from "./RazorpayCheckoutButton";
 const PAYMENT_STEP_STATUSES = ["pending", "declined"];
 const POLL_INTERVAL_MS = 1500;
 // Inlined at build time — the QR/screenshot flow stays as the only option
-// until this is actually set (and it's only ever set once Razorpay is
-// truly ready), so shipping this integration can't break checkout for
-// anyone still on the old flow.
-const RAZORPAY_ENABLED = Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
+// until this is explicitly turned on. The UroPay integration is still
+// scaffolding (placeholder API URL/field names, see /api/create-uropay-order),
+// so this must not flip on until you've actually confirmed it works, or real
+// buyers lose the ability to check out at all.
+const UROPAY_ENABLED = process.env.NEXT_PUBLIC_UROPAY_ENABLED === "true";
 
 function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -42,7 +43,6 @@ export default function OrderPage() {
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
   const [now, setNow] = useState(() => Date.now());
   const [accessDenied, setAccessDenied] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -189,7 +189,7 @@ export default function OrderPage() {
 
         {!isExpired && PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="checkout-panel">
-            {RAZORPAY_ENABLED ? (
+            {UROPAY_ENABLED ? (
               <>
                 <h3>Pay for your order</h3>
                 {order.status === "pending" && msRemaining !== null && (
@@ -209,18 +209,8 @@ export default function OrderPage() {
                   </span>
                 </div>
                 <div style={{ marginTop: "1rem", textAlign: "center" }}>
-                  <RazorpayCheckoutButton
-                    orderId={id}
-                    buyerName={order.buyerName}
-                    onPaymentSuccess={() => setPaymentProcessing(true)}
-                    onAccessDenied={() => setAccessDenied(true)}
-                  />
+                  <UroPayCheckout orderId={id} onAccessDenied={() => setAccessDenied(true)} />
                 </div>
-                {paymentProcessing && (
-                  <p className="muted" style={{ textAlign: "center", marginTop: "0.75rem" }}>
-                    Payment received — confirming your order, just a moment...
-                  </p>
-                )}
               </>
             ) : (
               <>

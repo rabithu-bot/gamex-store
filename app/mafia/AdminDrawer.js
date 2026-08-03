@@ -2,19 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, ChevronDown, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck } from "lucide-react";
-import SettingsPanel from "./SettingsPanel";
-import QuickRepliesSettings from "./QuickRepliesSettings";
-import AddListingPanel from "./AddListingPanel";
-import ProofsSettings from "./ProofsSettings";
-import EnableNotifications from "@/app/components/EnableNotifications";
+import Link from "next/link";
+import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck } from "lucide-react";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
-  const [qrExpanded, setQrExpanded] = useState(false);
-  const [repliesExpanded, setRepliesExpanded] = useState(false);
-  const [addListingExpanded, setAddListingExpanded] = useState(false);
-  const [proofsExpanded, setProofsExpanded] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -53,65 +45,37 @@ export default function AdminDrawer({ open, onClose }) {
           </button>
         </div>
 
-        <div className="admin-drawer-notifications">
-          <span className="admin-drawer-row-label">
-            <MessageSquareText size={16} />
-            Message Notifications
-          </span>
-          <EnableNotifications apiPath="/api/admin/push/subscribe" />
-        </div>
-
-        <button type="button" className="admin-drawer-row" onClick={() => setQrExpanded((v) => !v)}>
+        <Link href="/mafia/settings/payment-qr" className="admin-drawer-row" onClick={onClose}>
           <span className="admin-drawer-row-label">
             <QrCode size={16} />
             Payment QR Code
           </span>
-          <ChevronDown size={16} className={`admin-drawer-chevron${qrExpanded ? " open" : ""}`} />
-        </button>
-        {qrExpanded && (
-          <div className="admin-drawer-qr">
-            <SettingsPanel />
-          </div>
-        )}
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
 
-        <button type="button" className="admin-drawer-row" onClick={() => setRepliesExpanded((v) => !v)}>
+        <Link href="/mafia/settings/quick-replies" className="admin-drawer-row" onClick={onClose}>
           <span className="admin-drawer-row-label">
             <MessageSquareText size={16} />
             Saved Replies
           </span>
-          <ChevronDown size={16} className={`admin-drawer-chevron${repliesExpanded ? " open" : ""}`} />
-        </button>
-        {repliesExpanded && (
-          <div className="admin-drawer-qr">
-            <QuickRepliesSettings />
-          </div>
-        )}
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
 
-        <button type="button" className="admin-drawer-row" onClick={() => setAddListingExpanded((v) => !v)}>
+        <Link href="/mafia/settings/add-listing" className="admin-drawer-row" onClick={onClose}>
           <span className="admin-drawer-row-label">
             <PackagePlus size={16} />
             Add New Listing
           </span>
-          <ChevronDown size={16} className={`admin-drawer-chevron${addListingExpanded ? " open" : ""}`} />
-        </button>
-        {addListingExpanded && (
-          <div className="admin-drawer-qr">
-            <AddListingPanel />
-          </div>
-        )}
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
 
-        <button type="button" className="admin-drawer-row" onClick={() => setProofsExpanded((v) => !v)}>
+        <Link href="/mafia/settings/proofs" className="admin-drawer-row" onClick={onClose}>
           <span className="admin-drawer-row-label">
             <ShieldCheck size={16} />
             Proofs
           </span>
-          <ChevronDown size={16} className={`admin-drawer-chevron${proofsExpanded ? " open" : ""}`} />
-        </button>
-        {proofsExpanded && (
-          <div className="admin-drawer-qr">
-            <ProofsSettings />
-          </div>
-        )}
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
 
         <button type="button" className="btn danger admin-drawer-signout" onClick={handleLogout} disabled={loggingOut}>
           <LogOut size={16} />
