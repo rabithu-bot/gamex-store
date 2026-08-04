@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, ImageUp } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import EnableNotifications from "@/app/components/EnableNotifications";
@@ -32,6 +32,7 @@ export default function OrderPage() {
   const toast = useToast();
   const [order, setOrder] = useState(null);
   const [screenshot, setScreenshot] = useState(null);
+  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
@@ -42,6 +43,16 @@ export default function OrderPage() {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!screenshot) {
+      setScreenshotPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(screenshot);
+    setScreenshotPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [screenshot]);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
@@ -221,8 +232,35 @@ export default function OrderPage() {
                   type="file"
                   accept="image/*"
                   required
+                  className="file-upload-input"
                   onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
                 />
+                <label
+                  htmlFor="screenshot"
+                  className={`file-upload-dropzone${screenshot ? " has-file" : ""}`}
+                >
+                  {screenshot ? (
+                    <>
+                      <img
+                        src={screenshotPreviewUrl}
+                        alt="Selected screenshot preview"
+                        className="file-upload-preview"
+                      />
+                      <span className="file-upload-text">
+                        <strong>{screenshot.name}</strong>
+                        <span className="muted">Tap to change</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageUp size={26} />
+                      <span className="file-upload-text">
+                        <strong>Upload payment screenshot</strong>
+                        <span className="muted">PNG or JPG, tap to browse</span>
+                      </span>
+                    </>
+                  )}
+                </label>
               </div>
               {submitError && <p className="error-text">{submitError}</p>}
               <button className="btn" type="submit" disabled={submitting}>

@@ -44,18 +44,7 @@ export default async function HomePage() {
     <>
       <SiteHeader />
       <main className="container">
-        <section className="hero">
-          <span className="eyebrow">Trusted Seller</span>
-          <h1>
-            GameX Store - <span className="accent-text">Verified Gaming Accounts Marketplace</span>
-          </h1>
-          <p>
-            Buy verified gaming accounts directly from the owner — pay securely on this
-            site and get your account instantly after confirmation.
-          </p>
-        </section>
-
-        <h2 style={{ marginTop: "2.5rem" }}>Available Gaming Accounts</h2>
+        <h1>Available Gaming Accounts</h1>
         <p className="muted">Verified accounts, sold directly by the store owner.</p>
 
         {listings.length === 0 && (

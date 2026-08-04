@@ -2,10 +2,11 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { MessageCircle, Paperclip, X, BadgeCheck, Mic, Square } from "lucide-react";
+import { MessageCircle, Paperclip, X, BadgeCheck, Mic, Square, ShieldCheck, BellRing } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import ReactionPicker from "@/app/components/ReactionPicker";
+import EnableNotifications from "@/app/components/EnableNotifications";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 
@@ -228,11 +229,19 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
 
   if (!buyerName) {
     return (
-      <div className="panel">
-        <h3 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <MessageCircle size={18} />
-          Contact Support
-        </h3>
+      <div className="panel support-chat-panel">
+        <div className="support-chat-header">
+          <span className="support-chat-icon-badge">
+            <MessageCircle size={19} />
+          </span>
+          <div className="support-chat-heading-group">
+            <h3>Contact Support</h3>
+          </div>
+          <span className="support-chat-verified">
+            <span className="status-dot" />
+            Verified Support
+          </span>
+        </div>
         <p className="muted">What&apos;s your name? We&apos;ll use it to address you in chat.</p>
         <form onSubmit={handleSaveName} style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
           <input
@@ -252,16 +261,42 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
   }
 
   return (
-    <div className="panel">
-      <h3 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <MessageCircle size={18} />
-        Contact Support
-      </h3>
-      <p className="muted">Regarding Order #{orderId}</p>
+    <div className="panel support-chat-panel">
+      <div className="support-chat-header">
+        <span className="support-chat-icon-badge">
+          <MessageCircle size={19} />
+        </span>
+        <div className="support-chat-heading-group">
+          <h3>Contact Support</h3>
+          <span className="muted">Regarding Order #{orderId}</span>
+        </div>
+        <span className="support-chat-verified">
+          <span className="status-dot" />
+          Verified Support
+        </span>
+      </div>
 
-      {messages.length > 0 && (
-        <div className="chat-thread">
-          {messages.map((m, i) => {
+      <div className="support-notify-banner">
+        <BellRing size={18} />
+        <div className="support-notify-copy">
+          <strong>Get notified when we reply</strong>
+          <span className="muted">Turn on alerts so you never miss our response.</span>
+        </div>
+        <EnableNotifications apiPath={`/api/orders/${orderId}/push/subscribe`} />
+      </div>
+
+      <div className="chat-thread">
+        {messages.length === 0 && (
+          <div className="chat-empty-state">
+            <ShieldCheck size={26} />
+            <strong>No messages yet</strong>
+            <p className="muted">
+              Send us a message below and our support team will get back to you shortly.
+            </p>
+          </div>
+        )}
+        {messages.length > 0 &&
+          messages.map((m, i) => {
             const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
             const showDayDivider = isNewDay(m.createdAt, messages[i - 1]?.createdAt);
             return (
@@ -347,8 +382,7 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
               </Fragment>
             );
           })}
-        </div>
-      )}
+      </div>
 
       {editingMessageId && (
         <div className="chat-reply-preview">

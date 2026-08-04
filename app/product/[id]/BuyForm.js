@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, ShieldCheck, Loader2 } from "lucide-react";
+import { X, ShieldCheck, Loader2, Zap } from "lucide-react";
 
 export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   const router = useRouter();
@@ -73,18 +73,22 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   return (
     <div style={{ marginTop: "1.25rem" }}>
       {error && !modalOpen && <p className="error-text">{error}</p>}
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <Link href="/proofs" className="btn">
+      <div className="buy-cta-row">
+        <Link href="/proofs" className="btn-proof">
+          <ShieldCheck size={16} />
           Proof
         </Link>
-        <button className="btn" onClick={handleStart} disabled={checking}>
+        <button className="btn-buy-now" onClick={handleStart} disabled={checking}>
           {checking ? (
             <>
-              <Loader2 size={16} className="icon-spin" />
-              Checking availability...
+              <Loader2 size={18} className="icon-spin" />
+              <span>Checking availability...</span>
             </>
           ) : (
-            "Buy Now"
+            <>
+              <Zap size={18} fill="currentColor" />
+              <span>Buy Now</span>
+            </>
           )}
         </button>
       </div>

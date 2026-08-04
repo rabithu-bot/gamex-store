@@ -78,18 +78,38 @@ select:focus-visible {
 .site-header .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: 0.01em;
+  gap: 0.55rem;
+  font-family: var(--font-display), var(--font-geist-sans);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
   color: var(--foreground);
+  transition: filter 0.2s ease, transform 0.15s ease;
 }
 
+.site-header .brand:hover {
+  filter: brightness(1.12);
+}
+
+.site-header .brand:active {
+  transform: scale(0.98);
+}
+
+/* The logo glyph literally is the "X" shape, so the wordmark's own X gets
+   matching visual weight — a richer gradient plus a soft glow (filter, not
+   text-shadow, since text-shadow is invisible on a background-clip:text
+   transparent fill) rather than just a flat two-stop tint. */
 .site-header .brand-x {
-  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  font-size: 1.2em;
+  background: linear-gradient(135deg, #e9defc 5%, #c4b5fd 35%, #8b5cf6 70%, #7c3aed);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.85));
+}
+
+.site-header .brand svg {
+  filter: drop-shadow(0 2px 10px rgba(139, 92, 246, 0.55));
 }
 
 .site-header-nav-desktop {
@@ -521,6 +541,78 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.03);
   color: inherit;
   font: inherit;
+}
+
+/* ---- Styled payment-screenshot uploader ---- */
+
+.file-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-upload-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1.5px dashed var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.file-upload-dropzone:hover {
+  border-color: rgba(196, 181, 253, 0.55);
+  background: var(--accent-soft);
+}
+
+.file-upload-input:focus-visible + .file-upload-dropzone {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.file-upload-dropzone svg {
+  flex-shrink: 0;
+  color: #c4b5fd;
+}
+
+.file-upload-dropzone.has-file {
+  border-style: solid;
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.file-upload-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.file-upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.file-upload-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-upload-text .muted {
+  font-size: 0.78rem;
 }
 
 .panel {
@@ -1536,6 +1628,121 @@ select:focus-visible {
   gap: 0.4rem;
 }
 
+/* ---- Buy Now / Proof CTA row ---- */
+
+.buy-cta-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-proof {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.btn-proof:hover {
+  border-color: rgba(196, 181, 253, 0.55);
+  background: var(--accent-soft);
+  color: #c4b5fd;
+}
+
+.btn-proof:active {
+  transform: scale(0.96);
+}
+
+.btn-buy-now {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.6rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(90deg, #8b5cf6, #d946ef 55%, #f59e0b);
+  background-size: 200% 100%;
+  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  animation: buy-now-glow 2.6s ease-in-out infinite;
+  transition: transform 0.12s ease, filter 0.15s ease, background-position 0.4s ease;
+}
+
+.btn-buy-now::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+}
+
+.btn-buy-now:hover::before {
+  transform: translateX(120%);
+}
+
+.btn-buy-now:hover {
+  filter: brightness(1.08);
+  background-position: 100% 0;
+}
+
+.btn-buy-now:active {
+  transform: scale(0.97);
+}
+
+.btn-buy-now:disabled {
+  animation: none;
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.btn-buy-now svg {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-buy-now span {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes buy-now-glow {
+  0%,
+  100% {
+    box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(217, 70, 239, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-buy-now {
+    animation: none;
+  }
+  .btn-buy-now::before {
+    display: none;
+  }
+}
+
 /* ---- Trust badges ---- */
 
 .trust-badges {
@@ -1779,6 +1986,129 @@ select:focus-visible {
 }
 
 /* ---- Support chat ---- */
+
+/* ---- Support chat: a calmer blue/slate treatment instead of the site's
+   playful purple, so this specific surface reads as a serious, verified
+   support channel rather than another marketing page. ---- */
+
+.support-chat-panel {
+  border-color: rgba(56, 189, 248, 0.22);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(23, 20, 38, 0.5));
+}
+
+.support-chat-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.support-chat-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: white;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+}
+
+.support-chat-heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.support-chat-heading-group h3 {
+  margin: 0;
+}
+
+.support-chat-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.support-chat-verified .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25);
+}
+
+.support-notify-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.support-notify-banner > svg {
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.support-notify-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 140px;
+}
+
+.support-notify-copy strong {
+  font-size: 0.86rem;
+}
+
+.support-notify-copy .muted {
+  font-size: 0.76rem;
+}
+
+.support-notify-banner .enable-notifications-denied {
+  flex: 1 1 100%;
+}
+
+.chat-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.4rem;
+  padding: 2rem 1rem;
+  min-height: 140px;
+}
+
+.chat-empty-state svg {
+  color: #38bdf8;
+  opacity: 0.85;
+  margin-bottom: 0.2rem;
+}
+
+.chat-empty-state p {
+  margin: 0;
+  max-width: 32ch;
+}
 
 .chat-thread {
   display: flex;
