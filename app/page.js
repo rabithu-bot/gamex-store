@@ -25,7 +25,11 @@ function groupByCategory(listings) {
 
 export default async function HomePage() {
   // Cheapest accounts surface first for buyers browsing the storefront.
+  // Drafts (pending admin review) are deliberately excluded — "sold" stays
+  // visible since buyers browsing still see it grayed out for trust/social
+  // proof, but an unreviewed draft has no business being public yet.
   const listings = await prisma.listing.findMany({
+    where: { status: { not: "draft" } },
     orderBy: { price: "asc" },
   });
   const categoryGroups = groupByCategory(listings);

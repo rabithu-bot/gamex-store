@@ -70,7 +70,10 @@ export default async function ProductPage({ params }) {
   const { id } = await params;
   const listing = await prisma.listing.findUnique({ where: { id: Number(id) } });
 
-  if (!listing) notFound();
+  // Drafts (e.g. from the Instagram import pipeline, pending admin review)
+  // aren't ready to sell yet — treat them the same as a missing listing
+  // rather than exposing an unreviewed price/description/Buy Now button.
+  if (!listing || listing.status === "draft") notFound();
 
   const images = JSON.parse(listing.images || "[]");
   const rareItems = JSON.parse(listing.rareItems || "[]");

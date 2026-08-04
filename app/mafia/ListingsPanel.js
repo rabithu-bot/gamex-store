@@ -125,6 +125,7 @@ export default function ListingsPanel() {
                   value={editForm.status}
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                 >
+                  <option value="draft">draft (not visible to buyers)</option>
                   <option value="available">available</option>
                   <option value="sold">sold</option>
                 </select>
