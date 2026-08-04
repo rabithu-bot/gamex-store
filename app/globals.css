@@ -250,6 +250,7 @@ select:focus-visible {
 }
 
 .proof-gallery-thumb {
+  position: relative;
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
@@ -1037,6 +1038,7 @@ select:focus-visible {
 }
 
 .proof-thumb-btn {
+  position: relative;
   width: 52px;
   height: 52px;
   border-radius: 8px;
@@ -1803,13 +1805,22 @@ select:focus-visible {
 }
 
 .chat-timestamp {
-  display: flex;
-  justify-content: flex-end;
+  float: right;
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  margin-left: 0.5rem;
   margin-top: 0.2rem;
   font-size: 0.68rem;
   opacity: 0.6;
+  white-space: nowrap;
+}
+
+.chat-timestamp-standalone {
+  float: none;
+  display: flex;
+  justify-content: flex-end;
+  margin-left: 0;
 }
 
 .chat-form {
@@ -3367,13 +3378,22 @@ select:focus-visible {
 }
 
 .admin-chat-timestamp {
-  display: flex;
-  justify-content: flex-end;
+  float: right;
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  margin-left: 0.5rem;
   margin-top: 0.2rem;
   font-size: 0.68rem;
   opacity: 0.7;
+  white-space: nowrap;
+}
+
+.admin-chat-timestamp-standalone {
+  float: none;
+  display: flex;
+  justify-content: flex-end;
+  margin-left: 0;
 }
 
 .chat-edited-label {

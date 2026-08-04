@@ -1,11 +1,11 @@
-import { put } from "@vercel/blob";
+import { uploadBuffer } from "./s3";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
 
-// Vercel's serverless functions run on a read-only filesystem, so uploads
-// can't be written to local disk the way they can in local dev — everything
-// goes to Vercel Blob instead, keyed by a random, unguessable path.
+// Serverless functions run on a read-only filesystem, so uploads can't be
+// written to local disk the way they can in local dev — everything goes to
+// S3 instead, keyed by a random, unguessable path.
 async function saveFile(file, prefix, { maxDimension } = {}) {
   if (!file || typeof file.arrayBuffer !== "function" || file.size === 0) return null;
 
@@ -29,12 +29,7 @@ async function saveFile(file, prefix, { maxDimension } = {}) {
     }
   }
 
-  const blob = await put(key, buffer, {
-    access: "public",
-    contentType: file.type || undefined,
-  });
-
-  return blob.url;
+  return uploadBuffer(key, buffer, file.type || "application/octet-stream");
 }
 
 // Payment screenshots: the URL is only ever included in admin-authenticated

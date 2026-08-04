@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const SWIPE_THRESHOLD = 28;
@@ -69,14 +70,35 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
           <ChevronLeft size={22} />
         </button>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        key={activeSrc}
-        className="lightbox-image"
-        src={activeSrc}
-        alt={alt || ""}
-        onClick={(e) => e.stopPropagation()}
-      />
+      {activeSrc.startsWith("blob:") ? (
+        // A caller (e.g. the chat threads) can pass through an optimistic
+        // local object URL — next/image can't optimize that, so it falls
+        // back to a plain <img> for this one case.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={activeSrc}
+          className="lightbox-image"
+          src={activeSrc}
+          alt={alt || ""}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        // Real dimensions are unknown ahead of time (arbitrary uploaded
+        // screenshots/photos) — width/height below are nominal, and the
+        // inline auto override hands sizing back to .lightbox-image's
+        // max-width/max-height/object-fit, same as the plain <img> did.
+        <Image
+          key={activeSrc}
+          className="lightbox-image"
+          src={activeSrc}
+          alt={alt || ""}
+          width={900}
+          height={900}
+          style={{ width: "auto", height: "auto" }}
+          sizes="(max-width: 900px) 90vw, 900px"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
       {canNavigate && (
         <>
           <button

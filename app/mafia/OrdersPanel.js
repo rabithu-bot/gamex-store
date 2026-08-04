@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import Image from "next/image";
 import { Search } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
@@ -122,8 +123,12 @@ export default function OrdersPanel() {
                       className="proof-thumb-btn"
                       onClick={() => setZoomedProof(order.screenshotPath)}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={order.screenshotPath} alt={`Payment proof for order #${order.id}`} loading="lazy" />
+                      <Image
+                        src={order.screenshotPath}
+                        alt={`Payment proof for order #${order.id}`}
+                        fill
+                        sizes="52px"
+                      />
                     </button>
                   ) : (
                     "—"

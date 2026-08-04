@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
@@ -191,11 +192,12 @@ export default function OrderPage() {
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
               Scan this QR with any UPI app, then enter the amount below yourself.
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={qrUrl}
               alt="UPI payment QR code"
-              style={{ width: 220, margin: "0.5rem auto", display: "block", borderRadius: 12 }}
+              width={220}
+              height={220}
+              style={{ width: 220, height: "auto", margin: "0.5rem auto", display: "block", borderRadius: 12 }}
             />
             <div className="payable-badge-row">
               <span className="payable-badge">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRef } from "react";
 
 export default function ListingCard({ listing }) {
@@ -40,12 +41,12 @@ export default function ListingCard({ listing }) {
     >
       <div ref={innerRef} className="tilt-card-inner">
         <div className="card-image-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             className={`card-image${isSold ? " card-image-sold" : ""}`}
             src={images[0] || "/window.svg"}
             alt={`${listing.title} - GameX Store`}
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1200px) 33vw, 20vw"
           />
           <span className="badge card-image-badge">{listing.category}</span>
           {isSold && <span className="sold-badge">Sold Out</span>}

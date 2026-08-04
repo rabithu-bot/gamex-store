@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Lightbox from "@/app/components/Lightbox";
 
 export default function ProofGallery({ images }) {
@@ -17,8 +18,12 @@ export default function ProofGallery({ images }) {
             onClick={() => setIndex(i)}
             aria-label="View proof image"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt={`Delivery Proof ${i + 1} - GameX Store`} loading="lazy" />
+            <Image
+              src={url}
+              alt={`Delivery Proof ${i + 1} - GameX Store`}
+              fill
+              sizes="(max-width: 640px) 33vw, 140px"
+            />
           </button>
         ))}
       </div>

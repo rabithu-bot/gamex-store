@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
@@ -48,12 +49,14 @@ export default function ImageGallery({ images, alt }) {
         onTouchEnd={handleTouchEnd}
         onClick={() => setZoomed(true)}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           key={active}
           className={`gallery-main ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
           src={gallery[active]}
           alt={alt}
+          fill
+          sizes="340px"
+          priority={active === 0}
         />
         {/* Single zoom badge — bottom-left, inside the fixed-size box above. */}
         <div className="gallery-zoom-hint" aria-hidden="true">
@@ -101,8 +104,13 @@ export default function ImageGallery({ images, alt }) {
               onClick={() => goTo(i)}
               aria-label={`View photo ${i + 1}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`${alt} thumbnail ${i + 1}`} className="gallery-thumb-img" loading="lazy" />
+              <Image
+                src={src}
+                alt={`${alt} thumbnail ${i + 1}`}
+                className="gallery-thumb-img"
+                fill
+                sizes="64px"
+              />
             </button>
           ))}
         </div>

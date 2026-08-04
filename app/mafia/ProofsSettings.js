@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import { Trash2, Upload } from "lucide-react";
 
 const MAX_PROOFS = 150;
@@ -71,8 +72,7 @@ export default function ProofsSettings() {
             <div className="proof-settings-grid">
               {proofs.map((p) => (
                 <div key={p.id} className="proof-settings-thumb">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt="Proof" loading="lazy" />
+                  <Image src={p.url} alt="Proof" fill sizes="80px" />
                   <button
                     type="button"
                     className="btn danger proof-settings-delete"

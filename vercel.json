@@ -1,5 +1,1 @@
-{
-  "crons": [
-    { "path": "/api/cron/purge-orders", "schedule": "0 0 * * *" }
-  ]
-}
+{}
