@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ShieldCheck, Zap, Headset, Star, Server, Hash, Gem } from "lucide-react";
+import { ShieldCheck, Zap, Headset, Star, Server, Gem } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -164,14 +164,6 @@ export default async function ProductPage({ params }) {
                   SOLD OUT
                 </button>
               )}
-            </div>
-
-            <div className="product-section product-section-description">
-              <h3 className="product-section-heading heading-description">
-                <Hash size={15} />
-                Description
-              </h3>
-              <p className="muted product-description">{listing.description}</p>
             </div>
 
             {rareItems.length > 0 && (

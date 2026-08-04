@@ -331,8 +331,10 @@ select:focus-visible {
   top: 0.55rem;
   left: 0.55rem;
   z-index: 2;
-  background: rgba(13, 11, 23, 0.65);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(135deg, #fde68a, #f6ad2c 55%, #d97706);
+  color: #4a2600;
+  border: 1px solid rgba(255, 241, 199, 0.7);
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 /* Diagonal "SOLD OUT" stamp, centered over the thumbnail rather than a

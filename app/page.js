@@ -1,4 +1,4 @@
-import { ShieldCheck, Lock, Zap, PackageOpen } from "lucide-react";
+import { PackageOpen } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import SiteHeader from "@/app/components/SiteHeader";
 import ListingCard from "@/app/components/ListingCard";
@@ -54,30 +54,6 @@ export default async function HomePage() {
             site and get your account instantly after confirmation.
           </p>
         </section>
-
-        <div className="feature-tiles">
-          <div className="feature-tile">
-            <div className="icon">
-              <ShieldCheck size={20} />
-            </div>
-            <strong>Verified Accounts</strong>
-            <p>Every listing is owned and checked by the seller.</p>
-          </div>
-          <div className="feature-tile">
-            <div className="icon">
-              <Lock size={20} />
-            </div>
-            <strong>Pay Securely On-Site</strong>
-            <p>Scan the UPI QR here, no off-platform chats needed.</p>
-          </div>
-          <div className="feature-tile">
-            <div className="icon">
-              <Zap size={20} />
-            </div>
-            <strong>Fast Manual Delivery</strong>
-            <p>Credentials are released right here once payment is confirmed.</p>
-          </div>
-        </div>
 
         <h2 style={{ marginTop: "2.5rem" }}>Available Gaming Accounts</h2>
         <p className="muted">Verified accounts, sold directly by the store owner.</p>
