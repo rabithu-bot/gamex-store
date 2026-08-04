@@ -6,7 +6,6 @@ import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 const emptyForm = {
   title: "",
-  description: "",
   price: "",
   originalPrice: "",
   category: "",
@@ -36,7 +35,6 @@ export default function ListingsPanel() {
     setEditingId(listing.id);
     setEditForm({
       title: listing.title,
-      description: listing.description,
       price: listing.price,
       originalPrice: listing.originalPrice || "",
       category: listing.category,
@@ -90,14 +88,6 @@ export default function ListingsPanel() {
                 <input
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>Description</label>
-                <textarea
-                  rows={3}
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                 />
               </div>
               <div className="field-grid-2">

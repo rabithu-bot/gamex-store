@@ -29,6 +29,8 @@
 // Run with:
 //   node --require=./load-env.mjs scripts/import-instagram-listings.mjs posts.json
 //   node --require=./load-env.mjs scripts/import-instagram-listings.mjs posts.json --limit 5 --dry-run
+//   node --require=./load-env.mjs scripts/import-instagram-listings.mjs posts.json --delay-ms 6000
+//     (--delay-ms sets the floor of a randomized 6-10s-by-default per-post delay)
 
 import { readFile } from "fs/promises";
 import dns from "dns";
@@ -49,6 +51,17 @@ const POST_LIMIT = limitIndex !== -1 ? Number(args[limitIndex + 1]) : Infinity;
 
 const GEMINI_MODEL = "gemini-flash-latest";
 const MAX_IMAGES_TO_GEMINI = 3; // cost/context control for multi-photo posts
+const delayIndex = args.indexOf("--delay-ms");
+// Instagram's CDN rate-limits/blocks the requesting IP after a burst of rapid
+// downloads (observed ~20 requests before 403s start) — pacing requests out
+// avoids tripping that, at the cost of a slower overall run. Randomized
+// rather than fixed so requests don't land in an obviously-mechanical
+// pattern; still just politely slower, not spoofed traffic.
+const MIN_DELAY_MS = delayIndex !== -1 ? Number(args[delayIndex + 1]) : 6000;
+const MAX_DELAY_MS = MIN_DELAY_MS + 4000;
+const randomDelay = () => MIN_DELAY_MS + Math.floor(Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const MAX_IMAGE_RETRIES = 4;
 const REQUIRED_ENV = [
   "GEMINI_API_KEY",
   "AWS_REGION",
@@ -81,15 +94,22 @@ const s3 = new S3Client({
 const GEMINI_SCHEMA = {
   type: "OBJECT",
   properties: {
-    title: { type: "STRING", description: "Short catchy listing title, e.g. 'Free Fire Max Account - Level 65'" },
-    category: { type: "STRING", description: "The game name, e.g. 'Free Fire', 'PUBG Mobile', 'BGMI'" },
+    isProductListing: {
+      type: "BOOLEAN",
+      description:
+        "True only if this post is actually advertising a specific gaming account currently for sale. " +
+        "False for anything else: personal/meme/vlog content, esports clips, unrelated photos, or a post " +
+        "that explicitly says the account is already SOLD.",
+    },
+    title: { type: "STRING", nullable: true, description: "Short catchy listing title, e.g. 'Free Fire Max Account - Level 65'" },
+    category: { type: "STRING", nullable: true, description: "The game name, e.g. 'Free Fire', 'PUBG Mobile', 'BGMI'" },
     gameUid: { type: "STRING", nullable: true, description: "In-game UID if visible/mentioned, else null" },
     level: { type: "INTEGER", nullable: true },
     rareItems: { type: "ARRAY", items: { type: "STRING" }, description: "Short tags for rare skins/items mentioned or visible, e.g. ['3x EVO MAX', 'PRIME 7']" },
-    description: { type: "STRING", description: "2-4 sentence buyer-facing description based on the caption and image" },
+    description: { type: "STRING", nullable: true, description: "2-4 sentence buyer-facing description based on the caption and image" },
     price: { type: "INTEGER", nullable: true, description: "Price in INR if clearly stated in the caption, else null" },
   },
-  required: ["title", "category", "description", "rareItems"],
+  required: ["isProductListing"],
 };
 
 // Normalizes whatever shape the source JSON uses (Apify's Instagram
@@ -99,11 +119,17 @@ function normalizePost(raw) {
   const permalink = raw.url || raw.permalink || raw.postUrl || raw.link || raw.id;
   const caption = raw.caption ?? raw.text ?? raw.edge_media_to_caption?.edges?.[0]?.node?.text ?? "";
 
+  // Carousel/sidecar posts store their extra slides under different key
+  // names depending on which Apify actor produced the export — check the
+  // common variants before falling back to the single cover image.
+  const carouselSource =
+    raw.images || raw.childPosts || raw.sidecarMedia || raw.carouselMedia || raw.carouselItems || raw.edges;
+
   let imageUrls = [];
-  if (Array.isArray(raw.images) && raw.images.length > 0) {
-    imageUrls = raw.images;
-  } else if (Array.isArray(raw.childPosts) && raw.childPosts.length > 0) {
-    imageUrls = raw.childPosts.map((c) => c.displayUrl || c.url).filter(Boolean);
+  if (Array.isArray(carouselSource) && carouselSource.length > 0) {
+    imageUrls = carouselSource
+      .map((c) => (typeof c === "string" ? c : c.displayUrl || c.display_url || c.url || c.imageUrl))
+      .filter(Boolean);
   } else if (raw.displayUrl || raw.display_url) {
     imageUrls = [raw.displayUrl || raw.display_url];
   } else if (raw.imageUrl) {
@@ -119,9 +145,23 @@ function normalizePost(raw) {
   return { permalink: String(permalink), caption, imageUrls };
 }
 
-async function fetchImageAsBase64(url) {
+async function fetchImageAsBase64(url, attempt = 1) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to download image (${res.status}): ${url}`);
+  if (!res.ok) {
+    // 403/429 here is Instagram's rate-limiter, not an expired link (the
+    // signed URL's own expiry is usually days out) — exponential backoff,
+    // capped, rather than failing immediately. If the IP is under a longer
+    // suspension (not just a short burst throttle) this still won't clear
+    // it — at that point the honest answer is to stop and retry the whole
+    // run later, not to keep hammering it.
+    if ((res.status === 403 || res.status === 429) && attempt < MAX_IMAGE_RETRIES) {
+      const backoff = Math.min(60000, 5000 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 2000);
+      console.log(`    (${res.status}, retrying in ${Math.round(backoff / 1000)}s — attempt ${attempt + 1}/${MAX_IMAGE_RETRIES})`);
+      await sleep(backoff);
+      return fetchImageAsBase64(url, attempt + 1);
+    }
+    throw new Error(`Failed to download image (${res.status}): ${url}`);
+  }
   const buffer = Buffer.from(await res.arrayBuffer());
   return { base64: buffer.toString("base64"), buffer, contentType: res.headers.get("content-type") || "image/jpeg" };
 }
@@ -130,8 +170,12 @@ async function parseWithGemini(caption, images) {
   const parts = [
     {
       text:
-        "You're helping list a gaming account for sale on an e-commerce store, based on an Instagram post. " +
-        "Extract structured listing details from the caption and photo(s) below. " +
+        "This is one post from a gaming-account-reseller's Instagram, mixed in with ordinary personal/meme/vlog " +
+        "content and posts about accounts that already sold. First decide: is this post actually advertising a " +
+        "specific account currently for sale? If not (personal content, a meme, a vlog clip, an esports highlight, " +
+        "or the caption says it's already sold), set isProductListing to false and leave the other fields null — " +
+        "do not invent a listing for it.\n\n" +
+        "If it IS a live for-sale listing, extract the details below from the caption and photo(s). " +
         "If the caption doesn't clearly state something, use your best guess from the image, or null — don't invent specifics that aren't implied.\n\n" +
         `Caption: ${caption || "(no caption)"}`,
     },
@@ -214,6 +258,12 @@ async function main() {
 
       const parsed = await parseWithGemini(post.caption, downloaded.slice(0, MAX_IMAGES_TO_GEMINI));
 
+      if (!parsed.isProductListing) {
+        console.log(`- Skipping (not a for-sale listing): ${post.permalink}`);
+        skipped++;
+        continue;
+      }
+
       const s3Urls = [];
       for (const img of downloaded) s3Urls.push(await uploadToS3(img.buffer, img.contentType));
 
@@ -244,6 +294,8 @@ async function main() {
       console.error(`  ✗ Failed on ${post.permalink}: ${err.message}`);
       failed++;
     }
+
+    await sleep(randomDelay());
   }
 
   await client.end();

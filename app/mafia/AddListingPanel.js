@@ -4,7 +4,6 @@ import { useState } from "react";
 
 const emptyForm = {
   title: "",
-  description: "",
   price: "",
   originalPrice: "",
   category: "",
@@ -57,14 +56,6 @@ export default function AddListingPanel() {
       <div className="form-field">
         <label>Title</label>
         <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-      </div>
-      <div className="form-field">
-        <label>Description</label>
-        <textarea
-          rows={3}
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
       </div>
       <div className="field-grid-2">
         <div className="form-field">
