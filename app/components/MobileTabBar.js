@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package } from "lucide-react";
+import { Home, ShieldCheck, Package } from "lucide-react";
 
 export default function MobileTabBar() {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function MobileTabBar() {
   if (pathname?.startsWith("/mafia")) return null;
 
   const isHome = pathname === "/";
+  const isProofs = pathname?.startsWith("/proofs");
   const isOrders = pathname?.startsWith("/orders") || pathname?.startsWith("/order/");
 
   return (
@@ -17,6 +18,10 @@ export default function MobileTabBar() {
       <Link href="/" className={`mobile-tab ${isHome ? "active" : ""}`}>
         <Home size={20} />
         <span>Home</span>
+      </Link>
+      <Link href="/proofs" className={`mobile-tab ${isProofs ? "active" : ""}`}>
+        <ShieldCheck size={20} />
+        <span>Proofs</span>
       </Link>
       <Link href="/orders" className={`mobile-tab ${isOrders ? "active" : ""}`}>
         <Package size={20} />

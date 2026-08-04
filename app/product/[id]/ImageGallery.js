@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
 const SWIPE_THRESHOLD = 28;
 
+const PRELOAD_RADIUS = 2; // preload this many slides on each side of the active one
+
 export default function ImageGallery({ images, alt }) {
-  const gallery = images.length > 0 ? images : ["/window.svg"];
+  const gallery = useMemo(() => (images.length > 0 ? images : ["/window.svg"]), [images]);
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState(1);
   const [zoomed, setZoomed] = useState(false);
+  const [mainLoaded, setMainLoaded] = useState(false);
   const thumbRefs = useRef([]);
   const touchStartX = useRef(null);
+  const preloadedRef = useRef(new Set());
+
 
   function goTo(rawIndex, dir) {
     const newIndex = ((rawIndex % gallery.length) + gallery.length) % gallery.length;
@@ -41,6 +46,32 @@ export default function ImageGallery({ images, alt }) {
     });
   }, [active]);
 
+  // Resets the skeleton for the slide we just switched to — the main image
+  // is served at full original resolution (unoptimized, no Next.js resizing)
+  // so on a slow connection it's worth covering with a placeholder rather
+  // than a blank box while it loads in.
+  useEffect(() => {
+    setMainLoaded(false);
+  }, [active]);
+
+  // Warms the browser cache for the next/previous couple of slides so
+  // stepping through the gallery feels instant instead of waiting on a
+  // fresh full-res fetch each time. Uses the DOM's own Image constructor
+  // (aliased via `window.Image` since `Image` here is next/image's default
+  // export) — a plain background fetch, no rendering involved.
+  useEffect(() => {
+    if (typeof window === "undefined" || gallery.length <= 1) return;
+    const offsets = Array.from({ length: PRELOAD_RADIUS }, (_, i) => i + 1).flatMap((n) => [n, -n]);
+    for (const offset of offsets) {
+      const idx = ((active + offset) % gallery.length + gallery.length) % gallery.length;
+      const url = gallery[idx];
+      if (preloadedRef.current.has(url)) continue;
+      preloadedRef.current.add(url);
+      const img = new window.Image();
+      img.src = url;
+    }
+  }, [active, gallery]);
+
   return (
     <div>
       <div
@@ -49,6 +80,7 @@ export default function ImageGallery({ images, alt }) {
         onTouchEnd={handleTouchEnd}
         onClick={() => setZoomed(true)}
       >
+        {!mainLoaded && <div className="gallery-main-skeleton skeleton" aria-hidden="true" />}
         <Image
           key={active}
           className={`gallery-main ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
@@ -57,6 +89,8 @@ export default function ImageGallery({ images, alt }) {
           fill
           sizes="340px"
           priority={active === 0}
+          unoptimized
+          onLoad={() => setMainLoaded(true)}
         />
         {/* Single zoom badge — bottom-left, inside the fixed-size box above. */}
         <div className="gallery-zoom-hint" aria-hidden="true">

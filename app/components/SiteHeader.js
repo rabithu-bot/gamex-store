@@ -9,6 +9,7 @@ export default function SiteHeader() {
         Game<span className="brand-x">X</span> Store
       </Link>
       <nav className="site-header-nav-desktop">
+        <Link href="/proofs">Proofs</Link>
         <Link href="/orders">My Orders</Link>
       </nav>
     </header>

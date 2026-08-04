@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   const router = useRouter();
@@ -78,7 +78,14 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
           Proof
         </Link>
         <button className="btn" onClick={handleStart} disabled={checking}>
-          {checking ? "Loading..." : "Buy Now"}
+          {checking ? (
+            <>
+              <Loader2 size={16} className="icon-spin" />
+              Checking availability...
+            </>
+          ) : (
+            "Buy Now"
+          )}
         </button>
       </div>
 
@@ -127,7 +134,14 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
                   type="submit"
                   disabled={loading || !name.trim()}
                 >
-                  {loading ? "Placing order..." : "Scan & Pay via QR Code ⚡"}
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="icon-spin" />
+                      Placing order...
+                    </>
+                  ) : (
+                    "Scan & Pay via QR Code ⚡"
+                  )}
                 </button>
                 <p className="checkout-modal-trust">
                   🔒 Secure SSL Encrypted Checkout • Instant Credentials Transfer

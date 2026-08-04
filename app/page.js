@@ -9,16 +9,22 @@ export const dynamic = "force-dynamic";
 // both the order categories first appear in and the price order within each
 // — lets the homepage render a keyword-relevant "<h3>{category} Accounts</h3>"
 // subheading per game instead of one flat grid.
+//
+// Grouped by a normalized key (trimmed, whitespace-collapsed, lowercased) so
+// admin-entered variants of the same game — "FreeFire", "Free Fire", "free
+// fire " — land in one section instead of silently fragmenting into several.
+// The heading itself still displays the first-seen spelling as typed.
 function groupByCategory(listings) {
   const groups = [];
-  const indexByCategory = new Map();
+  const indexByKey = new Map();
   for (const listing of listings) {
-    const category = listing.category || "Other";
-    if (!indexByCategory.has(category)) {
-      indexByCategory.set(category, groups.length);
-      groups.push({ category, items: [] });
+    const raw = (listing.category || "Other").trim();
+    const key = raw.toLowerCase().replace(/\s+/g, " ");
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, groups.length);
+      groups.push({ category: raw, items: [] });
     }
-    groups[indexByCategory.get(category)].items.push(listing);
+    groups[indexByKey.get(key)].items.push(listing);
   }
   return groups;
 }
@@ -38,33 +44,7 @@ export default async function HomePage() {
     <>
       <SiteHeader />
       <main className="container">
-        <h2>Available Gaming Accounts</h2>
-        <p className="muted">Verified accounts, sold directly by the store owner.</p>
-
-        {listings.length === 0 && (
-          <div className="empty-state">
-            <div className="icon">
-              <PackageOpen size={22} />
-            </div>
-            <strong>No listings available right now</strong>
-            <p className="muted" style={{ marginTop: "0.3rem" }}>
-              Check back soon — new accounts are added regularly.
-            </p>
-          </div>
-        )}
-
-        {categoryGroups.map(({ category, items }) => (
-          <section key={category} style={{ marginTop: "1.5rem" }}>
-            <h3 style={{ marginBottom: "0.75rem" }}>{category} Accounts</h3>
-            <div className="listing-grid">
-              {items.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <section className="hero" style={{ marginTop: "3rem" }}>
+        <section className="hero">
           <span className="eyebrow">Trusted Seller</span>
           <h1>
             GameX Store - <span className="accent-text">Verified Gaming Accounts Marketplace</span>
@@ -98,6 +78,32 @@ export default async function HomePage() {
             <p>Credentials are released right here once payment is confirmed.</p>
           </div>
         </div>
+
+        <h2 style={{ marginTop: "2.5rem" }}>Available Gaming Accounts</h2>
+        <p className="muted">Verified accounts, sold directly by the store owner.</p>
+
+        {listings.length === 0 && (
+          <div className="empty-state">
+            <div className="icon">
+              <PackageOpen size={22} />
+            </div>
+            <strong>No listings available right now</strong>
+            <p className="muted" style={{ marginTop: "0.3rem" }}>
+              Check back soon — new accounts are added regularly.
+            </p>
+          </div>
+        )}
+
+        {categoryGroups.map(({ category, items }) => (
+          <section key={category} style={{ marginTop: "1.5rem" }}>
+            <h3 style={{ marginBottom: "0.75rem" }}>{category} Accounts</h3>
+            <div className="listing-grid">
+              {items.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          </section>
+        ))}
       </main>
     </>
   );

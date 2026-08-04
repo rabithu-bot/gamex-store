@@ -39,9 +39,12 @@ export function savePaymentScreenshot(file) {
   return saveFile(file, "payment-screenshots", { maxDimension: 1600 });
 }
 
-// Listing photos: public, shown directly on the storefront.
+// Listing photos: public, shown directly on the storefront. Stored at full
+// original resolution/quality (no maxDimension) — the product gallery is
+// the one place buyers need to zoom in and actually verify account detail,
+// so this is the one upload type that skips the usual downscale/recompress.
 export function saveListingImage(file) {
-  return saveFile(file, "listings", { maxDimension: 1600 });
+  return saveFile(file, "listings");
 }
 
 // Chat attachments: public (both buyer and admin can view either side's uploads).

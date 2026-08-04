@@ -96,6 +96,7 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
           height={900}
           style={{ width: "auto", height: "auto" }}
           sizes="(max-width: 900px) 90vw, 900px"
+          unoptimized
           onClick={(e) => e.stopPropagation()}
         />
       )}
