@@ -7,3 +7,10 @@ export function isBuyerOnline(buyerLastSeenAt, now = Date.now()) {
   if (!buyerLastSeenAt) return false;
   return now - new Date(buyerLastSeenAt).getTime() < ONLINE_THRESHOLD_MS;
 }
+
+// Same threshold, mirrored for the buyer's own view of support (driven by
+// adminLastSeenAt instead of buyerLastSeenAt).
+export function isAdminOnline(adminLastSeenAt, now = Date.now()) {
+  if (!adminLastSeenAt) return false;
+  return now - new Date(adminLastSeenAt).getTime() < ONLINE_THRESHOLD_MS;
+}

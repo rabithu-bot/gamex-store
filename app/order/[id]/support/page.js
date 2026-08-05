@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
@@ -130,25 +128,17 @@ export default function OrderSupportPage() {
   }
 
   return (
-    <>
-      <SiteHeader />
-      <main className="container" style={{ maxWidth: 560 }}>
-        <Link href={`/order/${id}`} className="order-support-back">
-          <ArrowLeft size={16} />
-          Back to order
-        </Link>
-        <h1>Order #{order.id}</h1>
-        <p className="muted">{order.listing.title}</p>
-        <SupportChat
-          orderId={order.id}
-          messages={order.messages}
-          buyerName={order.buyerName}
-          onSend={handleSendMessage}
-          onSaveName={handleSaveName}
-          onReact={handleReact}
-          onEditMessage={handleEditMessage}
-        />
-      </main>
-    </>
+    <SupportChat
+      orderId={order.id}
+      listingTitle={order.listing.title}
+      messages={order.messages}
+      buyerName={order.buyerName}
+      adminTypingAt={order.adminTypingAt}
+      adminLastSeenAt={order.adminLastSeenAt}
+      onSend={handleSendMessage}
+      onSaveName={handleSaveName}
+      onReact={handleReact}
+      onEditMessage={handleEditMessage}
+    />
   );
 }

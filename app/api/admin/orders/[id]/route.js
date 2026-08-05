@@ -38,5 +38,12 @@ export async function GET(_request, { params }) {
   if (!order) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  // Piggybacks on the admin's own 1.5s poll (ChatThread's useVisiblePolling)
+  // rather than a dedicated ping endpoint — mirrors the buyer-side route's
+  // buyerLastSeenAt heartbeat so the buyer's support chat can show an
+  // "online" indicator for support too.
+  await prisma.order.update({ where: { id }, data: { adminLastSeenAt: new Date() } });
+
   return NextResponse.json(order);
 }

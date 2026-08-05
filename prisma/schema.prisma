@@ -86,6 +86,11 @@ model Order {
   // open) — lets the admin see a live "online" indicator despite this app
   // having no general-purpose buyer session/presence system.
   buyerLastSeenAt DateTime?
+  // Mirror of buyerTypingAt/buyerLastSeenAt, but for the admin side — lets
+  // the buyer's support chat show "Support is typing..." and an online dot
+  // for the admin, matching the admin's own view of the buyer.
+  adminTypingAt   DateTime?
+  adminLastSeenAt DateTime?
 
   @@index([sessionId])
 }

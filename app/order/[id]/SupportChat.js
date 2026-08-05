@@ -1,18 +1,35 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, Paperclip, X, BadgeCheck, Mic, Square, ShieldCheck, BellRing } from "lucide-react";
+import {
+  ArrowLeft,
+  ShieldCheck,
+  Paperclip,
+  X,
+  Mic,
+  Square,
+  Send,
+  Check,
+  CheckCheck,
+} from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import ReactionPicker from "@/app/components/ReactionPicker";
 import EnableNotifications from "@/app/components/EnableNotifications";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
+import { isAdminOnline } from "@/app/lib/onlineStatus";
 
 const TYPING_PING_INTERVAL_MS = 2000;
+const TYPING_STALE_MS = 4000;
 const LONG_PRESS_MS = 1000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
+
+function initials(name) {
+  return (name || "?").trim().slice(0, 2).toUpperCase();
+}
 
 function formatSeconds(total) {
   const m = Math.floor(total / 60);
@@ -20,7 +37,23 @@ function formatSeconds(total) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function SupportChat({ orderId, messages, buyerName, onSend, onSaveName, onReact, onEditMessage }) {
+// Mirrors the admin's ChatThread.js — same full-screen DM layout, bubble
+// styling, and read-tick/typing/online conventions, just with the buyer's
+// own messages taking the "sent" (right-aligned) slot instead of the
+// admin's, and none of the admin-only moderation tools (tag picker,
+// delete-conversation, quick replies, unsend).
+export default function SupportChat({
+  orderId,
+  listingTitle,
+  messages,
+  buyerName,
+  adminTypingAt,
+  adminLastSeenAt,
+  onSend,
+  onSaveName,
+  onReact,
+  onEditMessage,
+}) {
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [text, setText] = useState("");
@@ -34,7 +67,10 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
   const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
+  const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
+  const bottomRef = useRef(null);
   const lastTypingPingRef = useRef(0);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
@@ -76,10 +112,37 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
 
   useEffect(() => () => clearTimeout(longPressTimerRef.current), []);
 
+  // Drives the typing indicator's staleness check between poll ticks — the
+  // order data itself only refreshes every 1.5s, but "is this still recent
+  // enough to count as typing" needs to keep re-evaluating every second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Instagram/WhatsApp-style auto-growing composer, matching the admin's.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [text]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  const isAdminTyping = useMemo(() => {
+    if (!adminTypingAt) return false;
+    return now - new Date(adminTypingAt).getTime() < TYPING_STALE_MS;
+  }, [adminTypingAt, now]);
+
+  const adminOnline = useMemo(() => isAdminOnline(adminLastSeenAt, now), [adminLastSeenAt, now]);
+
   function pingTyping() {
-    const now = Date.now();
-    if (now - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
-    lastTypingPingRef.current = now;
+    const ts = Date.now();
+    if (ts - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
+    lastTypingPingRef.current = ts;
     fetch(`/api/orders/${orderId}/typing`, { method: "POST" }).catch(() => {});
   }
 
@@ -229,63 +292,73 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
 
   if (!buyerName) {
     return (
-      <div className="panel support-chat-panel">
-        <div className="support-chat-header">
-          <span className="support-chat-icon-badge">
-            <MessageCircle size={19} />
+      <div className="admin-chat-page">
+        <div className="admin-chat-header">
+          <Link href={`/order/${orderId}`} className="admin-chat-back">
+            <ArrowLeft size={18} />
+            Back
+          </Link>
+          <span className="dm-avatar-wrap">
+            <span className="dm-avatar">{initials(supportName)}</span>
           </span>
-          <div className="support-chat-heading-group">
-            <h3>Contact Support</h3>
+          <div className="admin-chat-header-info">
+            <strong>{supportName}</strong>
+            <span className="muted">
+              {listingTitle} • Order #{orderId}
+            </span>
           </div>
-          <span className="support-chat-verified">
-            <span className="status-dot" />
-            Verified Support
-          </span>
         </div>
-        <p className="muted">What&apos;s your name? We&apos;ll use it to address you in chat.</p>
-        <form onSubmit={handleSaveName} style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
-          <input
-            type="text"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            placeholder="Your name"
-            autoFocus
-            style={{ flex: 1 }}
-          />
-          <button className="btn" type="submit" disabled={savingName || !nameInput.trim()}>
-            {savingName ? "Saving..." : "Continue"}
-          </button>
-        </form>
+        <div className="admin-chat-body" style={{ alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 320 }}>
+            <p className="muted" style={{ textAlign: "center", marginBottom: "0.75rem" }}>
+              What&apos;s your name? We&apos;ll use it to address you in chat.
+            </p>
+            <form onSubmit={handleSaveName} style={{ display: "flex", gap: "0.5rem" }}>
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your name"
+                autoFocus
+                style={{ flex: 1 }}
+              />
+              <button className="btn" type="submit" disabled={savingName || !nameInput.trim()}>
+                {savingName ? "Saving..." : "Continue"}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="panel support-chat-panel">
-      <div className="support-chat-header">
-        <span className="support-chat-icon-badge">
-          <MessageCircle size={19} />
+    <div className="admin-chat-page">
+      <div className="admin-chat-header">
+        <Link href={`/order/${orderId}`} className="admin-chat-back">
+          <ArrowLeft size={18} />
+          Back
+        </Link>
+        <span className="dm-avatar-wrap">
+          <span className="dm-avatar">{initials(supportName)}</span>
+          {adminOnline && <span className="dm-online-dot" role="img" aria-label="Online now" />}
         </span>
-        <div className="support-chat-heading-group">
-          <h3>Contact Support</h3>
-          <span className="muted">Regarding Order #{orderId}</span>
+        <div className="admin-chat-header-info">
+          <strong>{supportName}</strong>
+          {adminOnline ? (
+            <span className="chat-online-text">Online</span>
+          ) : (
+            <span className="muted">
+              {listingTitle} • Order #{orderId}
+            </span>
+          )}
         </div>
-        <span className="support-chat-verified">
-          <span className="status-dot" />
-          Verified Support
+        <span className="admin-chat-header-notify">
+          <EnableNotifications apiPath={`/api/orders/${orderId}/push/subscribe`} />
         </span>
       </div>
 
-      <div className="support-notify-banner">
-        <BellRing size={18} />
-        <div className="support-notify-copy">
-          <strong>Get notified when we reply</strong>
-          <span className="muted">Turn on alerts so you never miss our response.</span>
-        </div>
-        <EnableNotifications apiPath={`/api/orders/${orderId}/push/subscribe`} />
-      </div>
-
-      <div className="chat-thread">
+      <div className="admin-chat-body">
         {messages.length === 0 && (
           <div className="chat-empty-state">
             <ShieldCheck size={26} />
@@ -295,93 +368,110 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
             </p>
           </div>
         )}
-        {messages.length > 0 &&
-          messages.map((m, i) => {
-            const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
-            const showDayDivider = isNewDay(m.createdAt, messages[i - 1]?.createdAt);
-            return (
-              <Fragment key={m.id}>
+        {messages.map((m, i) => {
+          const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
+          const showDayDivider = isNewDay(m.createdAt, messages[i - 1]?.createdAt);
+          const mine = m.sender === "buyer"; // the buyer's own messages sit in the "sent" slot
+          return (
+            <Fragment key={m.id}>
               {showDayDivider && (
                 <div className="chat-day-divider">
                   <span>{formatDayDivider(m.createdAt)}</span>
                 </div>
               )}
-              <div
-                className={`chat-bubble ${m.sender}`}
-                onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
-                onPointerMove={handleBubblePointerMove}
-                onPointerUp={clearLongPressTimer}
-                onPointerLeave={clearLongPressTimer}
-                onPointerCancel={clearLongPressTimer}
-                onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
-              >
-                <span className="chat-sender">
-                  {m.sender === "admin" ? (
-                    <>
-                      {supportName} <BadgeCheck size={13} className="verified-badge" />
-                    </>
-                  ) : (
-                    "You"
+              <div className={`admin-chat-bubble-row ${mine ? "sent" : "received"}`}>
+                <div
+                  className={`admin-chat-bubble ${mine ? "sent" : "received"}`}
+                  onPointerDown={(e) => handleBubblePointerDown(e, m.id)}
+                  onPointerMove={handleBubblePointerMove}
+                  onPointerUp={clearLongPressTimer}
+                  onPointerLeave={clearLongPressTimer}
+                  onPointerCancel={clearLongPressTimer}
+                  onContextMenu={(e) => handleBubbleContextMenu(e, m.id)}
+                >
+                  {original && (
+                    <div className="chat-quote-block">
+                      <span className="chat-quote-sender">
+                        {original.sender === "admin" ? supportName : "You"}
+                      </span>
+                      <span className="chat-quote-text">{quotePreview(original)}</span>
+                    </div>
                   )}
-                </span>
-                {original && (
-                  <div className="chat-quote-block">
-                    <span className="chat-quote-sender">
-                      {original.sender === "admin" ? supportName : "You"}
-                    </span>
-                    <span className="chat-quote-text">{quotePreview(original)}</span>
-                  </div>
-                )}
-                {m.attachmentPath && m.attachmentType === "audio" ? (
-                  <VoiceMessagePlayer src={m.attachmentPath} />
-                ) : (
-                  m.attachmentPath &&
-                  (m.attachmentPath.startsWith("blob:") ? (
-                    // Optimistic send — a local object URL standing in until
-                    // the real S3 URL comes back from the next poll tick.
-                    // next/image can't optimize a blob: URL, so this one
-                    // stays a plain <img> for its brief moment on screen.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.attachmentPath}
-                      alt="Attachment"
-                      className="chat-attachment"
-                      onClick={() => setZoomSrc(m.attachmentPath)}
-                    />
+                  {m.attachmentPath && m.attachmentType === "audio" ? (
+                    <VoiceMessagePlayer src={m.attachmentPath} />
                   ) : (
-                    <Image
-                      src={m.attachmentPath}
-                      alt="Attachment"
-                      className="chat-attachment"
-                      width={200}
-                      height={200}
-                      style={{ height: "auto" }}
-                      sizes="200px"
-                      onClick={() => setZoomSrc(m.attachmentPath)}
-                    />
-                  ))
-                )}
-                {/* Timestamp lives inside the same paragraph as the last
-                    word so it floats into the bottom-right corner and wraps
-                    with the text, instead of owning a separate full-width
-                    row under the message. */}
-                {m.body && (
-                  <p>
-                    {m.body}
-                    <span className="chat-timestamp">
-                      {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
+                    m.attachmentPath &&
+                    (m.attachmentPath.startsWith("blob:") ? (
+                      // Optimistic send — a local object URL standing in until
+                      // the real S3 URL comes back from the next poll tick.
+                      // next/image can't optimize a blob: URL, so this one
+                      // stays a plain <img> for its brief moment on screen.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.attachmentPath}
+                        alt="Attachment"
+                        className="chat-attachment"
+                        onClick={() => setZoomSrc(m.attachmentPath)}
+                      />
+                    ) : (
+                      <Image
+                        src={m.attachmentPath}
+                        alt="Attachment"
+                        className="chat-attachment"
+                        width={200}
+                        height={200}
+                        style={{ height: "auto" }}
+                        sizes="200px"
+                        onClick={() => setZoomSrc(m.attachmentPath)}
+                      />
+                    ))
+                  )}
+                  {m.body && (
+                    <p>
+                      {m.body}
+                      <span className="admin-chat-timestamp">
+                        {m.editedAt && m.sender === "buyer" && <span className="chat-edited-label">edited</span>}
+                        {formatTime(m.createdAt)}
+                        {mine && (
+                          <span
+                            className={`chat-read-tick${m.readAt ? " seen" : ""}`}
+                            title={m.readAt ? "Seen" : "Sent"}
+                          >
+                            {m.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
+                          </span>
+                        )}
+                      </span>
+                    </p>
+                  )}
+                  {!m.body && (
+                    <span className="admin-chat-timestamp admin-chat-timestamp-standalone">
                       {formatTime(m.createdAt)}
+                      {mine && (
+                        <span
+                          className={`chat-read-tick${m.readAt ? " seen" : ""}`}
+                          title={m.readAt ? "Seen" : "Sent"}
+                        >
+                          {m.readAt ? <CheckCheck size={13} /> : <Check size={13} />}
+                        </span>
+                      )}
                     </span>
-                  </p>
-                )}
-                {!m.body && (
-                  <span className="chat-timestamp chat-timestamp-standalone">{formatTime(m.createdAt)}</span>
-                )}
-                {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
+                  )}
+                  {m.reaction && <span className="dm-message-reaction">{m.reaction}</span>}
+                </div>
               </div>
-              </Fragment>
-            );
-          })}
+            </Fragment>
+          );
+        })}
+        {isAdminTyping && (
+          <div className="admin-chat-bubble-row received">
+            <div className="admin-chat-bubble received chat-typing-bubble">
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
       </div>
 
       {editingMessageId && (
@@ -414,78 +504,83 @@ export default function SupportChat({ orderId, messages, buyerName, onSend, onSa
         </div>
       )}
 
-      {micError && (
-        <div className="chat-mic-error">
-          {micError}
-          <button type="button" onClick={() => setMicError("")} aria-label="Dismiss">
-            <X size={14} />
-          </button>
-        </div>
-      )}
+      <div className="chat-form-wrap">
+        {micError && (
+          <div className="chat-mic-error">
+            {micError}
+            <button type="button" onClick={() => setMicError("")} aria-label="Dismiss">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
-      {recording ? (
-        <div className="chat-form chat-recording-dock">
-          <span className="chat-recording-dot" />
-          <span className="chat-recording-timer">{formatSeconds(recordingSeconds)}</span>
-          <span className="muted" style={{ flex: 1 }}>
-            Recording voice message...
-          </span>
-          <button
-            type="button"
-            className="chat-attach-btn"
-            aria-label="Stop recording"
-            onClick={handleStopRecording}
-          >
-            <Square size={15} fill="currentColor" />
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="chat-form">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null);
-              setAudioBlob(null);
-            }}
-          />
-          {!editingMessageId && (
+        {recording ? (
+          <div className="admin-chat-dock chat-recording-dock">
+            <span className="chat-recording-dot" />
+            <span className="chat-recording-timer">{formatSeconds(recordingSeconds)}</span>
+            <span className="muted" style={{ flex: 1 }}>
+              Recording voice message...
+            </span>
             <button
               type="button"
-              className="chat-attach-btn"
-              aria-label="Attach image"
-              onClick={() => fileInputRef.current?.click()}
+              className="admin-chat-send"
+              aria-label="Stop recording"
+              onClick={handleStopRecording}
             >
-              <Paperclip size={16} />
+              <Square size={15} fill="currentColor" />
             </button>
-          )}
-          {!editingMessageId && !text.trim() && !file && !audioBlob && (
-            <button
-              type="button"
-              className="chat-attach-btn"
-              aria-label="Record voice message"
-              onClick={handleStartRecording}
-            >
-              <Mic size={16} />
-            </button>
-          )}
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              pingTyping();
-            }}
-            placeholder="Type your message..."
-            autoFocus
-          />
-          <button className="btn" type="submit" disabled={sending || (!text.trim() && !file && !audioBlob)}>
-            Send
-          </button>
-        </form>
-      )}
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="admin-chat-dock">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                setFile(e.target.files?.[0] || null);
+                setAudioBlob(null);
+              }}
+            />
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              className="admin-chat-input"
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                pingTyping();
+              }}
+              placeholder="Message..."
+              enterKeyHint="enter"
+            />
+            {!editingMessageId && (
+              <button
+                type="button"
+                className="chat-attach-btn"
+                aria-label="Attach image"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip size={16} />
+              </button>
+            )}
+            {text.trim() || file || audioBlob || editingMessageId ? (
+              <button className="admin-chat-send" type="submit" disabled={sending} aria-label="Send">
+                <Send size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="admin-chat-send"
+                aria-label="Record voice message"
+                onClick={handleStartRecording}
+              >
+                <Mic size={16} />
+              </button>
+            )}
+          </form>
+        )}
+      </div>
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
 

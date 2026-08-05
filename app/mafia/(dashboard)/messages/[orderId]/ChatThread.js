@@ -26,6 +26,7 @@ import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
 
 const POLL_INTERVAL_MS = 1500;
+const TYPING_PING_INTERVAL_MS = 2000;
 const LONG_PRESS_MS = 1000;
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
 const SWIPE_TRIGGER_PX = 50;
@@ -66,6 +67,7 @@ export default function ChatThread({ orderId }) {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
+  const lastTypingPingRef = useRef(0);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
   const swipeStartRef = useRef(null);
@@ -314,6 +316,13 @@ export default function ChatThread({ orderId }) {
       body: JSON.stringify({ reaction: next }),
     });
     fetchOrder();
+  }
+
+  function pingTyping() {
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
+    lastTypingPingRef.current = now;
+    fetch(`/api/admin/orders/${orderId}/typing`, { method: "POST" }).catch(() => {});
   }
 
   function clearLongPressTimer() {
@@ -750,6 +759,7 @@ export default function ChatThread({ orderId }) {
               onChange={(e) => {
                 setReplyText(e.target.value);
                 setShowSuggestions(true);
+                pingTyping();
               }}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Message..."

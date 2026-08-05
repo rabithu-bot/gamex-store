@@ -34,6 +34,8 @@ export async function GET(request, { params }) {
     createdAt: order.createdAt,
     expiresAt: new Date(order.createdAt.getTime() + ORDER_EXPIRY_MS),
     proofSubmitted: Boolean(order.screenshotPath),
+    adminTypingAt: order.adminTypingAt,
+    adminLastSeenAt: order.adminLastSeenAt,
     messages: order.messages.map((m) => ({
       id: m.id,
       sender: m.sender,

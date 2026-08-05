@@ -2121,107 +2121,6 @@ select:focus-visible {
 
 /* ---- Support chat ---- */
 
-/* ---- Support chat: a calmer blue/slate treatment instead of the site's
-   playful purple, so this specific surface reads as a serious, verified
-   support channel rather than another marketing page. ---- */
-
-.support-chat-panel {
-  border-color: rgba(56, 189, 248, 0.22);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(23, 20, 38, 0.5));
-}
-
-.support-chat-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
-}
-
-.support-chat-icon-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, #0ea5e9, #0369a1);
-  color: white;
-  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
-}
-
-.support-chat-heading-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  flex: 1 1 160px;
-  min-width: 0;
-}
-
-.support-chat-heading-group h3 {
-  margin: 0;
-}
-
-.support-chat-verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #7dd3fc;
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.support-chat-verified .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25);
-}
-
-.support-notify-banner {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.7rem;
-  margin-top: 1rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.22);
-  background: rgba(14, 165, 233, 0.08);
-}
-
-.support-notify-banner > svg {
-  color: #38bdf8;
-  flex-shrink: 0;
-}
-
-.support-notify-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  flex: 1 1 140px;
-}
-
-.support-notify-copy strong {
-  font-size: 0.86rem;
-}
-
-.support-notify-copy .muted {
-  font-size: 0.76rem;
-}
-
-.support-notify-banner .enable-notifications-denied {
-  flex: 1 1 100%;
-}
-
 .chat-empty-state {
   display: flex;
   flex-direction: column;
@@ -2242,91 +2141,6 @@ select:focus-visible {
 .chat-empty-state p {
   margin: 0;
   max-width: 32ch;
-}
-
-.chat-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 1rem 0;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.chat-bubble {
-  position: relative;
-  max-width: 80%;
-  padding: 0.5rem 0.8rem;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-  cursor: pointer;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: pan-y;
-}
-
-.chat-bubble .chat-sender {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  opacity: 0.55;
-  margin-bottom: 0.15rem;
-}
-
-.verified-badge {
-  opacity: 1;
-  color: #3b9eff;
-}
-
-.chat-bubble.buyer {
-  align-self: flex-end;
-  background: var(--accent-soft);
-  border-color: transparent;
-}
-
-.chat-bubble.admin {
-  align-self: flex-start;
-}
-
-.chat-timestamp {
-  float: right;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-left: 0.5rem;
-  margin-top: 0.2rem;
-  font-size: 0.68rem;
-  opacity: 0.6;
-  white-space: nowrap;
-}
-
-.chat-timestamp-standalone {
-  float: none;
-  display: flex;
-  justify-content: flex-end;
-  margin-left: 0;
-}
-
-.chat-form {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.chat-form input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.55rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-  color: inherit;
-  font: inherit;
 }
 
 /* ---- Admin messages inbox ---- */
@@ -2497,6 +2311,22 @@ select:focus-visible {
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 6px rgba(139, 92, 246, 0.8);
+}
+
+.admin-chat-header-notify {
+  flex-shrink: 0;
+  max-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-chat-header-notify .enable-notifications-denied {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  text-align: right;
 }
 
 .dm-delete-conversation {
