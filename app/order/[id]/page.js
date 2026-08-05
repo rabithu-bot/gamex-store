@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, ImageUp } from "lucide-react";
+import { MessageCircle, ImageUp, ShieldCheck } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
 import EnableNotifications from "@/app/components/EnableNotifications";
@@ -272,33 +272,44 @@ export default function OrderPage() {
 
         {order.status === "confirmed" && order.account && (
           <div className="credentials-box">
-            <p className="credentials-heading">
-              <FacebookLogo size={20} />
-              <span>
-                <strong>Payment confirmed!</strong> Here are your Facebook account details:
+            <div className="credentials-header">
+              <span className="credentials-icon-badge">
+                <FacebookLogo size={30} />
               </span>
-            </p>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
-              <span style={{ minWidth: 0, wordBreak: "break-all" }}>
-                Account ID: <span className="credentials-value">{order.account.accountId}</span>
+              <div className="credentials-header-text">
+                <strong>Payment Confirmed</strong>
+                <span className="muted">Your Facebook account is ready below</span>
+              </div>
+              <span className="credentials-verified-badge">
+                <ShieldCheck size={13} />
+                Verified
               </span>
-              <CopyButton value={order.account.accountId} label="Copy" />
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.4rem" }}>
-              <span style={{ minWidth: 0, wordBreak: "break-all" }}>
-                Password: <span className="credentials-value">{order.account.accountPassword}</span>
-              </span>
-              <CopyButton value={order.account.accountPassword} label="Copy" />
+
+            <div className="credential-field">
+              <span className="credential-field-label">Account ID</span>
+              <div className="credential-field-row">
+                <span className="credentials-value">{order.account.accountId}</span>
+                <CopyButton value={order.account.accountId} label="Copy" />
+              </div>
+            </div>
+
+            <div className="credential-field">
+              <span className="credential-field-label">Password</span>
+              <div className="credential-field-row">
+                <span className="credentials-value">{order.account.accountPassword}</span>
+                <CopyButton value={order.account.accountPassword} label="Copy" />
+              </div>
             </div>
           </div>
         )}
 
         <div className="panel" style={{ textAlign: "center" }}>
-          <Link href={`/order/${order.id}/support`} className="btn secondary">
-            <MessageCircle size={16} />
+          <Link href={`/order/${order.id}/support`} className="btn support-cta-btn">
+            <MessageCircle size={18} />
             Contact Support
           </Link>
-          <div className="notif-toggle-row" style={{ marginTop: "0.75rem", justifyContent: "center" }}>
+          <div className="notif-toggle-row" style={{ marginTop: "0.85rem", justifyContent: "center" }}>
             <span className="notif-toggle-label">Get notified about order updates</span>
             <EnableNotifications apiPath={`/api/orders/${order.id}/push/subscribe`} />
           </div>

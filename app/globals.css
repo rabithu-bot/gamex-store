@@ -594,6 +594,11 @@ select:focus-visible {
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
+  /* Skips the ~300ms tap-disambiguation delay some mobile browsers still
+     apply to elements that don't explicitly rule out double-tap-to-zoom —
+     every button/link on the site is a single deliberate action, never a
+     zoom target. */
+  touch-action: manipulation;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   color: white;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
@@ -851,20 +856,100 @@ select:focus-visible {
 }
 
 .credentials-box {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.35);
-  border-radius: 14px;
-  padding: 1rem;
+  background: radial-gradient(120% 140% at 100% 0%, rgba(34, 197, 94, 0.14), transparent 60%),
+    rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 16px;
+  padding: 1.1rem;
   margin-top: 1rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-.credentials-heading {
+.credentials-header {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.credentials-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 14px rgba(24, 119, 242, 0.35);
+}
+
+.credentials-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 160px;
+  min-width: 0;
   font-family: var(--font-geist-sans);
+}
+
+.credentials-header-text strong {
+  font-size: 1rem;
+}
+
+.credentials-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.14);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: #4ade80;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.credential-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.credential-field + .credential-field {
+  margin-top: 0.9rem;
+}
+
+.credential-field-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  font-family: var(--font-geist-sans);
+}
+
+.credential-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.credential-field-row .credentials-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* Amber against the box's green tint so the actual sensitive values pop
@@ -1077,6 +1162,11 @@ select:focus-visible {
 .stat-icon.messages {
   background: rgba(34, 211, 238, 0.16);
   color: #22d3ee;
+}
+
+.stat-icon.lifetime {
+  background: rgba(129, 140, 248, 0.16);
+  color: #a5b4fc;
 }
 
 .stat-value {
@@ -2195,6 +2285,12 @@ select:focus-visible {
 
 .enable-notifications-denied {
   font-size: 0.8rem;
+}
+
+.support-cta-btn {
+  min-width: 220px;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.5rem;
 }
 
 .notif-toggle-row {

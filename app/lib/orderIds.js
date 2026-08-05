@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "@/app/lib/prisma";
+import { incrementLifetimeOrderCount } from "@/app/lib/lifetimeOrderCount";
 
 // Deliberately letters-only per spec (no digits, no symbols) — 52 choices
 // per character, 12 characters, so collisions are not a practical concern
@@ -23,7 +24,9 @@ export function generateOrderId() {
 export async function createOrder(data) {
   for (let attempt = 0; attempt < MAX_CREATE_ATTEMPTS; attempt++) {
     try {
-      return await prisma.order.create({ data: { id: generateOrderId(), ...data } });
+      const order = await prisma.order.create({ data: { id: generateOrderId(), ...data } });
+      await incrementLifetimeOrderCount();
+      return order;
     } catch (err) {
       const isIdCollision = err?.code === "P2002" && err?.meta?.target?.includes("id");
       if (!isIdCollision || attempt === MAX_CREATE_ATTEMPTS - 1) throw err;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { IndianRupee, PackageCheck, PackageX, MessageCircle } from "lucide-react";
+import { IndianRupee, PackageCheck, PackageX, MessageCircle, Users } from "lucide-react";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 export default function StatsBar() {
@@ -18,7 +18,7 @@ export default function StatsBar() {
   if (!stats) {
     return (
       <div className="stats-bar">
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="stat-card skeleton" style={{ height: 74 }} />
         ))}
       </div>
@@ -61,6 +61,15 @@ export default function StatsBar() {
         <div>
           <span className="stat-value">{stats.unreadConvos}</span>
           <span className="stat-label">Unread Chats</span>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon lifetime">
+          <Users size={16} />
+        </div>
+        <div>
+          <span className="stat-value">{stats.totalOrdersAllTime.toLocaleString("en-IN")}</span>
+          <span className="stat-label">Total Orders (All-Time)</span>
         </div>
       </div>
     </div>
