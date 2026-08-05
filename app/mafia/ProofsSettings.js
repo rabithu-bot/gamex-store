@@ -8,9 +8,11 @@ const MAX_PROOFS = 150;
 
 export default function ProofsSettings() {
   const [proofs, setProofs] = useState(null);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [batchDate, setBatchDate] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(null); // { done, total }
   const fileInputRef = useRef(null);
 
   const fetchProofs = useCallback(async () => {
@@ -24,23 +26,37 @@ export default function ProofsSettings() {
 
   async function handleUpload(e) {
     e.preventDefault();
-    if (!file || uploading || (proofs && proofs.length >= MAX_PROOFS)) return;
+    if (!files.length || uploading || (proofs && proofs.length >= MAX_PROOFS)) return;
     setError("");
     setUploading(true);
+    setProgress({ done: 0, total: files.length });
 
-    const formData = new FormData();
-    formData.set("image", file);
-
-    const res = await fetch("/api/admin/proofs", { method: "POST", body: formData });
-    setUploading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Couldn't upload that image");
-      return;
+    // Multi-select in the picker, but the API only takes one image per
+    // request — upload sequentially so admin can pick a whole batch from
+    // their gallery instead of repeating this form once per screenshot.
+    for (let i = 0; i < files.length; i++) {
+      const formData = new FormData();
+      formData.set("image", files[i]);
+      if (batchDate) formData.set("proofDate", batchDate);
+      const res = await fetch("/api/admin/proofs", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(
+          files.length > 1
+            ? `Stopped after ${i} of ${files.length} — ${data.error || "upload failed"}`
+            : data.error || "Couldn't upload that image"
+        );
+        break;
+      }
+      setProgress({ done: i + 1, total: files.length });
+      fetchProofs();
     }
-    setFile(null);
+
+    setUploading(false);
+    setProgress(null);
+    setFiles([]);
+    setBatchDate("");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    fetchProofs();
   }
 
   async function handleDelete(id) {
@@ -89,16 +105,40 @@ export default function ProofsSettings() {
           {error && <p className="error-text">{error}</p>}
 
           {proofs.length < MAX_PROOFS ? (
-            <form onSubmit={handleUpload} className="quick-reply-add" style={{ marginTop: "0.75rem" }}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-              <button type="submit" className="btn secondary" disabled={uploading || !file}>
-                <Upload size={14} />
-              </button>
+            <form onSubmit={handleUpload} style={{ marginTop: "0.75rem" }}>
+              <div className="quick-reply-add">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                />
+                <button type="submit" className="btn secondary" disabled={uploading || !files.length}>
+                  {uploading && progress ? (
+                    `${progress.done}/${progress.total}`
+                  ) : files.length > 1 ? (
+                    <>
+                      <Upload size={14} />
+                      {files.length}
+                    </>
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                </button>
+              </div>
+              <div className="form-field" style={{ marginTop: "0.5rem", marginBottom: 0 }}>
+                <label htmlFor="proof-batch-date">
+                  When did these happen? (optional — shown to customers; leave blank to hide the date)
+                </label>
+                <input
+                  id="proof-batch-date"
+                  type="date"
+                  value={batchDate}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setBatchDate(e.target.value)}
+                />
+              </div>
             </form>
           ) : (
             <p className="muted quick-reply-limit">Limit reached ({MAX_PROOFS}) — delete one to add another.</p>

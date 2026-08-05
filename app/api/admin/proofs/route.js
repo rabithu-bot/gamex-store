@@ -30,7 +30,17 @@ export async function POST(request) {
     return NextResponse.json({ error: "Choose an image first" }, { status: 400 });
   }
 
+  // Optional — the real date this delivery/screenshot happened, since
+  // proofs are often uploaded in a batch long after the fact and the
+  // upload timestamp alone would show a misleading cluster of identical
+  // dates on the public page. Admin-supplied, not inferred or guessed.
+  const proofDateRaw = formData.get("proofDate");
+  const proofDate = proofDateRaw ? new Date(proofDateRaw) : null;
+  if (proofDate && Number.isNaN(proofDate.getTime())) {
+    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+  }
+
   const url = await saveProofImage(file);
-  const proof = await prisma.proofImage.create({ data: { url } });
+  const proof = await prisma.proofImage.create({ data: { url, proofDate } });
   return NextResponse.json(proof);
 }

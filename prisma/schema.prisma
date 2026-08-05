@@ -141,9 +141,15 @@ model QuickReply {
 // payment confirmations, etc.) — shown publicly on the /proofs page linked
 // from the product page's "Proof" button.
 model ProofImage {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   url       String
-  createdAt DateTime @default(now())
+  // The real date this delivery/screenshot happened — distinct from
+  // createdAt (upload time). Proofs are often batch-uploaded long after the
+  // fact, so createdAt alone would show a misleading cluster of identical
+  // dates on the public page. Nullable: legacy/undated proofs just show no
+  // date rather than a fabricated or misleading one.
+  proofDate DateTime?
+  createdAt DateTime  @default(now())
 }
 
 // Web Push subscriptions — one row per browser/device that's granted

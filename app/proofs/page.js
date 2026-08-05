@@ -1,4 +1,4 @@
-import { ShieldCheck, ImageOff } from "lucide-react";
+import { ShieldCheck, ImageOff, BadgeCheck } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -28,11 +28,35 @@ export default async function ProofsPage() {
       <SiteHeader />
       <main className="container">
         <ProofsBackButton />
-        <h1>
-          <ShieldCheck size={22} style={{ verticalAlign: "-3px", marginRight: "0.4rem" }} />
-          Proof
-        </h1>
-        <p className="muted">Real deliveries and payment confirmations from past customers.</p>
+
+        <div className="proofs-hero">
+          <span className="proofs-hero-eyebrow">
+            <ShieldCheck size={14} />
+            Verified Delivery Records
+          </span>
+          <h1>Real Proof, Every Delivery</h1>
+          <p className="muted">
+            Unedited screenshots straight from completed orders — every payment confirmation
+            and account handover we&apos;ve sent, exactly as the customer received it.
+          </p>
+
+          {proofs.length > 0 && (
+            <div className="proofs-stat-row">
+              <div className="proofs-stat">
+                <strong>{proofs.length}+</strong>
+                <span>Verified Deliveries</span>
+              </div>
+              <div className="proofs-stat">
+                <strong>100%</strong>
+                <span>Unedited Screenshots</span>
+              </div>
+              <div className="proofs-stat">
+                <BadgeCheck size={18} />
+                <span>Manually Reviewed</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {proofs.length === 0 ? (
           <div className="empty-state">
@@ -45,7 +69,12 @@ export default async function ProofsPage() {
             </p>
           </div>
         ) : (
-          <ProofGallery images={proofs.map((p) => p.url)} />
+          <ProofGallery
+            proofs={proofs.map((p) => ({
+              url: p.url,
+              proofDate: p.proofDate ? p.proofDate.toISOString() : null,
+            }))}
+          />
         )}
       </main>
     </>
