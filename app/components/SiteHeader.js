@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import InstallAppButton from "./InstallAppButton";
 
 export default function SiteHeader() {
   return (
@@ -12,6 +13,7 @@ export default function SiteHeader() {
         <Link href="/proofs">Proofs</Link>
         <Link href="/orders">My Orders</Link>
       </nav>
+      <InstallAppButton />
     </header>
   );
 }

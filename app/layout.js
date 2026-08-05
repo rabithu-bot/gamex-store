@@ -5,6 +5,7 @@ import AuroraBackground from "./components/AuroraBackground";
 import SplashScreen from "./components/SplashScreen";
 import MobileTabBar from "./components/MobileTabBar";
 import InAppBrowserBanner from "./components/InAppBrowserBanner";
+import RegisterServiceWorker from "./components/RegisterServiceWorker";
 import { SITE_URL } from "./lib/siteUrl";
 
 const geistSans = Geist({
@@ -52,7 +53,17 @@ export const metadata = {
     images: ["/icon.svg"],
   },
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GameX Store",
   },
 };
 
@@ -89,6 +100,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
+        <RegisterServiceWorker />
         <AuroraBackground />
         <SplashScreen />
         <InAppBrowserBanner />

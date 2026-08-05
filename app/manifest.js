@@ -1,0 +1,18 @@
+export default function manifest() {
+  return {
+    name: "GameX Store - Gaming Accounts Marketplace",
+    short_name: "GameX Store",
+    description: "Buy verified Free Fire, PUBG, and mobile gaming accounts safely on GameX Store.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#0d0b17",
+    theme_color: "#0d0b17",
+    orientation: "portrait",
+    icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+  };
+}

@@ -1,3 +1,16 @@
+// activate immediately rather than waiting for old clients to close — this
+// worker has no cache to migrate, so there's nothing to gain by waiting.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
+// A pass-through fetch handler, present purely so the browser recognizes an
+// active, controlling service worker (a PWA installability requirement) —
+// this app has no offline/cache story, so every request still just goes to
+// the network exactly as it would with no service worker at all.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload;
