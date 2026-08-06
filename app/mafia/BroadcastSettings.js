@@ -4,12 +4,6 @@ import { useEffect, useState } from "react";
 import { Send, BellRing } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 
-const TYPE_LABELS = {
-  broadcast: "Broadcast",
-  "admin-alert": "New message → Admin",
-  "buyer-reply": "Reply → Buyer",
-};
-
 export default function BroadcastSettings() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -19,18 +13,18 @@ export default function BroadcastSettings() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const [logs, setLogs] = useState(null);
+  const [subscriberCount, setSubscriberCount] = useState(null);
 
-  async function loadLogs() {
-    const res = await fetch("/api/admin/push-log");
+  async function loadSubscriberCount() {
+    const res = await fetch("/api/admin/push-subscribers");
     if (res.ok) {
       const data = await res.json();
-      setLogs(data.logs);
+      setSubscriberCount(data.count);
     }
   }
 
   useEffect(() => {
-    loadLogs();
+    loadSubscriberCount();
   }, []);
 
   function handleSubmit(e) {
@@ -61,7 +55,7 @@ export default function BroadcastSettings() {
       return;
     }
     setResult(data);
-    loadLogs();
+    loadSubscriberCount();
   }
 
   return (
@@ -143,41 +137,17 @@ export default function BroadcastSettings() {
 
       <div style={{ borderTop: "1px solid var(--border)", margin: "1.5rem 0 1rem" }} />
 
-      <h3 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <BellRing size={17} />
-        Notification Log
-      </h3>
-      <p className="muted" style={{ marginTop: "0.3rem", fontSize: "0.85rem" }}>
-        Every push notification sent so far — broadcasts, new-message alerts to admin, and reply alerts to buyers.
-      </p>
-
-      {logs === null && <p className="muted">Loading...</p>}
-      {logs && logs.length === 0 && <p className="muted">No push notifications have been sent yet.</p>}
-      {logs && logs.length > 0 && (
-        <table className="admin-table" style={{ marginTop: "0.75rem" }}>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Title</th>
-              <th>Sent</th>
-              <th>When</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td>{TYPE_LABELS[log.type] || log.type}</td>
-                <td>{log.title}</td>
-                <td>
-                  {log.sent}/{log.total}
-                  {log.failed > 0 ? <span className="muted"> ({log.failed} failed)</span> : ""}
-                </td>
-                <td className="muted">{new Date(log.createdAt).toLocaleString("en-IN")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="stat-card">
+        <div className="stat-icon notify">
+          <BellRing size={16} />
+        </div>
+        <div>
+          <span className="stat-value">
+            {subscriberCount === null ? "…" : `🔔 ${subscriberCount}`}
+          </span>
+          <span className="stat-label">Subscribed Users</span>
+        </div>
+      </div>
     </div>
   );
 }
