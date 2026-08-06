@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Maximize, Minimize } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
 function formatProofDate(iso) {
@@ -50,28 +50,36 @@ function seededDelay(str) {
 function ProofVideo({ url, onPlay }) {
   const delay = useMemo(() => seededDelay(url), [url]);
   const videoRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // The native fullscreen button fullscreens only the <video> element
-    // itself — the watermark is a sibling <span>, not a video descendant,
-    // so it was vanishing the instant someone zoomed in. Redirecting the
-    // fullscreen target to the shared .proof-gallery-thumb container (which
-    // wraps both the video and the watermark) keeps it visible there too.
+    const container = videoRef.current?.closest(".proof-gallery-thumb");
+    if (!container) return;
     function handleFullscreenChange() {
-      if (document.fullscreenElement === video) {
-        const container = video.closest(".proof-gallery-thumb");
-        if (container) {
-          document.exitFullscreen().then(() => container.requestFullscreen()).catch(() => {});
-        }
-      }
+      setIsFullscreen(document.fullscreenElement === container);
     }
-
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  // The native fullscreen button fullscreens only the <video> element itself
+  // — the watermark is a sibling <span>, not a video descendant, so it
+  // vanished the instant someone zoomed in. Worse, on Android, letting the
+  // bare <video> go fullscreen also triggers the browser's own "auto-rotate
+  // to landscape" behavior for video-element fullscreen specifically, which
+  // isn't wanted here (these are portrait recordings). controlsList
+  // "nofullscreen" hides that native button (Chrome/Edge) so the button
+  // below — which fullscreens the shared .proof-gallery-thumb container
+  // directly — is the only path in, sidestepping both problems at once
+  // instead of reacting after the fact with screen.orientation.lock.
+  function handleFullscreenClick() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+      return;
+    }
+    const container = videoRef.current?.closest(".proof-gallery-thumb");
+    container?.requestFullscreen?.().catch(() => {});
+  }
 
   return (
     <>
@@ -79,7 +87,7 @@ function ProofVideo({ url, onPlay }) {
         ref={videoRef}
         src={url}
         controls
-        controlsList="nodownload"
+        controlsList="nodownload nofullscreen"
         onContextMenu={(e) => e.preventDefault()}
         className="proof-gallery-video"
         onPlay={onPlay}
@@ -87,6 +95,14 @@ function ProofVideo({ url, onPlay }) {
       <span className="proof-watermark" style={{ animationDelay: `${delay}s` }} aria-hidden="true">
         gamexstore.com
       </span>
+      <button
+        type="button"
+        className="proof-video-fullscreen-btn"
+        onClick={handleFullscreenClick}
+        aria-label="Fullscreen"
+      >
+        {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+      </button>
     </>
   );
 }
