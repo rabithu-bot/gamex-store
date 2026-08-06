@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Settings, ShieldCheck } from "lucide-react";
 import AdminDrawer from "./AdminDrawer";
+import EnableNotifications from "@/app/components/EnableNotifications";
 
 export default function AdminHeader() {
   const pathname = usePathname();
@@ -13,6 +14,7 @@ export default function AdminHeader() {
 
   return (
     <>
+      <EnableNotifications apiPath="/api/admin/push/subscribe" />
       <header className="admin-header-bar">
         <div className="admin-header-left">
           {!isRoot && (

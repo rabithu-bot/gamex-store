@@ -2,9 +2,34 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
-import { Search } from "lucide-react";
+import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
+
+function ProofThumb({ src, orderId, onZoom }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return (
+      <span className="proof-thumb-btn proof-thumb-missing" aria-label="No payment proof">
+        <ImageOff size={18} />
+      </span>
+    );
+  }
+
+  return (
+    <button type="button" className="proof-thumb-btn" onClick={onZoom}>
+      <Image
+        src={src}
+        alt={`Payment proof for order #${orderId}`}
+        fill
+        sizes="52px"
+        unoptimized
+        onError={() => setFailed(true)}
+      />
+    </button>
+  );
+}
 
 const FILTERS = ["all", "pending_verification", "pending"];
 const FILTER_LABELS = {
@@ -117,22 +142,11 @@ export default function OrdersPanel() {
                   <div className="muted">₹{order.listingPrice.toLocaleString("en-IN")}</div>
                 </td>
                 <td>
-                  {order.screenshotPath ? (
-                    <button
-                      type="button"
-                      className="proof-thumb-btn"
-                      onClick={() => setZoomedProof(order.screenshotPath)}
-                    >
-                      <Image
-                        src={order.screenshotPath}
-                        alt={`Payment proof for order #${order.id}`}
-                        fill
-                        sizes="52px"
-                      />
-                    </button>
-                  ) : (
-                    "—"
-                  )}
+                  <ProofThumb
+                    src={order.screenshotPath}
+                    orderId={order.id}
+                    onZoom={() => setZoomedProof(order.screenshotPath)}
+                  />
                 </td>
                 <td>
                   <span className={`status-pill ${order.status}`}>
@@ -141,7 +155,7 @@ export default function OrdersPanel() {
                 </td>
                 <td>
                   {order.status === "pending_verification" && (
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <div className="order-actions">
                       <button
                         className="btn success"
                         disabled={busyId === order.id}

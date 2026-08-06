@@ -439,6 +439,45 @@ select:focus-visible {
   max-height: 380px;
 }
 
+.proof-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  column-span: all;
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+.proof-pair-video-wrap {
+  flex: 1 1 50%;
+  max-width: 50%;
+  min-width: 0;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.proof-pair-video-wrap .proof-gallery-video {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+
+.proof-pair-photo-wrap {
+  flex: 1 1 50%;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .proof-pair {
+    gap: 0.5rem;
+  }
+}
+
 .proof-verified-badge {
   position: absolute;
   top: 0.5rem;
@@ -1408,6 +1447,20 @@ select:focus-visible {
   vertical-align: top;
 }
 
+.admin-table th {
+  white-space: nowrap;
+}
+
+.admin-table td:nth-child(2) {
+  /* Buyer name is free text — a stray unbroken string (e.g. a bot pasting a
+     long tracking URL into the name field) can otherwise blow this column's
+     width out across the whole table, since browsers size auto-layout table
+     columns by their widest unbreakable content. */
+  max-width: 200px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .proof-thumb-btn {
   position: relative;
   width: 52px;
@@ -1424,6 +1477,27 @@ select:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.proof-thumb-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .order-actions .btn {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.8rem;
+  }
 }
 
 .error-text {
@@ -2338,6 +2412,18 @@ select:focus-visible {
   min-width: 220px;
   font-size: 0.95rem;
   padding: 0.75rem 1.5rem;
+}
+
+.support-cta-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.support-cta-panel .enable-notifications-denied {
+  display: block;
 }
 
 .chat-online-text {

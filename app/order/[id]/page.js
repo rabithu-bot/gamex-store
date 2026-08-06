@@ -304,7 +304,7 @@ export default function OrderPage() {
           </div>
         )}
 
-        <div className="panel" style={{ textAlign: "center" }}>
+        <div className="panel support-cta-panel">
           <Link href={`/order/${order.id}/support`} className="btn support-cta-btn">
             <MessageCircle size={18} />
             Contact Support
