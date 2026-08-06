@@ -49,9 +49,34 @@ function seededDelay(str) {
 // other watermarked preview video online.
 function ProofVideo({ url, onPlay }) {
   const delay = useMemo(() => seededDelay(url), [url]);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // The native fullscreen button fullscreens only the <video> element
+    // itself — the watermark is a sibling <span>, not a video descendant,
+    // so it was vanishing the instant someone zoomed in. Redirecting the
+    // fullscreen target to the shared .proof-gallery-thumb container (which
+    // wraps both the video and the watermark) keeps it visible there too.
+    function handleFullscreenChange() {
+      if (document.fullscreenElement === video) {
+        const container = video.closest(".proof-gallery-thumb");
+        if (container) {
+          document.exitFullscreen().then(() => container.requestFullscreen()).catch(() => {});
+        }
+      }
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
   return (
     <>
       <video
+        ref={videoRef}
         src={url}
         controls
         controlsList="nodownload"
