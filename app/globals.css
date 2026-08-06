@@ -439,6 +439,36 @@ select:focus-visible {
   max-height: 380px;
 }
 
+.proof-watermark {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 6px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  animation: proof-watermark-float 16s ease-in-out infinite;
+}
+
+@keyframes proof-watermark-float {
+  0% { top: 8%; left: 6%; }
+  20% { top: 74%; left: 58%; }
+  40% { top: 18%; left: 68%; }
+  60% { top: 80%; left: 10%; }
+  80% { top: 42%; left: 38%; }
+  100% { top: 8%; left: 6%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proof-watermark {
+    animation: none;
+    top: 8%;
+    left: 6%;
+  }
+}
+
 .proof-pair {
   display: flex;
   align-items: flex-start;

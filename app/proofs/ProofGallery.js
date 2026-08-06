@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
@@ -29,6 +29,39 @@ function ProofBadges({ proofDate }) {
         Verified
       </span>
       {proofDate && <span className="proof-date-caption">{formatProofDate(proofDate)}</span>}
+    </>
+  );
+}
+
+// Stable per-video offset (not re-randomized on every render) so the
+// watermark's float animation doesn't start at the exact same point on
+// every video on the page — purely cosmetic, derived from the URL itself.
+function seededDelay(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return -(hash % 16);
+}
+
+// Scoped to the public Proofs gallery only (never chat attachments or
+// product listing media) — a lightly branded, always-moving watermark plus
+// controlsList="nodownload" and a blocked right-click context menu, so
+// screen-recording is the only real way to lift the footage, same as any
+// other watermarked preview video online.
+function ProofVideo({ url, onPlay }) {
+  const delay = useMemo(() => seededDelay(url), [url]);
+  return (
+    <>
+      <video
+        src={url}
+        controls
+        controlsList="nodownload"
+        onContextMenu={(e) => e.preventDefault()}
+        className="proof-gallery-video"
+        onPlay={onPlay}
+      />
+      <span className="proof-watermark" style={{ animationDelay: `${delay}s` }} aria-hidden="true">
+        gamexstore.com
+      </span>
     </>
   );
 }
@@ -76,7 +109,7 @@ function ProofPair({ video, photo, photoIndex, onZoomPhoto }) {
         className="proof-gallery-thumb proof-gallery-thumb-video proof-pair-video-wrap"
         style={photoHeight ? { height: photoHeight } : undefined}
       >
-        <video src={video.url} controls className="proof-gallery-video" onPlay={pauseOtherVideos} />
+        <ProofVideo url={video.url} onPlay={pauseOtherVideos} />
         <ProofBadges proofDate={video.proofDate} />
       </div>
 
@@ -129,7 +162,7 @@ export default function ProofGallery({ proofs }) {
           if (proof.type === "video") {
             return (
               <div key={item.key} className="proof-gallery-thumb proof-gallery-thumb-video">
-                <video src={proof.url} controls className="proof-gallery-video" onPlay={pauseOtherVideos} />
+                <ProofVideo url={proof.url} onPlay={pauseOtherVideos} />
                 <ProofBadges proofDate={proof.proofDate} />
               </div>
             );
