@@ -182,3 +182,17 @@ model Setting {
   key   String @id
   value String
 }
+
+model PushLog {
+  id        Int      @id @default(autoincrement())
+  type      String // "broadcast" | "admin-alert" | "buyer-reply"
+  title     String
+  body      String
+  url       String?
+  sent      Int
+  failed    Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}

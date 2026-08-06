@@ -14,6 +14,7 @@ import {
   Check,
   CheckCheck,
   Video as VideoIcon,
+  BellRing,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
@@ -23,6 +24,7 @@ import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audi
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isAdminOnline } from "@/app/lib/onlineStatus";
 import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+import { subscribeToPush, hasActivePushSubscription, isPushSupported } from "@/app/lib/pushClient";
 
 function isVideoFile(file) {
   return Boolean(file?.type?.startsWith("video/"));
@@ -71,6 +73,7 @@ export default function SupportChat({
   const [micError, setMicError] = useState("");
   const [attachmentError, setAttachmentError] = useState("");
   const [sending, setSending] = useState(false);
+  const [notifyBanner, setNotifyBanner] = useState(null); // "prompt" | "blocked" | null
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
   const [activeMenu, setActiveMenu] = useState(null); // { messageId, x, y }
@@ -151,6 +154,26 @@ export default function SupportChat({
     if (ts - lastTypingPingRef.current < TYPING_PING_INTERVAL_MS) return;
     lastTypingPingRef.current = ts;
     fetch(`/api/orders/${orderId}/typing`, { method: "POST" }).catch(() => {});
+  }
+
+  // Re-checked after every message send rather than just once on mount —
+  // if the customer hasn't granted notifications yet (dismissed the first
+  // auto-prompt, or explicitly blocked it), keep nudging them each time
+  // they send something, since that's exactly the moment they'd most want
+  // to know we can reply while they're gone. Stops the instant they're
+  // actually subscribed and never comes back after that.
+  async function checkAndPromptNotifications() {
+    if (!isPushSupported()) return;
+    if (await hasActivePushSubscription()) {
+      setNotifyBanner(null);
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setNotifyBanner("blocked");
+      return;
+    }
+    const result = await subscribeToPush(`/api/orders/${orderId}/push/subscribe`);
+    setNotifyBanner(result.ok ? null : result.reason === "denied" ? "blocked" : "prompt");
   }
 
   function clearLongPressTimer() {
@@ -301,6 +324,7 @@ export default function SupportChat({
     setAudioBlob(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setSending(false);
+    checkAndPromptNotifications();
   }
 
   async function handleSaveName(e) {
@@ -532,6 +556,20 @@ export default function SupportChat({
         <div className="chat-attachment-preview">
           <VoiceMessagePlayer src={audioBlobUrl} />
           <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {notifyBanner && (
+        <div className="chat-notify-nudge">
+          <BellRing size={16} />
+          <span>
+            {notifyBanner === "blocked"
+              ? "Notifications are blocked — enable them in your browser's site settings to get instant replies."
+              : "Enable notifications to get instant replies, even if you close this tab."}
+          </span>
+          <button type="button" onClick={() => setNotifyBanner(null)} aria-label="Dismiss">
             <X size={14} />
           </button>
         </div>

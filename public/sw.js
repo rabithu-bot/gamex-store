@@ -25,6 +25,7 @@ self.addEventListener("push", (event) => {
       body: payload.body,
       icon: "/icon.svg",
       badge: "/icon.svg",
+      image: payload.image || undefined,
       data: { url: payload.url || "/" },
       tag: payload.tag,
     })

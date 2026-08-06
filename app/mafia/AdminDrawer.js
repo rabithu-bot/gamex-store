@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck } from "lucide-react";
+import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck, Megaphone } from "lucide-react";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
@@ -73,6 +73,14 @@ export default function AdminDrawer({ open, onClose }) {
           <span className="admin-drawer-row-label">
             <ShieldCheck size={16} />
             Proofs
+          </span>
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
+
+        <Link href="/mafia/settings/broadcast" className="admin-drawer-row" onClick={onClose}>
+          <span className="admin-drawer-row-label">
+            <Megaphone size={16} />
+            Broadcast Push
           </span>
           <ChevronRight size={16} className="admin-drawer-chevron" />
         </Link>

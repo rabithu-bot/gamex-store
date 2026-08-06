@@ -4804,6 +4804,32 @@ select:focus-visible {
   font-size: 0.85rem;
 }
 
+.chat-notify-nudge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.5rem;
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-size: 0.82rem;
+}
+
+.chat-notify-nudge svg {
+  flex-shrink: 0;
+}
+
+.chat-notify-nudge span {
+  flex: 1;
+}
+
+.chat-notify-nudge button {
+  flex-shrink: 0;
+  color: inherit;
+}
+
 .chat-mic-error button {
   flex-shrink: 0;
   border: none;

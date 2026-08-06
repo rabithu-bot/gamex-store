@@ -13,9 +13,11 @@ function ensureConfigured() {
 }
 
 async function sendToSubscriptions(subscriptions, payload) {
-  if (!ensureConfigured() || subscriptions.length === 0) return;
+  if (!ensureConfigured() || subscriptions.length === 0) return { sent: 0, failed: 0 };
   const body = JSON.stringify(payload);
 
+  let sent = 0;
+  let failed = 0;
   await Promise.all(
     subscriptions.map(async (sub) => {
       try {
@@ -23,7 +25,9 @@ async function sendToSubscriptions(subscriptions, payload) {
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body
         );
+        sent += 1;
       } catch (err) {
+        failed += 1;
         // 404/410 means the browser has revoked/expired this subscription —
         // clean it up so future sends don't keep retrying a dead endpoint.
         if (err.statusCode === 404 || err.statusCode === 410) {
@@ -32,6 +36,14 @@ async function sendToSubscriptions(subscriptions, payload) {
       }
     })
   );
+  return { sent, failed };
+}
+
+// Every push send (admin alert, buyer reply, or broadcast) gets recorded here
+// so the admin panel can show "how many notifications have gone out" without
+// needing to inspect the webpush provider directly.
+async function logPushSend({ type, title, body, url, sent, failed, total }) {
+  await prisma.pushLog.create({ data: { type, title, body, url, sent, failed, total } }).catch(() => {});
 }
 
 // Pinged when a buyer sends a message on any order — every admin browser
@@ -40,12 +52,11 @@ async function sendToSubscriptions(subscriptions, payload) {
 export async function notifyAdminsOfMessage({ orderId, buyerName, tag, body }) {
   const subs = await prisma.pushSubscription.findMany({ where: { role: "admin" } });
   const prefix = tag ? `${tag[0].toUpperCase() + tag.slice(1)} customer` : "New message";
-  await sendToSubscriptions(subs, {
-    title: `${prefix}: ${buyerName || "Buyer"}`,
-    body: body || "Sent a new message",
-    url: `/mafia/messages/${orderId}`,
-    tag: `order-${orderId}`,
-  });
+  const title = `${prefix}: ${buyerName || "Buyer"}`;
+  const msgBody = body || "Sent a new message";
+  const url = `/mafia/messages/${orderId}`;
+  const { sent, failed } = await sendToSubscriptions(subs, { title, body: msgBody, url, tag: `order-${orderId}` });
+  await logPushSend({ type: "admin-alert", title, body: msgBody, url, sent, failed, total: subs.length });
 }
 
 // Pinged when the admin replies to an order whose buyer isn't currently
@@ -53,10 +64,26 @@ export async function notifyAdminsOfMessage({ orderId, buyerName, tag, body }) {
 // to that specific order gets one, buyers don't get pinged for other orders.
 export async function notifyBuyerOfReply({ orderId, supportName, body }) {
   const subs = await prisma.pushSubscription.findMany({ where: { role: "buyer", orderId } });
-  await sendToSubscriptions(subs, {
-    title: `${supportName || "Support"} replied`,
-    body: body || "New message about your order",
-    url: `/order/${orderId}/support`,
-    tag: `order-${orderId}`,
+  const title = `${supportName || "Support"} replied`;
+  const msgBody = body || "New message about your order";
+  const url = `/order/${orderId}/support`;
+  const { sent, failed } = await sendToSubscriptions(subs, { title, body: msgBody, url, tag: `order-${orderId}` });
+  await logPushSend({ type: "buyer-reply", title, body: msgBody, url, sent, failed, total: subs.length });
+}
+
+// Admin-triggered marketing/announcement blast — every push subscription in
+// the table gets it (every past buyer and admin device that ever granted
+// notification permission), regardless of which order it was tied to.
+export async function sendBroadcast({ title, body, url, image }) {
+  const subs = await prisma.pushSubscription.findMany();
+  const targetUrl = url || "/";
+  const { sent, failed } = await sendToSubscriptions(subs, {
+    title,
+    body,
+    url: targetUrl,
+    image: image || undefined,
+    tag: "broadcast",
   });
+  await logPushSend({ type: "broadcast", title, body, url: targetUrl, sent, failed, total: subs.length });
+  return { total: subs.length, sent, failed };
 }
