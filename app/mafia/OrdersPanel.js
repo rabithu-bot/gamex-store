@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import Image from "next/image";
 import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
@@ -19,12 +18,10 @@ function ProofThumb({ src, orderId, onZoom }) {
 
   return (
     <button type="button" className="proof-thumb-btn" onClick={onZoom}>
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={src}
         alt={`Payment proof for order #${orderId}`}
-        fill
-        sizes="52px"
-        unoptimized
         onError={() => setFailed(true)}
       />
     </button>

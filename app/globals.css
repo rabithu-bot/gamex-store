@@ -2171,9 +2171,9 @@ select:focus-visible {
 }
 
 /* Fixed-shape box (never collapses, never overflows) — the image is an
-   absolutely-positioned fill layer inside it (next/image `fill`), so its
-   size can never push the container around or leave it undersized before
-   the browser knows the image's own intrinsic dimensions. */
+   absolutely-positioned fill layer inside it, so its size can never push
+   the container around or leave it undersized before the browser knows
+   the image's own intrinsic dimensions. */
 .gallery-main-wrap {
   position: relative;
   width: 100%;

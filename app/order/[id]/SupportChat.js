@@ -2,7 +2,6 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
   ShieldCheck,
@@ -447,12 +446,7 @@ export default function SupportChat({
                   ) : m.attachmentPath && m.attachmentType === "video" ? (
                     <video src={m.attachmentPath} controls className="chat-attachment chat-attachment-video" />
                   ) : (
-                    m.attachmentPath &&
-                    (m.attachmentPath.startsWith("blob:") ? (
-                      // Optimistic send — a local object URL standing in until
-                      // the real S3 URL comes back from the next poll tick.
-                      // next/image can't optimize a blob: URL, so this one
-                      // stays a plain <img> for its brief moment on screen.
+                    m.attachmentPath && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={m.attachmentPath}
@@ -460,18 +454,7 @@ export default function SupportChat({
                         className="chat-attachment"
                         onClick={() => setZoomSrc(m.attachmentPath)}
                       />
-                    ) : (
-                      <Image
-                        src={m.attachmentPath}
-                        alt="Attachment"
-                        className="chat-attachment"
-                        width={200}
-                        height={200}
-                        style={{ height: "auto" }}
-                        sizes="200px"
-                        onClick={() => setZoomSrc(m.attachmentPath)}
-                      />
-                    ))
+                    )
                   )}
                   {m.body && (
                     <p>

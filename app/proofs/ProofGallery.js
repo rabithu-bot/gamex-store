@@ -144,11 +144,6 @@ export default function ProofGallery({ proofs }) {
               onClick={() => setIndex(thisImageIndex)}
               aria-label="View proof image"
             >
-              {/* Real screenshots at their natural aspect ratio, not stored
-                  dimensions — next/image needs one of those up front, so this
-                  stays a plain <img> (same documented exception as blob:
-                  previews elsewhere) rather than force-cropping proof text
-                  out of a fixed square. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={proof.url}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 
@@ -56,9 +55,7 @@ export default function ImageGallery({ images, alt }) {
 
   // Warms the browser cache for the next/previous couple of slides so
   // stepping through the gallery feels instant instead of waiting on a
-  // fresh full-res fetch each time. Uses the DOM's own Image constructor
-  // (aliased via `window.Image` since `Image` here is next/image's default
-  // export) — a plain background fetch, no rendering involved.
+  // fresh full-res fetch each time — a plain background fetch, no rendering involved.
   useEffect(() => {
     if (typeof window === "undefined" || gallery.length <= 1) return;
     const offsets = Array.from({ length: PRELOAD_RADIUS }, (_, i) => i + 1).flatMap((n) => [n, -n]);
@@ -67,7 +64,7 @@ export default function ImageGallery({ images, alt }) {
       const url = gallery[idx];
       if (preloadedRef.current.has(url)) continue;
       preloadedRef.current.add(url);
-      const img = new window.Image();
+      const img = new Image();
       img.src = url;
     }
   }, [active, gallery]);
@@ -81,15 +78,13 @@ export default function ImageGallery({ images, alt }) {
         onClick={() => setZoomed(true)}
       >
         {!mainLoaded && <div className="gallery-main-skeleton skeleton" aria-hidden="true" />}
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           key={active}
           className={`gallery-main ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
           src={gallery[active]}
           alt={alt}
-          fill
-          sizes="340px"
-          priority={active === 0}
-          unoptimized
+          loading={active === 0 ? "eager" : "lazy"}
           onLoad={() => setMainLoaded(true)}
         />
         {/* Single zoom badge — bottom-left, inside the fixed-size box above. */}
@@ -138,12 +133,12 @@ export default function ImageGallery({ images, alt }) {
               onClick={() => goTo(i)}
               aria-label={`View photo ${i + 1}`}
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={src}
                 alt={`${alt} thumbnail ${i + 1}`}
                 className="gallery-thumb-img"
-                fill
-                sizes="64px"
+                loading="lazy"
               />
             </button>
           ))}

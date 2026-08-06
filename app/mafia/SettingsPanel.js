@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Image from "next/image";
 
 export default function SettingsPanel() {
   const [qrUrl, setQrUrl] = useState(null);
@@ -76,25 +75,12 @@ export default function SettingsPanel() {
             <p className="muted" style={{ fontSize: "0.8rem", marginBottom: "0.4rem" }}>
               {preview ? "New QR (preview)" : "Current QR"}
             </p>
-            {preview ? (
-              // A local blob: URL from the file input the admin just picked —
-              // next/image can't optimize that (nothing to fetch remotely),
-              // so the pending preview stays a plain <img>.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview}
-                alt="UPI payment QR code"
-                style={{ width: 180, borderRadius: 12, border: "1px solid var(--border)" }}
-              />
-            ) : (
-              <Image
-                src={qrUrl || "/upi-qr.jpg"}
-                alt="UPI payment QR code"
-                width={180}
-                height={180}
-                style={{ width: 180, height: "auto", borderRadius: 12, border: "1px solid var(--border)" }}
-              />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview || qrUrl || "/upi-qr.jpg"}
+              alt="UPI payment QR code"
+              style={{ width: 180, borderRadius: 12, border: "1px solid var(--border)" }}
+            />
           </div>
         </div>
 

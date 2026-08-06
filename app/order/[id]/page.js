@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { MessageCircle, ImageUp, ShieldCheck } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import CopyButton from "@/app/components/CopyButton";
@@ -12,12 +11,12 @@ import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
 import FacebookLogo from "./FacebookLogo";
+import { useOrderPoll } from "./useOrderPoll";
 
 // pending_verification is deliberately excluded here — that status now has
 // its own dedicated /order/[id]/confirming page (see the redirect effect
 // below), so this page never needs to render a body for it.
 const PAYMENT_STEP_STATUSES = ["pending", "declined"];
-const POLL_INTERVAL_MS = 1500;
 
 function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -30,14 +29,13 @@ export default function OrderPage() {
   const { id } = useParams();
   const router = useRouter();
   const toast = useToast();
-  const [order, setOrder] = useState(null);
+  const { order, accessDenied, setAccessDenied, refetch: fetchOrder } = useOrderPoll(id);
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
   const [now, setNow] = useState(() => Date.now());
-  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -53,21 +51,6 @@ export default function OrderPage() {
     setScreenshotPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [screenshot]);
-
-  const fetchOrder = useCallback(async () => {
-    const res = await fetch(`/api/orders/${id}`, { cache: "no-store" });
-    if (res.ok) {
-      setOrder(await res.json());
-    } else if (res.status === 403) {
-      setAccessDenied(true);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchOrder();
-    const interval = setInterval(fetchOrder, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchOrder]);
 
   // Verification-in-progress now lives on its own page so the buyer isn't
   // stuck watching a spinner inline — hand off as soon as we see the status
@@ -203,11 +186,10 @@ export default function OrderPage() {
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
               Scan this QR with any UPI app, then enter the amount below yourself.
             </p>
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={qrUrl}
               alt="UPI payment QR code"
-              width={220}
-              height={220}
               style={{ width: 220, height: "auto", margin: "0.5rem auto", display: "block", borderRadius: 12 }}
             />
             <div className="payable-badge-row">

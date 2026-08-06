@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import Image from "next/image";
 import { Trash2, Upload, Play } from "lucide-react";
 import { uploadVideoAttachment } from "@/app/lib/videoUpload";
 
@@ -116,7 +115,8 @@ export default function ProofsSettings() {
                       </span>
                     </>
                   ) : (
-                    <Image src={p.url} alt="Proof" fill sizes="80px" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.url} alt="Proof" />
                   )}
                   <button
                     type="button"
