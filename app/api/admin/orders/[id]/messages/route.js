@@ -24,16 +24,28 @@ export async function POST(request, { params }) {
   const hasAttachment = attachment && typeof attachment.arrayBuffer === "function" && attachment.size > 0;
   const replyToIdRaw = formData.get("replyToId");
   const replyToId = replyToIdRaw ? Number(replyToIdRaw) : null;
+  // Videos are already uploaded straight to S3 (see the video-url route) by
+  // the time this request is made — the client sends the resulting URL
+  // instead of the file itself, so there's no attachment bytes to proxy.
+  const preUploadedUrl = formData.get("attachmentUrl");
+  const preUploadedType = formData.get("attachmentType");
 
-  if (!text && !hasAttachment) {
+  if (!text && !hasAttachment && !preUploadedUrl) {
     return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
   }
 
-  const attachmentPath = hasAttachment ? await saveMessageAttachment(attachment) : null;
-  // Voice notes are recorded client-side and uploaded with a real audio
-  // MIME type; anything else with an attachment keeps the pre-existing
-  // image behavior.
-  const attachmentType = hasAttachment ? (attachment.type?.startsWith("audio/") ? "audio" : "image") : null;
+  let attachmentPath = null;
+  let attachmentType = null;
+  if (preUploadedUrl) {
+    attachmentPath = String(preUploadedUrl);
+    attachmentType = preUploadedType === "video" ? "video" : "image";
+  } else if (hasAttachment) {
+    attachmentPath = await saveMessageAttachment(attachment);
+    // Voice notes are recorded client-side and uploaded with a real audio
+    // MIME type; anything else with an attachment keeps the pre-existing
+    // image behavior.
+    attachmentType = attachment.type?.startsWith("audio/") ? "audio" : "image";
+  }
 
   await prisma.message.create({
     data: {
@@ -52,7 +64,14 @@ export async function POST(request, { params }) {
   if (!isBuyerOnline(order.buyerLastSeenAt)) {
     await notifyBuyerOfReply({
       orderId,
-      body: attachmentType === "audio" ? "🎤 Voice message" : attachmentPath && !text ? "📷 Photo" : text,
+      body:
+        attachmentType === "audio"
+          ? "🎤 Voice message"
+          : attachmentType === "video" && !text
+            ? "🎥 Video"
+            : attachmentPath && !text
+              ? "📷 Photo"
+              : text,
     }).catch(() => {});
   }
 

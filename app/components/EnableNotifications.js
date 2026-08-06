@@ -1,65 +1,47 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  subscribeToPush,
-  unsubscribeFromPush,
-  hasActivePushSubscription,
-  isPushSupported,
-} from "@/app/lib/pushClient";
+import { subscribeToPush, hasActivePushSubscription, isPushSupported } from "@/app/lib/pushClient";
 
-// `supported`/`on` start false on both the server render and the client's
-// first render (before effects run) so they agree — reading them directly in
-// the render body would read window/Notification state differently between
-// server and client and trigger a hydration mismatch.
+// Auto-subscribes as soon as this mounts (order page / support chat) instead
+// of waiting for a manual toggle — the browser's own native permission
+// prompt ("gamexstore.com wants to send you notifications") is the only UI
+// a customer sees; there's nothing left here for them to click. Renders
+// nothing except a quiet hint if the customer has actually blocked
+// notifications at the browser level, since there's no button left to
+// explain that state.
 export default function EnableNotifications({ apiPath, extra }) {
-  const [supported, setSupported] = useState(false);
-  const [on, setOn] = useState(false);
   const [denied, setDenied] = useState(false);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!isPushSupported()) return;
-    setSupported(true);
-    setDenied(Notification.permission === "denied");
-    hasActivePushSubscription().then(setOn);
-  }, []);
-
-  async function handleToggle() {
-    if (busy) return;
-    setBusy(true);
-    if (on) {
-      await unsubscribeFromPush();
-      setOn(false);
-    } else {
-      const result = await subscribeToPush(apiPath, extra);
-      setDenied(result.reason === "denied");
-      setOn(result.ok);
+    if (Notification.permission === "denied") {
+      setDenied(true);
+      return;
     }
-    setBusy(false);
-  }
 
-  if (!supported) return null;
+    let cancelled = false;
+    (async () => {
+      const alreadyOn = await hasActivePushSubscription();
+      if (alreadyOn || cancelled) return;
+      const result = await subscribeToPush(apiPath, extra);
+      if (!cancelled && result.reason === "denied") setDenied(true);
+    })();
 
-  if (denied) {
-    return (
-      <span className="muted enable-notifications-denied">
-        Notifications are blocked — enable them in your browser&apos;s site settings.
-      </span>
-    );
-  }
+    return () => {
+      cancelled = true;
+    };
+    // extra is a plain object recreated on every render by callers — keying
+    // off apiPath alone (the actual identity of "which subscription") avoids
+    // re-running this effect (and re-prompting) on every unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiPath]);
+
+  if (!denied) return null;
 
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label="Toggle message notifications"
-      className={`notif-toggle${on ? " on" : ""}`}
-      onClick={handleToggle}
-      disabled={busy}
-    >
-      <span className="notif-toggle-thumb" />
-    </button>
+    <span className="muted enable-notifications-denied">
+      Notifications are blocked — enable them in your browser&apos;s site settings.
+    </span>
   );
 }

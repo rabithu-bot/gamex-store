@@ -13,6 +13,7 @@ import {
   Send,
   Check,
   CheckCheck,
+  Video as VideoIcon,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
@@ -21,6 +22,11 @@ import EnableNotifications from "@/app/components/EnableNotifications";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isAdminOnline } from "@/app/lib/onlineStatus";
+import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+
+function isVideoFile(file) {
+  return Boolean(file?.type?.startsWith("video/"));
+}
 
 const TYPING_PING_INTERVAL_MS = 2000;
 const TYPING_STALE_MS = 4000;
@@ -63,6 +69,7 @@ export default function SupportChat({
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [micError, setMicError] = useState("");
+  const [attachmentError, setAttachmentError] = useState("");
   const [sending, setSending] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [supportName, setSupportName] = useState("Support");
@@ -184,6 +191,7 @@ export default function SupportChat({
   function quotePreview(message) {
     if (!message) return null;
     if (message.attachmentType === "audio") return "🎤 Voice message";
+    if (message.attachmentType === "video" && !message.body) return "🎥 Video";
     if (message.attachmentPath && !message.body) return "📷 Photo";
     return message.body;
   }
@@ -273,8 +281,21 @@ export default function SupportChat({
         })
       : file;
     if ((!text.trim() && !attachment) || sending) return;
+    setAttachmentError("");
     setSending(true);
-    await onSend(text.trim(), attachment);
+
+    if (isVideoFile(attachment)) {
+      const result = await uploadVideoAttachment(`/api/orders/${orderId}/messages/video-url`, attachment);
+      if (!result.ok) {
+        setAttachmentError(result.error);
+        setSending(false);
+        return;
+      }
+      await onSend(text.trim(), null, { file: attachment, publicUrl: result.publicUrl });
+    } else {
+      await onSend(text.trim(), attachment);
+    }
+
     setText("");
     setFile(null);
     setAudioBlob(null);
@@ -399,6 +420,8 @@ export default function SupportChat({
                   )}
                   {m.attachmentPath && m.attachmentType === "audio" ? (
                     <VoiceMessagePlayer src={m.attachmentPath} />
+                  ) : m.attachmentPath && m.attachmentType === "video" ? (
+                    <video src={m.attachmentPath} controls className="chat-attachment chat-attachment-video" />
                   ) : (
                     m.attachmentPath &&
                     (m.attachmentPath.startsWith("blob:") ? (
@@ -486,8 +509,18 @@ export default function SupportChat({
         </div>
       )}
 
+      {attachmentError && (
+        <div className="chat-mic-error">
+          {attachmentError}
+          <button type="button" onClick={() => setAttachmentError("")} aria-label="Dismiss">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {file && (
         <div className="chat-attachment-preview">
+          {isVideoFile(file) && <VideoIcon size={14} />}
           <span className="muted">{file.name}</span>
           <button type="button" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
             <X size={14} />
@@ -535,10 +568,17 @@ export default function SupportChat({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               style={{ display: "none" }}
               onChange={(e) => {
-                setFile(e.target.files?.[0] || null);
+                const picked = e.target.files?.[0] || null;
+                if (picked && isVideoFile(picked) && picked.size > 50 * 1024 * 1024) {
+                  setAttachmentError("Video must be under 50MB.");
+                  e.target.value = "";
+                  return;
+                }
+                setAttachmentError("");
+                setFile(picked);
                 setAudioBlob(null);
               }}
             />

@@ -148,6 +148,11 @@ model QuickReply {
 model ProofImage {
   id        Int       @id @default(autoincrement())
   url       String
+  // "image" | "video" — videos upload straight to S3 via a presigned URL
+  // (see app/lib/videoUpload.js) instead of proxying through this route, but
+  // otherwise live in the same table/gallery as image proofs. Defaults to
+  // "image" so every pre-existing row keeps rendering exactly as before.
+  type      String    @default("image")
   // The real date this delivery/screenshot happened — distinct from
   // createdAt (upload time). Proofs are often batch-uploaded long after the
   // fact, so createdAt alone would show a misleading cluster of identical

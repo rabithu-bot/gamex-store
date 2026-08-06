@@ -1,4 +1,4 @@
-import { uploadBuffer } from "./s3";
+import { uploadBuffer, getPresignedUploadUrl } from "./s3";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
@@ -50,6 +50,26 @@ export function saveListingImage(file) {
 // Chat attachments: public (both buyer and admin can view either side's uploads).
 export function saveMessageAttachment(file) {
   return saveFile(file, "messages", { maxDimension: 1280 });
+}
+
+// Videos are too large to proxy through a serverless function (see s3.js),
+// so the browser uploads them straight to S3 via a presigned URL — this
+// just mints the destination key/URL pair, no bytes pass through here.
+function getVideoUploadUrl(prefix, fileName, contentType) {
+  const ext = path.extname(fileName || "").slice(0, 10) || ".mp4";
+  const key = `${prefix}/${Date.now()}-${crypto.randomUUID()}${ext}`;
+  return getPresignedUploadUrl(key, contentType);
+}
+
+// Chat video attachments.
+export function getMessageVideoUploadUrl(fileName, contentType) {
+  return getVideoUploadUrl("messages", fileName, contentType);
+}
+
+// Proof videos: same bucket/gallery as proof screenshots, just a video
+// instead of an image (see ProofImage.type).
+export function getProofVideoUploadUrl(fileName, contentType) {
+  return getVideoUploadUrl("proofs", fileName, contentType);
 }
 
 // UPI payment QR: public, shown on every pending order's payment step.

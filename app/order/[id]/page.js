@@ -309,10 +309,9 @@ export default function OrderPage() {
             <MessageCircle size={18} />
             Contact Support
           </Link>
-          <div className="notif-toggle-row" style={{ marginTop: "0.85rem", justifyContent: "center" }}>
-            <span className="notif-toggle-label">Get notified about order updates</span>
-            <EnableNotifications apiPath={`/api/orders/${order.id}/push/subscribe`} />
-          </div>
+          {/* No visible control — this just triggers the browser's native
+              permission prompt and subscribes silently once granted. */}
+          <EnableNotifications apiPath={`/api/orders/${order.id}/push/subscribe`} />
         </div>
       </main>
     </>

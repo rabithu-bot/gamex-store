@@ -14,44 +14,68 @@ function formatProofDate(iso) {
 
 export default function ProofGallery({ proofs }) {
   const [index, setIndex] = useState(null);
-  const images = proofs.map((p) => p.url);
+  // Videos play inline with their own controls rather than opening the
+  // (image-only) lightbox, so its navigable set is just the image proofs —
+  // indices below are positions within THIS array, not the full proofs list.
+  const images = proofs.filter((p) => p.type !== "video").map((p) => p.url);
+
+  let imageIndex = -1;
 
   return (
     <>
       <div className="proof-gallery-grid">
-        {proofs.map((proof, i) => (
-          <button
-            key={proof.url}
-            type="button"
-            className="proof-gallery-thumb"
-            onClick={() => setIndex(i)}
-            aria-label="View proof image"
-          >
-            {/* Real screenshots at their natural aspect ratio, not stored
-                dimensions — next/image needs one of those up front, so this
-                stays a plain <img> (same documented exception as blob:
-                previews elsewhere) rather than force-cropping proof text
-                out of a fixed square. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={proof.url}
-              alt={`Delivery Proof ${i + 1} - GameX Store`}
-              loading="lazy"
-              decoding="async"
-            />
-            <span className="proof-verified-badge">
-              <ShieldCheck size={12} />
-              Verified
-            </span>
-            {/* Only shown when the admin set a real date for this batch —
-                never falls back to upload time, which would misleadingly
-                cluster every proof on whatever day it happened to be bulk
-                -uploaded. */}
-            {proof.proofDate && (
-              <span className="proof-date-caption">{formatProofDate(proof.proofDate)}</span>
-            )}
-          </button>
-        ))}
+        {proofs.map((proof, i) => {
+          if (proof.type === "video") {
+            return (
+              <div key={proof.url} className="proof-gallery-thumb proof-gallery-thumb-video">
+                <video src={proof.url} controls className="proof-gallery-video" />
+                <span className="proof-verified-badge">
+                  <ShieldCheck size={12} />
+                  Verified
+                </span>
+                {proof.proofDate && (
+                  <span className="proof-date-caption">{formatProofDate(proof.proofDate)}</span>
+                )}
+              </div>
+            );
+          }
+
+          imageIndex += 1;
+          const thisImageIndex = imageIndex;
+          return (
+            <button
+              key={proof.url}
+              type="button"
+              className="proof-gallery-thumb"
+              onClick={() => setIndex(thisImageIndex)}
+              aria-label="View proof image"
+            >
+              {/* Real screenshots at their natural aspect ratio, not stored
+                  dimensions — next/image needs one of those up front, so this
+                  stays a plain <img> (same documented exception as blob:
+                  previews elsewhere) rather than force-cropping proof text
+                  out of a fixed square. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={proof.url}
+                alt={`Delivery Proof ${i + 1} - GameX Store`}
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="proof-verified-badge">
+                <ShieldCheck size={12} />
+                Verified
+              </span>
+              {/* Only shown when the admin set a real date for this batch —
+                  never falls back to upload time, which would misleadingly
+                  cluster every proof on whatever day it happened to be bulk
+                  -uploaded. */}
+              {proof.proofDate && (
+                <span className="proof-date-caption">{formatProofDate(proof.proofDate)}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {index !== null && (

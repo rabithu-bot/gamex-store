@@ -2,9 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
-import { Trash2, Upload } from "lucide-react";
+import { Trash2, Upload, Play } from "lucide-react";
+import { uploadVideoAttachment } from "@/app/lib/videoUpload";
 
 const MAX_PROOFS = 150;
+
+function isVideoFile(file) {
+  return Boolean(file?.type?.startsWith("video/"));
+}
 
 export default function ProofsSettings() {
   const [proofs, setProofs] = useState(null);
@@ -31,20 +36,34 @@ export default function ProofsSettings() {
     setUploading(true);
     setProgress({ done: 0, total: files.length });
 
-    // Multi-select in the picker, but the API only takes one image per
+    // Multi-select in the picker, but the API only takes one file per
     // request — upload sequentially so admin can pick a whole batch from
     // their gallery instead of repeating this form once per screenshot.
     for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       const formData = new FormData();
-      formData.set("image", files[i]);
       if (batchDate) formData.set("proofDate", batchDate);
+
+      if (isVideoFile(file)) {
+        const result = await uploadVideoAttachment("/api/admin/proofs/video-url", file);
+        if (!result.ok) {
+          setError(
+            files.length > 1 ? `Stopped after ${i} of ${files.length} — ${result.error}` : result.error
+          );
+          break;
+        }
+        formData.set("videoUrl", result.publicUrl);
+      } else {
+        formData.set("image", file);
+      }
+
       const res = await fetch("/api/admin/proofs", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(
           files.length > 1
             ? `Stopped after ${i} of ${files.length} — ${data.error || "upload failed"}`
-            : data.error || "Couldn't upload that image"
+            : data.error || "Couldn't upload that file"
         );
         break;
       }
@@ -68,8 +87,9 @@ export default function ProofsSettings() {
     <div className="panel">
       <h3>Proofs</h3>
       <p className="muted" style={{ marginTop: "0.3rem" }}>
-        Screenshots shown to customers on the public Proof page (linked from the Buy Now button on
-        every product) — past deliveries, payment confirmations, anything that builds trust.
+        Screenshots and videos shown to customers on the public Proof page (linked from the Buy
+        Now button on every product) — past deliveries, payment confirmations, anything that
+        builds trust.
       </p>
 
       {!proofs ? (
@@ -82,17 +102,26 @@ export default function ProofsSettings() {
         <>
           {proofs.length === 0 ? (
             <p className="muted" style={{ padding: "0.6rem 0" }}>
-              No proof images yet — upload one below.
+              No proofs yet — upload one below.
             </p>
           ) : (
             <div className="proof-settings-grid">
               {proofs.map((p) => (
                 <div key={p.id} className="proof-settings-thumb">
-                  <Image src={p.url} alt="Proof" fill sizes="80px" />
+                  {p.type === "video" ? (
+                    <>
+                      <video src={p.url} muted playsInline />
+                      <span className="proof-settings-thumb-play">
+                        <Play size={12} fill="currentColor" />
+                      </span>
+                    </>
+                  ) : (
+                    <Image src={p.url} alt="Proof" fill sizes="80px" />
+                  )}
                   <button
                     type="button"
                     className="btn danger proof-settings-delete"
-                    aria-label="Delete proof image"
+                    aria-label="Delete proof"
                     onClick={() => handleDelete(p.id)}
                   >
                     <Trash2 size={13} />
@@ -110,7 +139,7 @@ export default function ProofsSettings() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   multiple
                   onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 />

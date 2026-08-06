@@ -72,6 +72,7 @@ export default async function ProofsPage() {
           <ProofGallery
             proofs={proofs.map((p) => ({
               url: p.url,
+              type: p.type,
               proofDate: p.proofDate ? p.proofDate.toISOString() : null,
             }))}
           />

@@ -14,6 +14,7 @@ import {
   CornerUpLeft,
   Check,
   CheckCheck,
+  Video as VideoIcon,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
@@ -24,6 +25,11 @@ import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
+import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+
+function isVideoFile(file) {
+  return Boolean(file?.type?.startsWith("video/"));
+}
 
 const POLL_INTERVAL_MS = 1500;
 const TYPING_PING_INTERVAL_MS = 2000;
@@ -56,6 +62,7 @@ export default function ChatThread({ orderId }) {
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [micError, setMicError] = useState("");
+  const [attachmentError, setAttachmentError] = useState("");
   const [sending, setSending] = useState(false);
   const [zoomSrc, setZoomSrc] = useState(null);
   const [quickReplies, setQuickReplies] = useState([]);
@@ -235,6 +242,20 @@ export default function ChatThread({ orderId }) {
 
     if (!trimmed && !replyFile && !audioBlob) return;
 
+    setAttachmentError("");
+    setSending(true);
+
+    let uploadedVideoUrl = null;
+    if (replyFile && isVideoFile(replyFile)) {
+      const result = await uploadVideoAttachment(`/api/admin/orders/${order.id}/messages/video-url`, replyFile);
+      if (!result.ok) {
+        setAttachmentError(result.error);
+        setSending(false);
+        return;
+      }
+      uploadedVideoUrl = result.publicUrl;
+    }
+
     const formData = new FormData();
     formData.set("body", trimmed);
     let optimisticAttachmentPath = null;
@@ -244,6 +265,11 @@ export default function ChatThread({ orderId }) {
       formData.set("attachment", audioBlob, `voice-${Date.now()}.${ext}`);
       optimisticAttachmentPath = URL.createObjectURL(audioBlob);
       optimisticAttachmentType = "audio";
+    } else if (uploadedVideoUrl) {
+      formData.set("attachmentUrl", uploadedVideoUrl);
+      formData.set("attachmentType", "video");
+      optimisticAttachmentPath = URL.createObjectURL(replyFile);
+      optimisticAttachmentType = "video";
     } else if (replyFile) {
       formData.set("attachment", replyFile);
       optimisticAttachmentPath = URL.createObjectURL(replyFile);
@@ -284,7 +310,6 @@ export default function ChatThread({ orderId }) {
     setShowSuggestions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    setSending(true);
     await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
     await fetchOrder();
     setSending(false);
@@ -480,6 +505,7 @@ export default function ChatThread({ orderId }) {
   function quotePreview(message) {
     if (!message) return null;
     if (message.attachmentType === "audio") return "🎤 Voice message";
+    if (message.attachmentType === "video" && !message.body) return "🎥 Video";
     if (message.attachmentPath && !message.body) return "📷 Photo";
     return message.body;
   }
@@ -569,6 +595,8 @@ export default function ChatThread({ orderId }) {
                 )}
                 {m.attachmentPath && m.attachmentType === "audio" ? (
                   <VoiceMessagePlayer src={m.attachmentPath} />
+                ) : m.attachmentPath && m.attachmentType === "video" ? (
+                  <video src={m.attachmentPath} controls className="chat-attachment chat-attachment-video" />
                 ) : (
                   m.attachmentPath &&
                   (m.attachmentPath.startsWith("blob:") ? (
@@ -671,8 +699,18 @@ export default function ChatThread({ orderId }) {
         </div>
       )}
 
+      {attachmentError && (
+        <div className="chat-mic-error">
+          {attachmentError}
+          <button type="button" onClick={() => setAttachmentError("")} aria-label="Dismiss">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {replyFile && (
         <div className="chat-attachment-preview">
+          {isVideoFile(replyFile) && <VideoIcon size={14} />}
           <span className="muted">{replyFile.name}</span>
           <button
             type="button"
@@ -744,10 +782,17 @@ export default function ChatThread({ orderId }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               style={{ display: "none" }}
               onChange={(e) => {
-                setReplyFile(e.target.files?.[0] || null);
+                const picked = e.target.files?.[0] || null;
+                if (picked && isVideoFile(picked) && picked.size > 50 * 1024 * 1024) {
+                  setAttachmentError("Video must be under 50MB.");
+                  e.target.value = "";
+                  return;
+                }
+                setAttachmentError("");
+                setReplyFile(picked);
                 setAudioBlob(null);
               }}
             />

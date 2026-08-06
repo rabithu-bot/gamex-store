@@ -17,11 +17,14 @@ export default function OrderSupportPage() {
     []
   );
 
-  async function handleSendMessage(text, file) {
+  async function handleSendMessage(text, file, videoMeta) {
     // Optimistic insert — same fix as the admin composer got: the bubble
     // appears instantly instead of waiting on the POST + a full refetch
-    // before the buyer sees anything happen.
-    const optimisticAttachmentPath = file ? URL.createObjectURL(file) : null;
+    // before the buyer sees anything happen. Videos are already uploaded to
+    // S3 by the time this is called (see SupportChat's handleSubmit), so the
+    // preview uses the original File object purely for its blob: URL.
+    const previewFile = videoMeta?.file || file;
+    const optimisticAttachmentPath = previewFile ? URL.createObjectURL(previewFile) : null;
     if (optimisticAttachmentPath) createdObjectUrlsRef.current.add(optimisticAttachmentPath);
     setOrder((prev) =>
       prev
@@ -34,7 +37,13 @@ export default function OrderSupportPage() {
                 sender: "buyer",
                 body: text,
                 attachmentPath: optimisticAttachmentPath,
-                attachmentType: file ? (file.type?.startsWith("audio/") ? "audio" : "image") : null,
+                attachmentType: videoMeta
+                  ? "video"
+                  : file
+                    ? file.type?.startsWith("audio/")
+                      ? "audio"
+                      : "image"
+                    : null,
                 replyToId: null,
                 readAt: null,
                 reaction: null,
@@ -47,7 +56,12 @@ export default function OrderSupportPage() {
 
     const formData = new FormData();
     formData.set("body", text);
-    if (file) formData.set("attachment", file);
+    if (videoMeta) {
+      formData.set("attachmentUrl", videoMeta.publicUrl);
+      formData.set("attachmentType", "video");
+    } else if (file) {
+      formData.set("attachment", file);
+    }
 
     const res = await fetch(`/api/orders/${id}/messages`, {
       method: "POST",

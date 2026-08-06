@@ -14,6 +14,14 @@ export function isPushSupported() {
   );
 }
 
+// Browsers throw (or effectively hang) if pushManager.subscribe() is called
+// a second time while a first call on the same registration is still in
+// flight — a real risk now that this fires automatically from a mount
+// effect, which React invokes twice in dev (Fast Refresh/StrictMode).
+// Memoizing the in-flight promise means every caller in that window shares
+// the one real subscribe attempt instead of racing a second one.
+let inFlightSubscribe = null;
+
 // Registers the service worker (idempotent — safe to call every time), asks
 // for notification permission if not already decided, subscribes to push,
 // and hands the subscription off to the given API route along with any
@@ -27,23 +35,34 @@ export async function subscribeToPush(apiPath, extra = {}) {
     if (permission !== "granted") return { ok: false, reason: "denied" };
   }
 
-  const registration = await navigator.serviceWorker.register("/sw.js");
-  await navigator.serviceWorker.ready;
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      if (!inFlightSubscribe) {
+        inFlightSubscribe = registration.pushManager
+          .subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+          })
+          .finally(() => {
+            inFlightSubscribe = null;
+          });
+      }
+      subscription = await inFlightSubscribe;
+    }
+
+    const res = await fetch(apiPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription, ...extra }),
     });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false, reason: "error" };
   }
-
-  const res = await fetch(apiPath, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ subscription, ...extra }),
-  });
-  return { ok: res.ok };
 }
 
 // Unsubscribes the browser's push subscription and tells the server to drop
