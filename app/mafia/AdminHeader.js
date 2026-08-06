@@ -27,19 +27,23 @@ export default function AdminHeader() {
               <ArrowLeft size={18} />
             </button>
           )}
-          <span className="dashboard-badge">
-            <ShieldCheck size={14} />
-            Vault Control
-          </span>
+          {isRoot && (
+            <span className="dashboard-badge">
+              <ShieldCheck size={14} />
+              Vault Control
+            </span>
+          )}
         </div>
-        <button
-          type="button"
-          className="admin-header-gear"
-          aria-label="Open settings"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <Settings size={18} />
-        </button>
+        {isRoot && (
+          <button
+            type="button"
+            className="admin-header-gear"
+            aria-label="Open settings"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <Settings size={18} />
+          </button>
+        )}
       </header>
 
       <AdminDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

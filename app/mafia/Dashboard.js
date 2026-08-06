@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingBag, Package, MessagesSquare, ShieldCheck } from "lucide-react";
+import { ShoppingBag, Package, MessagesSquare } from "lucide-react";
 import StatsBar from "./StatsBar";
 
 const SECTIONS = [
@@ -28,10 +28,6 @@ export default function Dashboard() {
     <div>
       <div className="dashboard-header">
         <div className="dashboard-title">
-          <span className="dashboard-badge">
-            <ShieldCheck size={14} />
-            Vault Control
-          </span>
           <h1>Admin Dashboard</h1>
         </div>
       </div>
