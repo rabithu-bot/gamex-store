@@ -2523,6 +2523,24 @@ select:focus-visible {
   box-shadow: 0 0 6px rgba(139, 92, 246, 0.8);
 }
 
+.notify-status-dot {
+  flex-shrink: 0;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.notify-status-dot.on {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.7);
+}
+
+.notify-status-dot.off {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
+}
+
 .admin-chat-header-notify {
   flex-shrink: 0;
   max-width: 120px;

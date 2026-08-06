@@ -161,6 +161,12 @@ export default function MessagesPanel() {
                   <span className="dm-list-top">
                     <span className="dm-list-name-group">
                       <strong>{customerName(order)}</strong>
+                      <span
+                        className={`notify-status-dot ${order.notificationsEnabled ? "on" : "off"}`}
+                        title={order.notificationsEnabled ? "Notifications ON" : "Notifications OFF"}
+                        role="img"
+                        aria-label={order.notificationsEnabled ? "Notifications enabled" : "Notifications disabled"}
+                      />
                       {order.tag && <CustomerTagBadge tag={order.tag} />}
                     </span>
                     <span className="dm-time">{relativeTime(last.createdAt)}</span>

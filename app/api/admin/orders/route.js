@@ -27,5 +27,22 @@ export async function GET() {
       },
     },
   });
-  return NextResponse.json(orders);
+
+  // One extra lightweight query rather than per-order round-trips — tells
+  // the inbox whether each buyer's device actually has push notifications
+  // subscribed, for the notification-status dot next to their name.
+  const subscribedOrderIds = new Set(
+    (
+      await prisma.pushSubscription.findMany({
+        where: { role: "buyer", orderId: { in: orders.map((o) => o.id) } },
+        select: { orderId: true },
+      })
+    ).map((s) => s.orderId)
+  );
+  const withNotifyStatus = orders.map((o) => ({
+    ...o,
+    notificationsEnabled: subscribedOrderIds.has(o.id),
+  }));
+
+  return NextResponse.json(withNotifyStatus);
 }
