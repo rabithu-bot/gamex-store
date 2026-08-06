@@ -6,11 +6,21 @@ import { ArrowLeft, Settings, ShieldCheck } from "lucide-react";
 import AdminDrawer from "./AdminDrawer";
 import EnableNotifications from "@/app/components/EnableNotifications";
 
+// Individual chat threads render as their own fixed, full-screen overlay
+// (see .admin-chat-page) with a complete self-contained header — avatar,
+// name, and its own "Back" link to the messages list. Rendering this shared
+// header underneath it too just stacked a second back button on top of
+// theirs, so it's skipped entirely on that one route.
+const CHAT_THREAD_PATTERN = /^\/mafia\/messages\/[^/]+$/;
+
 export default function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isRoot = pathname === "/mafia";
+  const isChatThread = CHAT_THREAD_PATTERN.test(pathname);
+
+  if (isChatThread) return <EnableNotifications apiPath="/api/admin/push/subscribe" />;
 
   return (
     <>
