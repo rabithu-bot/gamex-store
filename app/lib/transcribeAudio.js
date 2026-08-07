@@ -46,7 +46,8 @@ export async function transcribeVoiceNote(audioUrl) {
     ]);
     const transcript = result.response.text().trim();
     return transcript || null;
-  } catch {
-    return null;
+  } catch (err) {
+    console.error("transcribeVoiceNote failed:", err);
+    throw err;
   }
 }

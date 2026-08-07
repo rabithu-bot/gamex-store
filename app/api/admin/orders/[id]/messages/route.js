@@ -13,8 +13,12 @@ import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
 // blind "[voice note]" placeholder that would be useless to learn from.
 async function resolveMessageText(message) {
   if (message.attachmentType === "audio" && message.attachmentPath) {
-    const transcript = await transcribeVoiceNote(message.attachmentPath);
-    return transcript || "[voice note — transcription failed]";
+    try {
+      const transcript = await transcribeVoiceNote(message.attachmentPath);
+      return transcript || "[voice note — transcription failed]";
+    } catch (err) {
+      return `[voice note — transcription threw: ${err?.message || err}]`;
+    }
   }
   return message.body || "";
 }
