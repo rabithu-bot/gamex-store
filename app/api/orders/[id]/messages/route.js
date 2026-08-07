@@ -6,7 +6,20 @@ import { notifyAdminsOfMessage, notifyBuyerOfReply } from "@/app/lib/push";
 import { buildOrderAiContext } from "@/app/lib/aiSupportContext";
 import { generateSupportReply } from "@/app/lib/gemini";
 import { getOfficialQrUrl } from "@/app/lib/paymentQr";
-import { isGreetingOnly, pickGreetingReply, isQrRequest, QR_REPLY_TEXT } from "@/app/lib/aiIntent";
+import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
+import { sendChunkedReply, splitIntoChunks } from "@/app/lib/chunkReply";
+import {
+  isGreetingOnly,
+  pickGreetingReply,
+  isQrRequest,
+  QR_REPLY_CHUNKS,
+  isLoginQuestion,
+  LOGIN_REPLY_CHUNKS,
+  isBuyingGuidanceQuestion,
+  BUYING_GUIDANCE_CHUNKS,
+  isTrustQuestion,
+  TRUST_REPLY_CHUNKS,
+} from "@/app/lib/aiIntent";
 
 // Debounce window for the AI auto-reply. A buyer firing off several
 // messages in quick succession ("bhai" / "order ka status?" / "please
@@ -93,11 +106,11 @@ export async function POST(request, { params }) {
   // one personally, so the bot stays out of the way once that happens.
   // Deferred via after() rather than awaited: the buyer's own message
   // still saves and this request still returns immediately either way, but
-  // the Gemini round-trip (a couple of seconds) no longer holds up the
-  // send button — the reply just appears on the buyer's next poll tick,
-  // same as waiting for a real person to type back. after() (unlike a bare
-  // un-awaited promise) is guaranteed to actually finish running even
-  // though the response has already gone out.
+  // the Gemini round-trip no longer holds up the send button — the reply
+  // just appears on the buyer's next poll tick, same as waiting for a real
+  // person to type back. after() (unlike a bare un-awaited promise) is
+  // guaranteed to actually finish running even though the response has
+  // already gone out.
   if (!order.tag) {
     after(async () => {
       try {
@@ -113,34 +126,67 @@ export async function POST(request, { params }) {
         });
         if (!latestBuyerMessage || latestBuyerMessage.id !== buyerMessage.id) return;
 
-        // Two cases have exactly one correct answer that has nothing to do
-        // with the LLM — handle them directly instead of trusting a model
-        // to get them right every time.
-        if (isGreetingOnly(text)) {
-          const reply = pickGreetingReply();
-          await prisma.message.create({ data: { orderId, sender: "admin", body: reply } });
-          await notifyBuyerOfReply({ orderId, body: reply }).catch(() => {});
+        // Voice notes get transcribed first so every check below (and the
+        // Gemini fallback) can work from real text instead of a blind
+        // "🎤 Voice message" placeholder. If transcription fails, there's
+        // nothing reliable to respond to — skip the auto-reply and let a
+        // human pick it up, same as any other AI-pipeline failure.
+        let effectiveText = text;
+        if (attachmentType === "audio") {
+          const transcript = await transcribeVoiceNote(attachmentPath);
+          if (!transcript) return;
+          effectiveText = transcript;
+        }
+
+        // A handful of questions have exactly one correct, policy-level
+        // answer that has nothing to do with the LLM — handled directly
+        // instead of trusting a model to phrase store policy right every
+        // time. Checked in this order because a message can't be more
+        // than one of these anyway (each check is fairly specific).
+        if (isGreetingOnly(effectiveText)) {
+          const chunks = pickGreetingReply();
+          const combined = await sendChunkedReply({ orderId, chunks });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
 
-        if (isQrRequest(text)) {
+        if (isQrRequest(effectiveText)) {
           // The ONLY source for this is the global settings row — never a
           // URL pulled from this or any other order's past chat history.
           const qrUrl = await getOfficialQrUrl();
-          await prisma.message.create({
-            data: { orderId, sender: "admin", body: QR_REPLY_TEXT, attachmentPath: qrUrl, attachmentType: "image" },
+          const combined = await sendChunkedReply({
+            orderId,
+            chunks: QR_REPLY_CHUNKS,
+            attachmentPath: qrUrl,
+            attachmentType: "image",
           });
-          await notifyBuyerOfReply({ orderId, body: QR_REPLY_TEXT }).catch(() => {});
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
+          return;
+        }
+
+        if (isLoginQuestion(effectiveText)) {
+          const combined = await sendChunkedReply({ orderId, chunks: LOGIN_REPLY_CHUNKS });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
+          return;
+        }
+
+        if (isBuyingGuidanceQuestion(effectiveText)) {
+          const combined = await sendChunkedReply({ orderId, chunks: BUYING_GUIDANCE_CHUNKS });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
+          return;
+        }
+
+        if (isTrustQuestion(effectiveText)) {
+          const combined = await sendChunkedReply({ orderId, chunks: TRUST_REPLY_CHUNKS });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
 
         const context = await buildOrderAiContext(orderId);
-        const reply = context ? await generateSupportReply(context, notifyBody) : null;
+        const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
         if (reply) {
-          await prisma.message.create({
-            data: { orderId, sender: "admin", body: reply },
-          });
-          await notifyBuyerOfReply({ orderId, body: reply }).catch(() => {});
+          const combined = await sendChunkedReply({ orderId, chunks: splitIntoChunks(reply) });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
         }
       } catch {
         // AI failures must never surface to the buyer — worst case, no

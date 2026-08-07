@@ -1,8 +1,10 @@
-// Deterministic pre-checks that run BEFORE the Gemini call — these two
-// cases (a bare greeting, a QR code request) have exactly one correct
-// answer that has nothing to do with order status or LLM creativity, so
-// they're handled directly instead of trusting a model to get them right
-// every time.
+// Deterministic pre-checks that run BEFORE the Gemini call. Several kinds
+// of question have exactly one correct, policy-level answer that has
+// nothing to do with LLM creativity — greetings, QR requests, how to buy,
+// login method, and trust/warranty terms — so they're handled directly
+// instead of trusting a model to phrase store policy correctly every time.
+// Each fixed reply is pre-split into the 2-3 short chunks it should be
+// sent as (see app/lib/chunkReply.js) rather than one long block.
 
 const GREETING_WORDS = new Set([
   "hi",
@@ -21,7 +23,7 @@ const GREETING_WORDS = new Set([
 ]);
 
 // Only fires when the ENTIRE message is made of greeting words — "Hi" or
-// "Hello bhai" count, but "Hi mera order kab aayega" does not, so a real
+// "Hello sir" count, but "Hi mera order kab aayega" does not, so a real
 // question tacked onto a greeting still gets the full database-grounded
 // reply instead of being short-circuited.
 export function isGreetingOnly(text) {
@@ -35,7 +37,7 @@ export function isGreetingOnly(text) {
   return words.every((w) => GREETING_WORDS.has(w));
 }
 
-const GREETING_REPLIES = ["Hello bhai, bolo kya hua?", "Haan bhai, bolo."];
+const GREETING_REPLIES = [["Hello Sir, kaise madad kar sakta hoon?"], ["Haan Sir, bataiye kya chahiye aapko?"]];
 
 export function pickGreetingReply() {
   return GREETING_REPLIES[Math.floor(Math.random() * GREETING_REPLIES.length)];
@@ -56,7 +58,66 @@ export function isQrRequest(text) {
   return QR_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export const QR_REPLY_TEXT = "Bhai ye lo QR code, ispe payment karke screenshot bhej do.";
+export const QR_REPLY_CHUNKS = ["Sir ye lo QR code.", "Ispe payment karke screenshot bhej do."];
+
+const BUYING_KEYWORDS = [
+  "kaise le",
+  "kaise kharide",
+  "kaise khareed",
+  "id kaise",
+  "buy kaise",
+  "kaise buy",
+  "purchase kaise",
+  "kaise order",
+  "kaise le sakta",
+  "how to buy",
+  "how to purchase",
+  "how to order",
+];
+
+export function isBuyingGuidanceQuestion(text) {
+  const lower = String(text || "").toLowerCase();
+  return BUYING_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+export const BUYING_GUIDANCE_CHUNKS = [
+  "Sir, aap main menu me jayea wha pr id select kariya.",
+  "Buy now pr click krke pay krdejiya jitna ke id select kri hai apne utne and apko automatic id mill jayega.",
+];
+
+const LOGIN_KEYWORDS = ["login", "log in", "facebook se", "google se", "kaise chalega", "id kaise chale"];
+
+export function isLoginQuestion(text) {
+  const lower = String(text || "").toLowerCase();
+  return LOGIN_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+export const LOGIN_REPLY_CHUNKS = ["Sir id Facebook se login hai."];
+
+const TRUST_KEYWORDS = [
+  "trust",
+  "guarantee",
+  "warranty",
+  "scam",
+  "fraud",
+  "fake",
+  "bharosa",
+  "vishwas",
+  "vishwash",
+  "asli hai",
+  "sahi hai na",
+  "dhoka",
+];
+
+export function isTrustQuestion(text) {
+  const lower = String(text || "").toLowerCase();
+  return TRUST_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+export const TRUST_REPLY_CHUNKS = [
+  "Sir, id ki guaranteed rehti hai 6 month ki.",
+  "Agar 6 month me koi dikat aaye to aapke paise aapko wps ho jayenga ya jaise id aapko dikhaye gye hai ushe ache id aapko de jayegi free of cost bina aapise ek rs liye.",
+];
 
 // Gates whether the order-status directive gets shown to the model at all.
 // Without this, the bot was pulling in "your order is declined" for
