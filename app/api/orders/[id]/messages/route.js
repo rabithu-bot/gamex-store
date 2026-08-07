@@ -141,12 +141,15 @@ export async function POST(request, { params }) {
         // nothing reliable to respond to — skip the auto-reply and let a
         // human pick it up, same as any other AI-pipeline failure.
         let effectiveText = text;
-        // Voice-for-voice routing: a customer who sent a voice note gets a
-        // voice note back (in addition to the text, never instead of it);
-        // a customer who typed gets a text-only reply. Every
-        // sendChunkedReply call below passes this same flag through.
-        const wantsVoiceReply = attachmentType === "audio";
-        if (wantsVoiceReply) {
+        const isVoiceInput = attachmentType === "audio";
+        // Voice-note REPLIES are switched off for now (explicit request —
+        // both a text and a voice message were going out together, and
+        // that wasn't wanted). Voice-note INPUT still gets transcribed
+        // below either way, so the bot can still understand and text-reply
+        // to a voice message — only the audio-output side is disabled.
+        // Flip this back to isVoiceInput to re-enable voice-for-voice.
+        const wantsVoiceReply = false;
+        if (isVoiceInput) {
           const transcript = await transcribeVoiceNote(attachmentPath);
           if (!transcript) return;
           effectiveText = transcript;
