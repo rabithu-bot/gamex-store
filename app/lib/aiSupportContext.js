@@ -1,6 +1,6 @@
 import { prisma } from "@/app/lib/prisma";
-import { extractBudgetAmount } from "@/app/lib/aiIntent";
-import { findListingsNearBudget } from "@/app/lib/listingSearch";
+import { extractBudgetAmount, isAvailabilityQuestion } from "@/app/lib/aiIntent";
+import { findListingsNearBudget, findAvailableListings, firstListingImage } from "@/app/lib/listingSearch";
 
 // There's no real similarity search here — just the most recent admin-
 // authored replies from OTHER orders, given to the model as tone/phrasing
@@ -36,11 +36,17 @@ export async function buildOrderAiContext(orderId, latestText) {
   });
 
   // "500 rs me id dikhao" — real, live listing search, not the LLM
-  // guessing at stock. Null when no budget was mentioned at all (as
-  // opposed to an empty array, which means a budget WAS mentioned but
-  // genuinely nothing is in stock right now).
+  // guessing at stock. Null when no budget/availability question was asked
+  // at all (as opposed to an empty array, which means the question WAS
+  // asked and genuinely nothing is in stock right now).
   const budgetAmount = extractBudgetAmount(latestText);
-  const matchingListings = budgetAmount !== null ? await findListingsNearBudget(budgetAmount) : null;
+  let matchingListings = null;
+  if (budgetAmount !== null) {
+    matchingListings = await findListingsNearBudget(budgetAmount);
+  } else if (isAvailabilityQuestion(latestText)) {
+    matchingListings = await findAvailableListings();
+  }
+  const topListingImage = matchingListings?.length ? firstListingImage(matchingListings[0]) : null;
 
   return {
     order: {
@@ -70,5 +76,6 @@ export async function buildOrderAiContext(orderId, latestText) {
     styleSamples: pastAdminMessages.map((m) => m.body),
     budgetAmount,
     matchingListings,
+    topListingImage,
   };
 }

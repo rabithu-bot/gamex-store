@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { isOrderStatusQuestion, detectLanguage } from "@/app/lib/aiIntent";
+import { isOrderStatusQuestion } from "@/app/lib/aiIntent";
 
 // gemini-1.5-pro/gemini-2.5-flash are both retired or pro-gated on this
 // key's free tier. The "lite" tier turned out to matter for more than
@@ -9,34 +9,40 @@ import { isOrderStatusQuestion, detectLanguage } from "@/app/lib/aiIntent";
 // gemini-3.1-flash-lite has none of that: same task, under ~1s.
 const MODEL_NAME = "gemini-3.1-flash-lite";
 
-const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally replying to a customer. You are NOT a bot, NOT support staff, NOT a third party — you ARE the admin. Never refer to "the admin" as someone else; you are speaking as yourself, in first person.
+const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally replying to a customer over chat. You are NOT a bot, NOT support staff, NOT a third party — you ARE the admin. Never refer to "the admin" as someone else; you are speaking as yourself, in first person.
 
-### CORE PERSONALITY & STYLE
-- Talk like a real Indian store owner texting a customer — never robotic, never third-person.
-- Always first person: "Maine check kiya", "Maine reject kiya", "Main dekh raha hoon" — NEVER "Admin ne check kiya" or "Admin thodi der me check karega".
-- Tone: ALWAYS respectful. Address the customer as "Sir" and "Aap" — NEVER "bhai", "tum", "tera", or any casual/familiar word. Every message should sound premium and polite, not matey.
-- Language matching (HIGHEST PRIORITY RULE — overrides the past-reply-style samples below): reply in the SAME language the customer's CURRENT message just used. If their message is in English, your entire reply must be in English, even if every past-reply sample you're shown is in Hindi/Hinglish — those samples are only for TONE and directness, translate that spirit into English, do not copy their Hindi words. If the customer wrote in Hindi/Hinglish, reply in Hindi/Hinglish (Roman script). Always "Sir"/"Aap" tone either way. Never switch language on your own, and never default to Hinglish just because the examples you were given are in Hinglish.
-- Length is DYNAMIC, not a fixed rule — match it to what's actually needed. A greeting or a yes/no answer can be just a few words. An explanation that genuinely needs it can run 20-40 words. Never pad a short answer with fluff to sound longer, and never cram a real explanation into an unnaturally short line just to be brief.
-- Format: if the reply naturally has more than one distinct thought, put each on its own line (newline-separated — they'll be sent as separate chat messages, like a real person typing a few texts in a row). A single short reply just stays on one line; don't force a line break that isn't natural.
-- Directness: no soft reassurance filler — never say things like "tension mat lo", "don't worry", "sab thik ho jayega". State the actual fact plainly. Example — payment not found because they haven't paid: "Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye." Respectful (Sir/Aap) and blunt at the same time, not comforting.
+### LENGTH — THE MOST IMPORTANT RULE
+- Maximum 10-15 words. One single short sentence. Never more.
+- ONE message only — never multiple lines, never a list, never a paragraph. Everything you want to say has to fit in that one short line.
+- If you can't fit the full answer in 10-15 words, say the most important part only and stop. Short and incomplete beats long and complete here.
+
+### TONE
+- Talk exactly like a real Indian gamer texting a friend — casual, warm, zero corporate polish.
+- Always first person: "Maine check kiya", "Maine reject kiya" — NEVER "Admin ne check kiya" or third-person references to yourself.
+- Address the customer as "Bhai" or "Yaar" by default — like talking to a fellow gamer. Only use "Sir" right at the start of a fresh conversation or for one genuine moment of respect (e.g. reassuring them about a big payment) — never repeat "Sir" every single line, that reads as spam.
+- Natural Hinglish (Hindi in Roman script) ALWAYS — this is the one and only language, regardless of what language the customer used. No pure English sentences.
+- Zero technical/backend words — never say "fetch", "system", "database", "server", "data load ho raha hai", "API". Say it like a human: "bas 2 minute ruko, ID check karke abhi bhejta hu" instead of "system check kar raha hai".
+
+### NEVER LIE ABOUT STOCK OR SCREENSHOTS
+- Never say "screenshot available nahi hai" or claim something's out of stock from memory/guesswork — the AVAILABLE LISTINGS data below is checked live, right now. If it has real matches, confidently offer them and their screenshot. If it's genuinely empty, say so honestly — don't invent a listing either way.
+- This is about showing photos of an AVAILABLE (not yet purchased) listing — totally fine and expected. It is NOT about giving out a specific order's login/password early — that part stays gated to a confirmed, paid order (see ORDER STATUS below), which is a real rule, not an evasive lie.
 
 ### SALES ENERGY
-- You're not just support — you're the seller. When discussing any available listing (especially in response to a budget question), sound genuinely enthusiastic and persuasive: highlight what's good about it, and create natural urgency where it fits ("Sir ye ID bohot demand me hai, miss mat kariyega") or reassure on trust ("6 month full guarantee hai, aap befikar rahiye").
-- This energy is about DELIVERY, not content — only ever describe real listings/prices/details from the data given to you below. Never invent a stock count, a fake "only 1 left", or any detail not actually in the data. Persuasive tone, honest facts.
-- If the customer just agreed to buy something (see instructions below for what to say then), close confidently and warmly — this is the moment to sound like a closer, not to restate product details again.
+- You're the seller, not just support. When a real listing matches, sound genuinely into it: "Bhai abhi 700 me ye mast account available hai, dekhoge?" — natural excitement, not corporate.
+- Only ever describe real listings/prices from the data below. Never invent a stock count or a fake "only 1 left".
+- Customer just agreed to buy? Close warmly and confidently — that's your moment, not a place to repeat product details.
 
-### TOPIC DISCIPLINE (read this before anything else)
-- Answer ONLY the specific thing the customer actually asked. Order status, payment, and decline/rejection are a COMPLETELY SEPARATE topic from product/account questions (features, game UID, server, etc.) — never blend them.
-- If the customer is asking about the product/account itself — answer strictly from the PRODUCT RECORD below. Do NOT mention order status, payment, pending, or declined AT ALL in this case, even if that's the order's current status. Bringing up rejection/payment on an unrelated product question is a serious mistake.
-- If the product record doesn't have the answer, say so naturally and defer — e.g. "Sir abhi ye detail available nahi hai, payment verify hote hi bhej dunga." Never guess a feature that isn't in the data.
-- Only talk about order status, payment, verification, or decline/rejection when the customer is actually asking about THAT — see ORDER STATUS below for whether that applies right now. For a plain greeting, just greet back naturally — never mention status unprompted.
+### TOPIC DISCIPLINE
+- Answer ONLY the specific thing asked. Order status/payment/decline is a SEPARATE topic from product questions (login, features, server, level) — never blend them, even if that happens to be the order's current status.
+- Product question but the data doesn't have the answer? Say so naturally, don't guess: "Abhi ye detail nahi hai, payment ke baad bhej dunga."
+- Plain greeting? Just greet back — never mention order status unprompted.
 
 ### RESPONSE RULES
-1. Never invent a status, product detail, or outcome that isn't literally in the data below.
-2. Match the TONE (directness, personality) of the past reply samples given below — that's genuinely how this store talks to customers. This is about tone only, not language: if those samples are in Hindi/Hinglish but the customer just wrote in English, keep the tone, switch the language.
-3. Never promise a refund or cancellation unless the data explicitly says so.
-4. Not sure what the data means? Say less, don't guess.
-5. Never tell a customer to "place a new order", "start over", or that their "session expired" while they're actively engaged in paying for what they already started (asking about their payment, saying they're paying, about to send a screenshot). Stay locked onto helping them finish THIS purchase — don't pitch a different listing or a fresh order mid-flow. This applies regardless of what the backend status says.`;
+1. Never invent a status, product detail, price, or outcome not literally in the data below.
+2. Match the ENERGY (directness, excitement) of the past reply samples below, not necessarily their exact words.
+3. Never promise a refund/cancellation unless the data explicitly allows it.
+4. Never tell a customer to "place a new order" or that their "session expired" while they're actively paying for what they already started — stay focused on finishing THIS payment, regardless of the backend status.
+5. Unsure what the data means? Say less, don't guess.`;
 
 let client = null;
 function getClient() {
@@ -54,23 +60,24 @@ function getClient() {
 // this leaking into unrelated product questions just because it happened
 // to be the order's current status, which is exactly what this gate stops.
 const STATUS_DIRECTIVES = {
-  pending: "Customer hasn't paid/uploaded a screenshot yet — that's exactly why nothing has come through. State that plainly and directly, no soft reassurance, then ask for the payment screenshot. Example: \"Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye.\" Don't say anything is under review.",
-  pending_verification: "Screenshot IS submitted, you (the owner) haven't checked it yet — nothing approved or rejected. Say you're checking it yourself right now. Don't confirm delivery, don't say declined.",
+  pending: "Customer hasn't paid/uploaded a screenshot yet — say so straight, ask for the screenshot. e.g. \"Bhai, tune pay nahi kiya isliye nahi mila. Screenshot bhej check ke liye.\"",
+  pending_verification: "Screenshot IS submitted, you haven't checked it yet. Say you're checking it now yourself. Don't confirm delivery, don't say declined.",
   confirmed: "Order is paid and confirmed. Credentials are below — give them straight away, no waiting language.",
-  declined: "You (the owner) already rejected this — payment wasn't received properly or the screenshot looked fake. Say so directly, in first person, and tell them to redo the payment correctly. Do NOT tell them to wait — that already happened and it failed.",
+  declined: "You already rejected this — payment wasn't received or screenshot looked fake. Say so directly, tell them to redo it. Do NOT say wait — that already happened and failed.",
   // Deliberately does NOT say "session expired, place a new order" — a
   // real incident showed this killing active sales, telling a customer who
   // was actively mid-payment to restart from scratch. Whatever the backend
   // expiry flag says, if they're here talking about it, treat it exactly
   // like "pending": stay focused on getting the payment done.
-  expired: "Customer hasn't completed payment yet. Stay focused on getting the payment done — ask for the screenshot if you don't see one, or say you're checking if they say they already sent one. Do NOT tell them their session/order expired, do NOT tell them to place a new order or start over — that kills an active sale. Just keep helping them finish paying for what they already started.",
+  expired: "Customer hasn't completed payment yet. Stay focused on the payment — ask for the screenshot, or say you're checking if they say they sent one. Do NOT mention session/expiry, do NOT say to start over.",
 };
 
-function formatBudgetBlock(budgetAmount, matchingListings) {
-  if (budgetAmount === null) return null;
+function formatAvailabilityBlock(budgetAmount, matchingListings) {
+  if (budgetAmount === null && !matchingListings) return null;
+  const heading = budgetAmount !== null ? `CUSTOMER'S BUDGET: ₹${budgetAmount}` : "CUSTOMER IS ASKING WHAT'S AVAILABLE RIGHT NOW";
   if (!matchingListings || matchingListings.length === 0) {
-    return `CUSTOMER'S BUDGET: ₹${budgetAmount}
-MATCHING LISTINGS: none currently in stock near this budget. Say so honestly and directly — do NOT invent a listing or price. You may ask if a slightly different budget works, or offer to notify them when new stock matching this comes in.`;
+    return `${heading}
+AVAILABLE LISTINGS (checked live, right now): none in stock matching this. Say so honestly — do NOT invent one.`;
   }
   const list = matchingListings
     .map((l) => {
@@ -84,22 +91,22 @@ MATCHING LISTINGS: none currently in stock near this budget. Say so honestly and
       } catch {
         rare = [];
       }
-      if (rare.length) bits.push(rare.slice(0, 3).join(", "));
+      if (rare.length) bits.push(rare.slice(0, 2).join(", "));
       return `- ${l.title} — ${bits.join(" — ")}`;
     })
     .join("\n");
-  return `CUSTOMER'S BUDGET: ₹${budgetAmount}
-MATCHING LISTINGS (the ONLY real available IDs — never invent any other product, price, or detail; present these persuasively but honestly):
+  return `${heading}
+AVAILABLE LISTINGS (checked live, right now — the ONLY real stock, describe these, a screenshot of the top one is already attached to your reply):
 ${list}`;
 }
 
 function formatContext({ order, conversation, styleSamples, budgetAmount, matchingListings }, statusRelevant) {
-  const productBlock = `PRODUCT RECORD (use this for questions about the account/product itself — login method, features, server, level, etc.):
+  const productBlock = `PRODUCT RECORD (this order's own product — login method, features, server, level, etc.):
 - Title: ${order.listingTitle}
 - Category: ${order.productCategory || "not specified"}
 - Description: ${order.productDescription || "(no extra description on file)"}`;
 
-  const budgetBlock = formatBudgetBlock(budgetAmount ?? null, matchingListings);
+  const availabilityBlock = formatAvailabilityBlock(budgetAmount ?? null, matchingListings);
 
   const orderBlock = statusRelevant
     ? `ORDER STATUS (customer is asking about their order/payment — this is relevant right now):
@@ -131,13 +138,13 @@ ${
     : "(no past reply samples yet)";
 
   return `${productBlock}
-${budgetBlock ? `\n${budgetBlock}\n` : ""}
+${availabilityBlock ? `\n${availabilityBlock}\n` : ""}
 ${orderBlock}
 
 CONVERSATION SO FAR (this order):
 ${historyBlock}
 
-YOUR OWN PAST REPLY STYLE (from other orders — match this exact tone):
+YOUR OWN PAST REPLY ENERGY (from other orders — match the vibe, not the exact words):
 ${styleBlock}`;
 }
 
@@ -152,35 +159,23 @@ export async function generateSupportReply(context, latestBuyerMessage) {
     model: MODEL_NAME,
     systemInstruction: SYSTEM_INSTRUCTION,
     generationConfig: {
-      // Kept low on purpose: this replies from real order data, not
-      // creative writing. maxOutputTokens allows for the upper end of the
-      // dynamic length range (a genuine ~40-word explanation), not just a
-      // single short line.
-      temperature: 0.1,
-      maxOutputTokens: 180,
+      // Tight on purpose — real order data, not creative writing, and the
+      // 10-15 word cap means there's no reason to allow more tokens than
+      // that could ever need.
+      temperature: 0.15,
+      maxOutputTokens: 45,
     },
   });
   const statusRelevant = isOrderStatusQuestion(latestBuyerMessage);
-  // Stated as a hard fact rather than left for the model to infer — a real
-  // test showed it defaulting to Hinglish for a plain English message,
-  // apparently pattern-matching the (all-Hinglish) style samples over the
-  // customer's actual current language.
-  const language = detectLanguage(latestBuyerMessage);
-  const languageLine =
-    language === "english"
-      ? "The customer's message above is in ENGLISH. Your entire reply must be in English — do not use Hindi/Hinglish words, even if the style samples above are in Hinglish."
-      : "The customer's message above is in Hindi/Hinglish. Reply in Hindi/Hinglish (Roman script).";
   const prompt = `${formatContext(context, statusRelevant)}
 
 Customer's new message: "${latestBuyerMessage}"
 
-${languageLine}
-Reply as yourself (the owner), "Sir"/"Aap" tone, direct and blunt (no soft reassurance), length matched naturally to what's actually needed, following all rules above.`;
+Reply as yourself, natural Hinglish, "Bhai"/"Yaar" tone (Sir only if this is the very start), ONE short sentence, max 10-15 words, following all rules above.`;
 
   // generateContent (not the streaming variant) — the whole reply comes
-  // back as one block, matching the "no streaming" requirement. It's split
-  // into separate chat messages afterward (see app/lib/chunkReply.js), not
-  // streamed to the client.
+  // back as one block, sent as a single chat message (see
+  // app/lib/chunkReply.js), never split into multiple bubbles.
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
 }

@@ -7,7 +7,7 @@ import { buildOrderAiContext } from "@/app/lib/aiSupportContext";
 import { generateSupportReply } from "@/app/lib/gemini";
 import { getOfficialQrUrl } from "@/app/lib/paymentQr";
 import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
-import { sendChunkedReply, splitIntoChunks } from "@/app/lib/chunkReply";
+import { sendChunkedReply } from "@/app/lib/chunkReply";
 import {
   isGreetingOnly,
   pickGreetingReply,
@@ -32,9 +32,9 @@ import {
 // message in a burst ends up finding itself still "latest" and actually
 // fires the reply. Randomized per message (not a fixed constant) so the
 // bot doesn't reply after a suspiciously identical delay every time —
-// reads more like a real person's variable typing/thinking time.
-const AI_DEBOUNCE_MIN_MS = 3000;
-const AI_DEBOUNCE_MAX_MS = 10000;
+// reads more like a real person's natural typing time.
+const AI_DEBOUNCE_MIN_MS = 2000;
+const AI_DEBOUNCE_MAX_MS = 3000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -221,7 +221,17 @@ export async function POST(request, { params }) {
         const context = await buildOrderAiContext(orderId, effectiveText);
         const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
         if (reply) {
-          const combined = await sendChunkedReply({ orderId, chunks: splitIntoChunks(reply), voiceReply: wantsVoiceReply });
+          // A real screenshot of the top matching listing rides along when
+          // the customer was asking about budget/availability — "ye lo ID
+          // ki details aur screenshot", with an actual photo attached, not
+          // just a claim.
+          const combined = await sendChunkedReply({
+            orderId,
+            chunks: [reply],
+            attachmentPath: context.topListingImage || undefined,
+            attachmentType: context.topListingImage ? "image" : undefined,
+            voiceReply: wantsVoiceReply,
+          });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
         }
       } catch {

@@ -3,8 +3,8 @@
 // nothing to do with LLM creativity — greetings, QR requests, how to buy,
 // login method, and trust/warranty terms — so they're handled directly
 // instead of trusting a model to phrase store policy correctly every time.
-// Each fixed reply is pre-split into the 2-3 short chunks it should be
-// sent as (see app/lib/chunkReply.js) rather than one long block.
+// Every fixed reply here is kept under ~15 words and sent as ONE message
+// (see app/lib/chunkReply.js) — no multi-bubble splitting anymore.
 
 const GREETING_WORDS = new Set([
   "hi",
@@ -23,7 +23,7 @@ const GREETING_WORDS = new Set([
 ]);
 
 // Only fires when the ENTIRE message is made of greeting words — "Hi" or
-// "Hello sir" count, but "Hi mera order kab aayega" does not, so a real
+// "Hello bhai" count, but "Hi mera order kab aayega" does not, so a real
 // question tacked onto a greeting still gets the full database-grounded
 // reply instead of being short-circuited.
 export function isGreetingOnly(text) {
@@ -37,7 +37,10 @@ export function isGreetingOnly(text) {
   return words.every((w) => GREETING_WORDS.has(w));
 }
 
-const GREETING_REPLIES = [["Hello Sir, kaise madad kar sakta hoon?"], ["Haan Sir, bataiye kya chahiye aapko?"]];
+// "Sir" is reserved for the start of a conversation / genuine respect
+// moments — a greeting IS that moment, so it stays here. Everything after
+// this defaults to "Bhai"/"Yaar".
+const GREETING_REPLIES = [["Hello Sir, bolo kya help chahiye?"], ["Haan bhai, bata kya chahiye?"]];
 
 export function pickGreetingReply() {
   return GREETING_REPLIES[Math.floor(Math.random() * GREETING_REPLIES.length)];
@@ -58,7 +61,7 @@ export function isQrRequest(text) {
   return QR_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export const QR_REPLY_CHUNKS = ["Sir ye lo QR code.", "Ispe payment karke screenshot bhej do."];
+export const QR_REPLY_CHUNKS = ["Bhai ye lo QR code, payment karke screenshot bhej do."];
 
 const BUYING_KEYWORDS = [
   "kaise le",
@@ -80,10 +83,7 @@ export function isBuyingGuidanceQuestion(text) {
   return BUYING_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export const BUYING_GUIDANCE_CHUNKS = [
-  "Sir, aap main menu me jayea wha pr id select kariya.",
-  "Buy now pr click krke pay krdejiya jitna ke id select kri hai apne utne and apko automatic id mill jayega.",
-];
+export const BUYING_GUIDANCE_CHUNKS = ["Bhai menu se ID select kar, buy now dabao, payment karke ID mil jayegi turant."];
 
 const LOGIN_KEYWORDS = ["login", "log in", "facebook se", "google se", "kaise chalega", "id kaise chale"];
 
@@ -92,7 +92,7 @@ export function isLoginQuestion(text) {
   return LOGIN_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export const LOGIN_REPLY_CHUNKS = ["Sir id Facebook se login hai."];
+export const LOGIN_REPLY_CHUNKS = ["Bhai id Facebook se login hai."];
 
 const TRUST_KEYWORDS = [
   "trust",
@@ -115,8 +115,7 @@ export function isTrustQuestion(text) {
 }
 
 export const TRUST_REPLY_CHUNKS = [
-  "Sir, id ki guaranteed rehti hai 6 month ki.",
-  "Agar 6 month me koi dikat aaye to aapke paise aapko wps ho jayenga ya jaise id aapko dikhaye gye hai ushe ache id aapko de jayegi free of cost bina aapise ek rs liye.",
+  "Bhai 6 month guarantee hai, dikkat aaye to paisa wapas ya nayi ID free milegi.",
 ];
 
 // Fires when the customer has just agreed to buy a specific ID that was
@@ -157,8 +156,7 @@ export function isBuyIntent(text) {
 // isQrRequest reply above (that one's a plain "here's the QR"; this one is
 // the actual closing line once they've committed to a specific ID).
 export const CLOSING_REPLY_CHUNKS = [
-  "Sir, aap is official QR par amount pay karke screenshot yahi bhej dijiye.",
-  "Payment verify hote hi automatic ID aur password aapko turant mil jayega.",
+  "Bhai QR pe payment karke screenshot bhejo, ID-password turant mil jayega.",
 ];
 
 // Pulls a rupee amount out of a budget-shopping message ("500 rs me id
@@ -180,6 +178,29 @@ export function extractBudgetAmount(text) {
 
 export function isBudgetQuestion(text) {
   return extractBudgetAmount(text) !== null;
+}
+
+// A general "kya available hai" / "koi id hai kya" question — no specific
+// price mentioned, so extractBudgetAmount won't fire, but the customer
+// still needs a REAL, live stock answer, never a guessed "sab sold out".
+const AVAILABILITY_KEYWORDS = [
+  "available hai",
+  "available h",
+  "koi id hai",
+  "id hai kya",
+  "stock hai",
+  "kya hai abhi",
+  "kya available",
+  "id available",
+  "any id available",
+  "what's available",
+  "do you have",
+  "got any",
+];
+
+export function isAvailabilityQuestion(text) {
+  const lower = String(text || "").toLowerCase();
+  return AVAILABILITY_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 // Gates whether the order-status directive gets shown to the model at all.
@@ -215,93 +236,4 @@ const STATUS_KEYWORDS = [
 export function isOrderStatusQuestion(text) {
   const lower = String(text || "").toLowerCase();
   return STATUS_KEYWORDS.some((kw) => lower.includes(kw));
-}
-
-// Deterministic language detection for the general Gemini fallback — a
-// real test showed the model defaulting to Hinglish even for a plain
-// English message, apparently pattern-matching the (all-Hinglish)
-// past-reply style samples over the customer's actual current language.
-// Rather than trust instruction-following alone for this, the detected
-// language is stated explicitly in the prompt as a hard fact.
-const HINGLISH_MARKER_WORDS = new Set([
-  "hai",
-  "hain",
-  "kya",
-  "kaise",
-  "kab",
-  "kahan",
-  "kyun",
-  "kyu",
-  "mera",
-  "meri",
-  "mere",
-  "aapka",
-  "aapki",
-  "aap",
-  "nahi",
-  "nahin",
-  "kar",
-  "karo",
-  "kro",
-  "krdo",
-  "raha",
-  "rha",
-  "rahi",
-  "hua",
-  "hogaya",
-  "ho",
-  "tha",
-  "thi",
-  "milega",
-  "bhejo",
-  "bhej",
-  "diya",
-  "diyo",
-  "sahi",
-  "abhi",
-  "batao",
-  "bataiye",
-  "chahiye",
-  "dikhao",
-  "dikha",
-  "dikhado",
-  "wala",
-  "wali",
-  "kitna",
-  "kitne",
-  "kitni",
-  "accha",
-  "achha",
-  "theek",
-  "thik",
-  "kaisa",
-  "kaisi",
-  "konsa",
-  "kaunsa",
-  "hoga",
-  "hogi",
-  "lelo",
-  "lena",
-  "dedo",
-  "denge",
-  "milegi",
-  "milenge",
-  "chalega",
-  "chalegi",
-  "de",
-  "kro",
-  "riya",
-  "kariya",
-  "krke",
-]);
-
-export function detectLanguage(text) {
-  const cleaned = String(text || "")
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
-    .trim();
-  if (!cleaned) return "english";
-  const words = cleaned.split(/\s+/).filter(Boolean);
-  const hasHinglishMarker = words.some((w) => HINGLISH_MARKER_WORDS.has(w));
-  return hasHinglishMarker ? "hinglish" : "english";
 }
