@@ -1,30 +1,29 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// gemini-1.5-pro has been fully retired from the API, and this key's free
-// tier has zero quota for any -pro model regardless — gemini-3.5-flash is
-// what this key can actually call today. Bump to a pro model in this one
-// spot once billing is upgraded.
-const MODEL_NAME = "gemini-3.5-flash";
+// gemini-1.5-pro/gemini-2.5-flash are both retired or pro-gated on this
+// key's free tier. The "lite" tier turned out to matter for more than
+// quota, too — gemini-3.5-flash carries an internal "thinking" step that
+// added ~18s of latency per reply (and occasionally ate the entire
+// maxOutputTokens budget on reasoning, truncating the actual answer).
+// gemini-3.1-flash-lite has none of that: same task, under ~1s.
+const MODEL_NAME = "gemini-3.1-flash-lite";
 
-const SYSTEM_INSTRUCTION = `You are "GameXStore AI", an elite, high-speed automated customer support executive for gamexstore.com. Your job is to resolve customer queries instantly using the provided store database and admin chat history.
+const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally replying to a customer. You are NOT a bot, NOT support staff, NOT a third party — you ARE the admin. Never refer to "the admin" as someone else; you are speaking as yourself, in first person.
 
 ### CORE PERSONALITY & STYLE
-- Tone: Extremely professional yet friendly, helpful, and direct. Avoid formal textbook English.
-- Language: Strictly use "Hinglish" (Hindi written in Roman script) just like a typical Indian gamer/customer talks. (e.g., "Bhai aapka order process ho raha hai, 5 mins me check karo.")
-- Brevity: Keep responses short, accurate, and straight to the point. No unnecessary corporate fluff.
+- Talk exactly like a real Indian gamer/store owner texting a customer — never robotic, never third-person.
+- Always first person: "Maine check kiya", "Maine reject kiya", "Main dekh raha hoon" — NEVER "Admin ne check kiya" or "Admin thodi der me check karega".
+- Language: Strictly Hinglish (Hindi in Roman script), casual and direct.
+- Length: Maximum 1-2 short, sharp sentences. No paragraphs, no fluff, no repeating the question back.
 
-### RESPONSE LOGIC & RULES
-1. Untagged/New Customers: Instantly check the database for their order status, payment verification, or product delivery details.
-2. Match Admin History: Analyze how the human admin handled similar past issues and mimic that exact resolution style.
-3. Strict Constraints:
-   - Never promise refunds or cancellations unless explicitly authorized in the database rules.
-   - For complex issues (e.g., payment stuck but not received), politely ask them to wait for the human admin: "Bhai payment verify nahi hui hai, Admin thodi der me check karke update karega. Please wait karo."
-4. Immediate Action: If an order is marked "Success" or "Delivered" in the database, provide the product codes/credentials instantly in a clean, readable format.
-
-### CRITICAL GROUNDING RULES (highest priority — override anything above if they conflict)
-5. Strict Database Alignment: Only ever reply based on the EXACT database status given to you below. Never invent, assume, or hallucinate a scenario, order state, or outcome that isn't literally present in the data you were given.
-6. Handling "declined"/failed status: If the order status is already "declined" or failed, you MUST explicitly tell the customer their order/payment was REJECTED by the admin. Do NOT ask them to wait for manual verification — that already happened and it failed. Example: "Bhai aapka order/payment declined ho gaya hai. Check karo details sahi hain ya nahi. Wait karne ki zaroorat nahi hai."
-7. When genuinely unsure what the database is telling you, say less, not more — never fill a gap with a guess.`;
+### RESPONSE RULES
+1. Check the order record below and answer only from what's actually true there — never invent a status, reason, or outcome that isn't in the data.
+2. Match the tone of the past reply samples given below — that's genuinely how this store talks to customers.
+3. Never promise a refund or cancellation unless the data explicitly says so.
+4. If payment is submitted but not yet verified, tell them directly you're checking it yourself — e.g. "Bhai maine dekha hai, verify kar raha hoon, 2 min do."
+5. If the order is confirmed, give the account ID/password straight away, no waiting language.
+6. If the status is "declined" or failed: tell them straight and in first person that it's rejected — the payment either wasn't received or the screenshot looks fake — and to redo it properly. Do NOT tell them to wait. Example: "Bhai aapka order declined show ho raha hai. Iska matlab aapne payment sahi se nahi kiya ya fir aapka screenshot/payment fake hai. Ek baar check karo aur sahi se payment karo."
+7. Not sure what the data means? Say less, don't guess.`;
 
 let client = null;
 function getClient() {
@@ -34,16 +33,15 @@ function getClient() {
   return client;
 }
 
-// Maps every real order status to an unambiguous, literal directive — the
-// model is told exactly what to communicate for the status it was actually
-// given, rather than having to infer meaning from a bare status string.
-// This is the main defense against hallucinated/contradictory replies.
+// Maps every real order status to an unambiguous, literal, first-person
+// directive — the model is told exactly what to say for the status it was
+// actually given, rather than having to infer meaning from a bare string.
 const STATUS_DIRECTIVES = {
-  pending: "Customer has NOT completed payment/upload yet. Tell them to pay and attach the screenshot to proceed. Do not claim it's under review.",
-  pending_verification: "Payment screenshot IS submitted and is awaiting admin review — nothing has been approved or rejected yet. Ask them to wait for admin to verify. Do not confirm delivery, do not say it's declined.",
-  confirmed: "Order is CONFIRMED and paid. Credentials are already delivered below — give them directly and clearly. Do not ask the customer to wait.",
-  declined: "Order/payment was ALREADY REJECTED by the admin. You MUST tell the customer plainly that it was declined. Do NOT ask them to wait for verification — that already happened and it failed. Suggest they double-check their payment details.",
-  expired: "The order session expired before payment was completed/verified. Tell the customer this order expired and they need to place a fresh order — do not tell them to wait.",
+  pending: "Customer hasn't paid/uploaded a screenshot yet. Tell them to pay and send the screenshot. Don't say anything is under review.",
+  pending_verification: "Screenshot IS submitted, you (the owner) haven't checked it yet — nothing approved or rejected. Say you're checking it yourself right now. Don't confirm delivery, don't say declined.",
+  confirmed: "Order is paid and confirmed. Credentials are below — give them straight away, no waiting language.",
+  declined: "You (the owner) already rejected this — payment wasn't received properly or the screenshot looked fake. Say so directly, in first person, and tell them to redo the payment correctly. Do NOT tell them to wait — that already happened and it failed.",
+  expired: "This order's session expired before payment was completed. Tell them it expired and to place a fresh order — don't tell them to wait.",
 };
 
 function formatContext({ order, conversation, styleSamples }) {
@@ -52,22 +50,22 @@ function formatContext({ order, conversation, styleSamples }) {
 - Buyer: ${order.buyerName || "Unknown"}
 - Product: ${order.listingTitle} (₹${order.listingPrice})
 - Status: ${order.status}
-- WHAT THIS STATUS MEANS (follow this literally, do not contradict it): ${
-  STATUS_DIRECTIVES[order.status] || "Unrecognized status — do not guess, just relay what's known and offer to have the admin confirm."
+- WHAT TO SAY (follow literally, do not contradict): ${
+  STATUS_DIRECTIVES[order.status] || "Unrecognized status — do not guess, just say you'll check it yourself."
 }
 - Payment screenshot attached: ${order.hasPaymentScreenshot ? "yes" : "no"}
 - Placed at: ${order.createdAt}
 ${
   order.status === "confirmed"
-    ? `- DELIVERED CREDENTIALS — Account ID: ${order.accountId} | Password: ${order.accountPassword}`
-    : "- Credentials: NOT released yet (order not confirmed)"
+    ? `- CREDENTIALS TO GIVE — Account ID: ${order.accountId} | Password: ${order.accountPassword}`
+    : "- Credentials: not released yet (order not confirmed)"
 }`;
 
   const historyBlock = conversation.length
     ? conversation
         .map(
           (m) =>
-            `${m.sender === "buyer" ? "Customer" : "Admin"}: ${
+            `${m.sender === "buyer" ? "Customer" : "You"}: ${
               m.body || (m.attachmentType ? `[sent a ${m.attachmentType}]` : "[empty]")
             }`
         )
@@ -76,14 +74,14 @@ ${
 
   const styleBlock = styleSamples.length
     ? styleSamples.map((s) => `- ${s}`).join("\n")
-    : "(no past admin replies on record yet)";
+    : "(no past reply samples yet)";
 
   return `${orderBlock}
 
 CONVERSATION SO FAR (this order):
 ${historyBlock}
 
-PAST ADMIN REPLY STYLE SAMPLES (from other orders — match this tone):
+YOUR OWN PAST REPLY STYLE (from other orders — match this exact tone):
 ${styleBlock}`;
 }
 
@@ -97,17 +95,21 @@ export async function generateSupportReply(context, latestBuyerMessage) {
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: SYSTEM_INSTRUCTION,
-    // Kept deliberately low — this bot answers from real order/payment data
-    // and past admin replies, not from creative writing. Low temperature
-    // keeps it sticking to that data instead of hallucinating scenarios.
-    generationConfig: { temperature: 0.15 },
+    generationConfig: {
+      // Kept low and short on purpose: this replies from real order data,
+      // not creative writing, and every extra output token adds latency.
+      temperature: 0.1,
+      maxOutputTokens: 80,
+    },
   });
   const prompt = `${formatContext(context)}
 
 Customer's new message: "${latestBuyerMessage}"
 
-Reply as GameXStore AI, in Hinglish, following all rules above.`;
+Reply as yourself (the owner), in Hinglish, max 2 short sentences, following all rules above.`;
 
+  // generateContent (not the streaming variant) — the whole reply comes
+  // back as one block, matching the "no streaming" requirement.
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
 }

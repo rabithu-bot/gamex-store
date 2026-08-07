@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { saveMessageAttachment } from "@/app/lib/uploads";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
@@ -72,24 +72,32 @@ export async function POST(request, { params }) {
     body: notifyBody,
   }).catch(() => {});
 
-  // Untagged orders get an instant AI-generated reply — tagging a customer
-  // (VIP, priority, etc.) is the admin's own signal that they're handling
-  // this one personally, so the bot stays out of the way once that happens.
-  // Failures here must never break the buyer's own message from saving —
-  // worst case, no auto-reply goes out and a human picks it up as normal.
+  // Untagged orders get an AI-generated reply — tagging a customer (VIP,
+  // priority, etc.) is the admin's own signal that they're handling this
+  // one personally, so the bot stays out of the way once that happens.
+  // Deferred via after() rather than awaited: the buyer's own message
+  // still saves and this request still returns immediately either way, but
+  // the Gemini round-trip (a couple of seconds) no longer holds up the
+  // send button — the reply just appears on the buyer's next poll tick,
+  // same as waiting for a real person to type back. after() (unlike a bare
+  // un-awaited promise) is guaranteed to actually finish running even
+  // though the response has already gone out.
   if (!order.tag) {
-    try {
-      const context = await buildOrderAiContext(orderId);
-      const reply = context ? await generateSupportReply(context, notifyBody) : null;
-      if (reply) {
-        await prisma.message.create({
-          data: { orderId, sender: "admin", body: reply },
-        });
-        await notifyBuyerOfReply({ orderId, body: reply }).catch(() => {});
+    after(async () => {
+      try {
+        const context = await buildOrderAiContext(orderId);
+        const reply = context ? await generateSupportReply(context, notifyBody) : null;
+        if (reply) {
+          await prisma.message.create({
+            data: { orderId, sender: "admin", body: reply },
+          });
+          await notifyBuyerOfReply({ orderId, body: reply }).catch(() => {});
+        }
+      } catch {
+        // AI failures must never surface to the buyer — worst case, no
+        // auto-reply goes out and a human picks it up as normal.
       }
-    } catch {
-      // Swallowed — see comment above.
-    }
+    });
   }
 
   return NextResponse.json({ ok: true });

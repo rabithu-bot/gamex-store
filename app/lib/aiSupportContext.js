@@ -2,8 +2,14 @@ import { prisma } from "@/app/lib/prisma";
 
 // There's no real similarity search here — just the most recent admin-
 // authored replies from OTHER orders, given to the model as tone/phrasing
-// samples so it can mimic how this store's admin actually talks.
-const STYLE_SAMPLE_SIZE = 20;
+// samples so it can mimic how this store's admin actually talks. Kept small
+// — every extra sample is more input tokens, and this bot answers in 1-2
+// sentences from live order data, not from a large few-shot corpus.
+const STYLE_SAMPLE_SIZE = 8;
+// Only the tail of a long thread matters for "what's the current
+// situation" — capping this keeps the prompt (and therefore latency) from
+// growing unbounded on orders with a long conversation history.
+const CONVERSATION_TAIL_SIZE = 10;
 
 // Everything Gemini needs to answer a specific order's support query:
 // the order's own record + full thread, plus a style sample from past
@@ -39,7 +45,7 @@ export async function buildOrderAiContext(orderId) {
       accountId: order.status === "confirmed" ? order.accountId : null,
       accountPassword: order.status === "confirmed" ? order.accountPassword : null,
     },
-    conversation: order.messages.map((m) => ({
+    conversation: order.messages.slice(-CONVERSATION_TAIL_SIZE).map((m) => ({
       sender: m.sender,
       body: m.body,
       attachmentType: m.attachmentType,
