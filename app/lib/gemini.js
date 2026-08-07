@@ -20,6 +20,11 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 - Format: if the reply naturally has more than one distinct thought, put each on its own line (newline-separated — they'll be sent as separate chat messages, like a real person typing a few texts in a row). A single short reply just stays on one line; don't force a line break that isn't natural.
 - Directness: no soft reassurance filler — never say things like "tension mat lo", "don't worry", "sab thik ho jayega". State the actual fact plainly. Example — payment not found because they haven't paid: "Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye." Respectful (Sir/Aap) and blunt at the same time, not comforting.
 
+### SALES ENERGY
+- You're not just support — you're the seller. When discussing any available listing (especially in response to a budget question), sound genuinely enthusiastic and persuasive: highlight what's good about it, and create natural urgency where it fits ("Sir ye ID bohot demand me hai, miss mat kariyega") or reassure on trust ("6 month full guarantee hai, aap befikar rahiye").
+- This energy is about DELIVERY, not content — only ever describe real listings/prices/details from the data given to you below. Never invent a stock count, a fake "only 1 left", or any detail not actually in the data. Persuasive tone, honest facts.
+- If the customer just agreed to buy something (see instructions below for what to say then), close confidently and warmly — this is the moment to sound like a closer, not to restate product details again.
+
 ### TOPIC DISCIPLINE (read this before anything else)
 - Answer ONLY the specific thing the customer actually asked. Order status, payment, and decline/rejection are a COMPLETELY SEPARATE topic from product/account questions (features, game UID, server, etc.) — never blend them.
 - If the customer is asking about the product/account itself — answer strictly from the PRODUCT RECORD below. Do NOT mention order status, payment, pending, or declined AT ALL in this case, even if that's the order's current status. Bringing up rejection/payment on an unrelated product question is a serious mistake.
@@ -55,11 +60,40 @@ const STATUS_DIRECTIVES = {
   expired: "This order's session expired before payment was completed. Tell them it expired and to place a fresh order — don't tell them to wait.",
 };
 
-function formatContext({ order, conversation, styleSamples }, statusRelevant) {
+function formatBudgetBlock(budgetAmount, matchingListings) {
+  if (budgetAmount === null) return null;
+  if (!matchingListings || matchingListings.length === 0) {
+    return `CUSTOMER'S BUDGET: ₹${budgetAmount}
+MATCHING LISTINGS: none currently in stock near this budget. Say so honestly and directly — do NOT invent a listing or price. You may ask if a slightly different budget works, or offer to notify them when new stock matching this comes in.`;
+  }
+  const list = matchingListings
+    .map((l) => {
+      const bits = [`₹${l.price}`];
+      if (l.tier) bits.push(l.tier);
+      if (l.level) bits.push(`Level ${l.level}`);
+      if (l.gameUid) bits.push(`UID ${l.gameUid}`);
+      let rare = [];
+      try {
+        rare = JSON.parse(l.rareItems || "[]");
+      } catch {
+        rare = [];
+      }
+      if (rare.length) bits.push(rare.slice(0, 3).join(", "));
+      return `- ${l.title} — ${bits.join(" — ")}`;
+    })
+    .join("\n");
+  return `CUSTOMER'S BUDGET: ₹${budgetAmount}
+MATCHING LISTINGS (the ONLY real available IDs — never invent any other product, price, or detail; present these persuasively but honestly):
+${list}`;
+}
+
+function formatContext({ order, conversation, styleSamples, budgetAmount, matchingListings }, statusRelevant) {
   const productBlock = `PRODUCT RECORD (use this for questions about the account/product itself — login method, features, server, level, etc.):
 - Title: ${order.listingTitle}
 - Category: ${order.productCategory || "not specified"}
 - Description: ${order.productDescription || "(no extra description on file)"}`;
+
+  const budgetBlock = formatBudgetBlock(budgetAmount ?? null, matchingListings);
 
   const orderBlock = statusRelevant
     ? `ORDER STATUS (customer is asking about their order/payment — this is relevant right now):
@@ -91,7 +125,7 @@ ${
     : "(no past reply samples yet)";
 
   return `${productBlock}
-
+${budgetBlock ? `\n${budgetBlock}\n` : ""}
 ${orderBlock}
 
 CONVERSATION SO FAR (this order):

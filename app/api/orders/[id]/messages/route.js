@@ -13,6 +13,8 @@ import {
   pickGreetingReply,
   isQrRequest,
   QR_REPLY_CHUNKS,
+  isBuyIntent,
+  CLOSING_REPLY_CHUNKS,
   isLoginQuestion,
   LOGIN_REPLY_CHUNKS,
   isBuyingGuidanceQuestion,
@@ -28,11 +30,18 @@ import {
 // checks whether it's still the most recent buyer message. If a newer one
 // landed in the meantime, this attempt backs off silently; only the last
 // message in a burst ends up finding itself still "latest" and actually
-// fires the reply, ~2s after the buyer goes quiet.
-const AI_DEBOUNCE_MS = 2000;
+// fires the reply. Randomized per message (not a fixed constant) so the
+// bot doesn't reply after a suspiciously identical delay every time —
+// reads more like a real person's variable typing/thinking time.
+const AI_DEBOUNCE_MIN_MS = 3000;
+const AI_DEBOUNCE_MAX_MS = 10000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function randomDebounceMs() {
+  return AI_DEBOUNCE_MIN_MS + Math.floor(Math.random() * (AI_DEBOUNCE_MAX_MS - AI_DEBOUNCE_MIN_MS));
 }
 
 export async function POST(request, { params }) {
@@ -114,7 +123,7 @@ export async function POST(request, { params }) {
   if (!order.tag) {
     after(async () => {
       try {
-        await sleep(AI_DEBOUNCE_MS);
+        await sleep(randomDebounceMs());
 
         // A newer buyer message may have landed while this one was
         // waiting out its debounce window — if so, back off silently and
@@ -146,6 +155,23 @@ export async function POST(request, { params }) {
         if (isGreetingOnly(effectiveText)) {
           const chunks = pickGreetingReply();
           const combined = await sendChunkedReply({ orderId, chunks });
+          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
+          return;
+        }
+
+        // Sale-closing takes priority over a bare "QR do" — the customer
+        // has just committed to a specific ID, so the reply is the closing
+        // line, not the plain "here's the QR" one, even though both send
+        // the same real QR image pulled from the global settings row
+        // (never from chat history or any other order's data).
+        if (isBuyIntent(effectiveText)) {
+          const qrUrl = await getOfficialQrUrl();
+          const combined = await sendChunkedReply({
+            orderId,
+            chunks: CLOSING_REPLY_CHUNKS,
+            attachmentPath: qrUrl,
+            attachmentType: "image",
+          });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
@@ -182,7 +208,7 @@ export async function POST(request, { params }) {
           return;
         }
 
-        const context = await buildOrderAiContext(orderId);
+        const context = await buildOrderAiContext(orderId, effectiveText);
         const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
         if (reply) {
           const combined = await sendChunkedReply({ orderId, chunks: splitIntoChunks(reply) });

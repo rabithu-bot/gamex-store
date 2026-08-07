@@ -1,4 +1,6 @@
 import { prisma } from "@/app/lib/prisma";
+import { extractBudgetAmount } from "@/app/lib/aiIntent";
+import { findListingsNearBudget } from "@/app/lib/listingSearch";
 
 // There's no real similarity search here — just the most recent admin-
 // authored replies from OTHER orders, given to the model as tone/phrasing
@@ -16,7 +18,7 @@ const CONVERSATION_TAIL_SIZE = 10;
 // admin replies elsewhere. Credentials are only ever included once the
 // order is actually confirmed — mirrors the same gate the real order page
 // uses before showing them to the buyer.
-export async function buildOrderAiContext(orderId) {
+export async function buildOrderAiContext(orderId, latestText) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -32,6 +34,13 @@ export async function buildOrderAiContext(orderId) {
     take: STYLE_SAMPLE_SIZE,
     select: { body: true },
   });
+
+  // "500 rs me id dikhao" — real, live listing search, not the LLM
+  // guessing at stock. Null when no budget was mentioned at all (as
+  // opposed to an empty array, which means a budget WAS mentioned but
+  // genuinely nothing is in stock right now).
+  const budgetAmount = extractBudgetAmount(latestText);
+  const matchingListings = budgetAmount !== null ? await findListingsNearBudget(budgetAmount) : null;
 
   return {
     order: {
@@ -59,5 +68,7 @@ export async function buildOrderAiContext(orderId) {
       createdAt: m.createdAt,
     })),
     styleSamples: pastAdminMessages.map((m) => m.body),
+    budgetAmount,
+    matchingListings,
   };
 }

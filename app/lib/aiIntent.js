@@ -119,6 +119,69 @@ export const TRUST_REPLY_CHUNKS = [
   "Agar 6 month me koi dikat aaye to aapke paise aapko wps ho jayenga ya jaise id aapko dikhaye gye hai ushe ache id aapko de jayegi free of cost bina aapise ek rs liye.",
 ];
 
+// Fires when the customer has just agreed to buy a specific ID that was
+// already shown to them (e.g. after a budget pitch) — "haan ye chahiye",
+// "deal done", "buy karna hai". Distinct from isBuyingGuidanceQuestion,
+// which is someone asking HOW the buying process works in general.
+const BUY_INTENT_KEYWORDS = [
+  "haan ye chahiye",
+  "ye chahiye",
+  "deal done",
+  "buy karna hai",
+  "le lunga",
+  "le lena",
+  "ye lelo",
+  "ye le lo",
+  "ye wala de do",
+  "ye wala chahiye",
+  "confirm kar",
+  "final kar",
+  "pay kar deta",
+  "pay karta hoon",
+  "chalo le lete",
+  "haan le lunga",
+  "ok le lo",
+  "isse le lunga",
+  "yes i want this",
+  "i want this one",
+  "i'll take this",
+  "i will take this",
+];
+
+export function isBuyIntent(text) {
+  const lower = String(text || "").toLowerCase();
+  return BUY_INTENT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+// The sale-closing message — deliberately different wording from the bare
+// isQrRequest reply above (that one's a plain "here's the QR"; this one is
+// the actual closing line once they've committed to a specific ID).
+export const CLOSING_REPLY_CHUNKS = [
+  "Sir, aap is official QR par amount pay karke screenshot yahi bhej dijiye.",
+  "Payment verify hote hi automatic ID aur password aapko turant mil jayega.",
+];
+
+// Pulls a rupee amount out of a budget-shopping message ("500 rs me id
+// dikhao", "budget 800 hai", "700 wala kya hai") — requires BOTH a number
+// and a nearby budget/shopping-context word, so a stray number elsewhere
+// in the conversation doesn't get misread as a price ask.
+const BUDGET_CONTEXT_PATTERN =
+  /budget|rs\.?\s*\d|rupee|price|me id|mein id|me kya|mein kya|ka id|wala id|dikhao|milega|hai kya|range|ke andar|se kam|se km|tak/i;
+
+export function extractBudgetAmount(text) {
+  const raw = String(text || "");
+  if (!BUDGET_CONTEXT_PATTERN.test(raw)) return null;
+  const match = raw.match(/\d{2,6}/);
+  if (!match) return null;
+  const amount = parseInt(match[0], 10);
+  if (amount < 50 || amount > 100000) return null;
+  return amount;
+}
+
+export function isBudgetQuestion(text) {
+  return extractBudgetAmount(text) !== null;
+}
+
 // Gates whether the order-status directive gets shown to the model at all.
 // Without this, the bot was pulling in "your order is declined" for
 // completely unrelated questions (e.g. "login Facebook ya Google se hai?")
