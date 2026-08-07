@@ -147,6 +147,7 @@ function ProofPair({ video, photo, photoIndex, onZoomPhoto }) {
   return (
     <div className="proof-pair">
       <div
+        id={`proof-${video.id}`}
         className="proof-gallery-thumb proof-gallery-thumb-video proof-pair-video-wrap"
         style={photoHeight ? { height: photoHeight } : undefined}
       >
@@ -155,6 +156,7 @@ function ProofPair({ video, photo, photoIndex, onZoomPhoto }) {
       </div>
 
       <button
+        id={`proof-${photo.id}`}
         ref={photoRef}
         type="button"
         className="proof-gallery-thumb proof-pair-photo-wrap"
@@ -202,7 +204,7 @@ export default function ProofGallery({ proofs }) {
           const { proof } = item;
           if (proof.type === "video") {
             return (
-              <div key={item.key} className="proof-gallery-thumb proof-gallery-thumb-video">
+              <div key={item.key} id={`proof-${proof.id}`} className="proof-gallery-thumb proof-gallery-thumb-video">
                 <ProofVideo url={proof.url} onPlay={pauseOtherVideos} />
                 <ProofBadges proofDate={proof.proofDate} />
               </div>
@@ -213,6 +215,7 @@ export default function ProofGallery({ proofs }) {
           return (
             <button
               key={item.key}
+              id={`proof-${proof.id}`}
               type="button"
               className="proof-gallery-thumb"
               onClick={() => setIndex(thisImageIndex)}

@@ -14,12 +14,14 @@ import {
   Check,
   CheckCheck,
   Video as VideoIcon,
+  Share2,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import VoiceMessagePlayer from "@/app/components/VoiceMessagePlayer";
 import MessageUnsendMenu from "@/app/mafia/MessageUnsendMenu";
 import CustomerTagPicker from "@/app/mafia/CustomerTagPicker";
+import QuickShareModal from "@/app/mafia/QuickShareModal";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audioMime";
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
@@ -70,6 +72,7 @@ export default function ChatThread({ orderId }) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [swipeState, setSwipeState] = useState(null); // { id, offset }
   const [now, setNow] = useState(() => Date.now());
+  const [quickShareOpen, setQuickShareOpen] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
@@ -366,6 +369,11 @@ export default function ChatThread({ orderId }) {
 
   function startReply(message) {
     setReplyTarget(message);
+  }
+
+  function insertQuickShareLink(link) {
+    setReplyText((prev) => (prev.trim() ? `${prev.trim()} ${link}` : link));
+    textareaRef.current?.focus();
   }
 
   function handleBubblePointerDown(e, message) {
@@ -797,6 +805,16 @@ export default function ChatThread({ orderId }) {
               <button
                 type="button"
                 className="chat-attach-btn"
+                aria-label="Quick share"
+                onClick={() => setQuickShareOpen(true)}
+              >
+                <Share2 size={16} />
+              </button>
+            )}
+            {!editingMessageId && (
+              <button
+                type="button"
+                className="chat-attach-btn"
                 aria-label="Attach image"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -822,6 +840,10 @@ export default function ChatThread({ orderId }) {
       </div>
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
+
+      {quickShareOpen && (
+        <QuickShareModal onSelect={insertQuickShareLink} onClose={() => setQuickShareOpen(false)} />
+      )}
 
       {activeMenu && (
         <MessageUnsendMenu

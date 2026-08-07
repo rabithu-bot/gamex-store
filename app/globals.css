@@ -5190,3 +5190,142 @@ select:focus-visible {
 .ai-toggle-switch.on .ai-toggle-thumb {
   transform: translateX(22px);
 }
+
+.quick-share-box {
+  width: 100%;
+  max-width: 420px;
+  max-height: min(600px, 80vh);
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+  animation: lightbox-zoom-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.quick-share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quick-share-header h3 {
+  margin: 0;
+}
+
+.quick-share-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+
+.quick-share-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.quick-share-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quick-share-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  opacity: 1;
+}
+
+.quick-share-list {
+  margin-top: 0.9rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quick-share-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-share-item:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.quick-share-item-title {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-share-item-meta {
+  font-size: 0.78rem;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.quick-share-item-proof {
+  justify-content: flex-start;
+}
+
+.quick-share-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Sits under the sticky site header so a #proof-N deep link doesn't scroll
+   the target item halfway underneath it, then briefly glows so the exact
+   item being pointed to is obvious rather than just "somewhere on screen". */
+.proof-gallery-thumb {
+  scroll-margin-top: 90px;
+}
+
+.proof-gallery-thumb:target,
+.proof-pair:has(:target) .proof-gallery-thumb {
+  animation: proof-target-glow 2s ease-out 1;
+}
+
+@keyframes proof-target-glow {
+  0%, 30% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
