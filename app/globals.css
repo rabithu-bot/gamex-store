@@ -5137,3 +5137,56 @@ select:focus-visible {
 .admin-light .chat-reply-hover-btn {
   background: #ffffff;
 }
+
+/* ---- AI Learning (shadow mode) settings ---- */
+
+.ai-learning-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+
+.ai-learning-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  transition: width 0.3s ease;
+}
+
+.ai-toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ai-toggle-switch.on {
+  background: #059669;
+}
+
+.ai-toggle-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ai-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.ai-toggle-switch.on .ai-toggle-thumb {
+  transform: translateX(22px);
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck, Megaphone } from "lucide-react";
+import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck, Megaphone, Bot } from "lucide-react";
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
@@ -81,6 +81,14 @@ export default function AdminDrawer({ open, onClose }) {
           <span className="admin-drawer-row-label">
             <Megaphone size={16} />
             Broadcast Push
+          </span>
+          <ChevronRight size={16} className="admin-drawer-chevron" />
+        </Link>
+
+        <Link href="/mafia/settings/ai-learning" className="admin-drawer-row" onClick={onClose}>
+          <span className="admin-drawer-row-label">
+            <Bot size={16} />
+            AI Learning
           </span>
           <ChevronRight size={16} className="admin-drawer-chevron" />
         </Link>

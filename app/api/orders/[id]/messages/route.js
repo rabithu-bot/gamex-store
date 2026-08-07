@@ -8,6 +8,7 @@ import { generateSupportReply } from "@/app/lib/gemini";
 import { getOfficialQrUrl } from "@/app/lib/paymentQr";
 import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
 import { sendChunkedReply } from "@/app/lib/chunkReply";
+import { isAiAutoReplyEnabled } from "@/app/lib/aiLearning";
 import {
   isGreetingOnly,
   pickGreetingReply,
@@ -123,6 +124,13 @@ export async function POST(request, { params }) {
   if (!order.tag) {
     after(async () => {
       try {
+        // Shadow learning mode: the AI observes and logs (see the admin
+        // reply route) but never replies on its own until this is switched
+        // on — which itself is hard-gated at 100% learning progress, see
+        // app/lib/aiLearning.js. Checked first, before the debounce wait,
+        // so a disabled shop does zero extra work per message.
+        if (!(await isAiAutoReplyEnabled())) return;
+
         await sleep(randomDebounceMs());
 
         // A newer buyer message may have landed while this one was

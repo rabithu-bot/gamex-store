@@ -183,6 +183,24 @@ model Setting {
   value String
 }
 
+// "Shadow learning" log — every real admin reply, paired with the customer
+// message it responded to, captured purely as an observation while the AI
+// auto-reply is switched off. Not tied to Order via a relation on purpose:
+// this is meant to survive as a standing historical record independent of
+// order lifecycle (an order being deleted shouldn't erase what was learned
+// from it).
+model AiObservation {
+  id                     Int      @id @default(autoincrement())
+  orderId                String
+  customerMessage        String
+  customerAttachmentType String? // "image" | "video" | "audio" | null
+  adminReply             String
+  adminAttachmentType    String? // "image" | "video" | "audio" | null
+  createdAt              DateTime @default(now())
+
+  @@index([orderId])
+}
+
 model PushLog {
   id        Int      @id @default(autoincrement())
   type      String // "broadcast" | "admin-alert" | "buyer-reply"
