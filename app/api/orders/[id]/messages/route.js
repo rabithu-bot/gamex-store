@@ -141,7 +141,12 @@ export async function POST(request, { params }) {
         // nothing reliable to respond to — skip the auto-reply and let a
         // human pick it up, same as any other AI-pipeline failure.
         let effectiveText = text;
-        if (attachmentType === "audio") {
+        // Voice-for-voice routing: a customer who sent a voice note gets a
+        // voice note back (in addition to the text, never instead of it);
+        // a customer who typed gets a text-only reply. Every
+        // sendChunkedReply call below passes this same flag through.
+        const wantsVoiceReply = attachmentType === "audio";
+        if (wantsVoiceReply) {
           const transcript = await transcribeVoiceNote(attachmentPath);
           if (!transcript) return;
           effectiveText = transcript;
@@ -154,7 +159,7 @@ export async function POST(request, { params }) {
         // than one of these anyway (each check is fairly specific).
         if (isGreetingOnly(effectiveText)) {
           const chunks = pickGreetingReply();
-          const combined = await sendChunkedReply({ orderId, chunks });
+          const combined = await sendChunkedReply({ orderId, chunks, voiceReply: wantsVoiceReply });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
@@ -171,6 +176,7 @@ export async function POST(request, { params }) {
             chunks: CLOSING_REPLY_CHUNKS,
             attachmentPath: qrUrl,
             attachmentType: "image",
+            voiceReply: wantsVoiceReply,
           });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
@@ -185,25 +191,26 @@ export async function POST(request, { params }) {
             chunks: QR_REPLY_CHUNKS,
             attachmentPath: qrUrl,
             attachmentType: "image",
+            voiceReply: wantsVoiceReply,
           });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
 
         if (isLoginQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: LOGIN_REPLY_CHUNKS });
+          const combined = await sendChunkedReply({ orderId, chunks: LOGIN_REPLY_CHUNKS, voiceReply: wantsVoiceReply });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
 
         if (isBuyingGuidanceQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: BUYING_GUIDANCE_CHUNKS });
+          const combined = await sendChunkedReply({ orderId, chunks: BUYING_GUIDANCE_CHUNKS, voiceReply: wantsVoiceReply });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
 
         if (isTrustQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: TRUST_REPLY_CHUNKS });
+          const combined = await sendChunkedReply({ orderId, chunks: TRUST_REPLY_CHUNKS, voiceReply: wantsVoiceReply });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
           return;
         }
@@ -211,7 +218,7 @@ export async function POST(request, { params }) {
         const context = await buildOrderAiContext(orderId, effectiveText);
         const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
         if (reply) {
-          const combined = await sendChunkedReply({ orderId, chunks: splitIntoChunks(reply) });
+          const combined = await sendChunkedReply({ orderId, chunks: splitIntoChunks(reply), voiceReply: wantsVoiceReply });
           await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
         }
       } catch {

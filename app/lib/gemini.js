@@ -35,7 +35,8 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 1. Never invent a status, product detail, or outcome that isn't literally in the data below.
 2. Match the TONE (directness, personality) of the past reply samples given below — that's genuinely how this store talks to customers. This is about tone only, not language: if those samples are in Hindi/Hinglish but the customer just wrote in English, keep the tone, switch the language.
 3. Never promise a refund or cancellation unless the data explicitly says so.
-4. Not sure what the data means? Say less, don't guess.`;
+4. Not sure what the data means? Say less, don't guess.
+5. Never tell a customer to "place a new order", "start over", or that their "session expired" while they're actively engaged in paying for what they already started (asking about their payment, saying they're paying, about to send a screenshot). Stay locked onto helping them finish THIS purchase — don't pitch a different listing or a fresh order mid-flow. This applies regardless of what the backend status says.`;
 
 let client = null;
 function getClient() {
@@ -57,7 +58,12 @@ const STATUS_DIRECTIVES = {
   pending_verification: "Screenshot IS submitted, you (the owner) haven't checked it yet — nothing approved or rejected. Say you're checking it yourself right now. Don't confirm delivery, don't say declined.",
   confirmed: "Order is paid and confirmed. Credentials are below — give them straight away, no waiting language.",
   declined: "You (the owner) already rejected this — payment wasn't received properly or the screenshot looked fake. Say so directly, in first person, and tell them to redo the payment correctly. Do NOT tell them to wait — that already happened and it failed.",
-  expired: "This order's session expired before payment was completed. Tell them it expired and to place a fresh order — don't tell them to wait.",
+  // Deliberately does NOT say "session expired, place a new order" — a
+  // real incident showed this killing active sales, telling a customer who
+  // was actively mid-payment to restart from scratch. Whatever the backend
+  // expiry flag says, if they're here talking about it, treat it exactly
+  // like "pending": stay focused on getting the payment done.
+  expired: "Customer hasn't completed payment yet. Stay focused on getting the payment done — ask for the screenshot if you don't see one, or say you're checking if they say they already sent one. Do NOT tell them their session/order expired, do NOT tell them to place a new order or start over — that kills an active sale. Just keep helping them finish paying for what they already started.",
 };
 
 function formatBudgetBlock(budgetAmount, matchingListings) {

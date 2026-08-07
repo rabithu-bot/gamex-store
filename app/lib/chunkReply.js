@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { synthesizeVoiceNote } from "@/app/lib/elevenLabsTts";
 
 const MAX_CHUNKS = 3;
 // Small gap between each chunk so they read like separate messages someone
@@ -40,7 +41,13 @@ export function splitIntoChunks(text) {
 // paragraph — matches how a real person actually texts. Any attachment
 // (e.g. the QR image) rides on the first chunk. Returns the combined text,
 // for callers that need one string for a push notification body.
-export async function sendChunkedReply({ orderId, chunks, attachmentPath, attachmentType }) {
+//
+// voiceReply: true additionally sends ONE more message with a synthesized
+// voice note of the combined text (voice-for-voice routing — only set this
+// when the customer's own message was itself a voice note; text questions
+// get text-only replies). Failure to synthesize just skips the voice note
+// silently — it never blocks or removes the text reply that already sent.
+export async function sendChunkedReply({ orderId, chunks, attachmentPath, attachmentType, voiceReply = false }) {
   const list = chunks.filter(Boolean);
   if (list.length === 0) return "";
 
@@ -57,5 +64,16 @@ export async function sendChunkedReply({ orderId, chunks, attachmentPath, attach
     if (i < list.length - 1) await sleep(CHUNK_DELAY_MS);
   }
 
-  return list.join(" ");
+  const combined = list.join(" ");
+
+  if (voiceReply) {
+    const voiceUrl = await synthesizeVoiceNote(combined);
+    if (voiceUrl) {
+      await prisma.message.create({
+        data: { orderId, sender: "admin", body: "", attachmentPath: voiceUrl, attachmentType: "audio" },
+      });
+    }
+  }
+
+  return combined;
 }
