@@ -20,6 +20,7 @@ export async function buildOrderAiContext(orderId) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
+      listing: { select: { description: true, category: true, gameUid: true, server: true, level: true } },
       messages: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -44,6 +45,12 @@ export async function buildOrderAiContext(orderId) {
       confirmedAt: order.confirmedAt,
       accountId: order.status === "confirmed" ? order.accountId : null,
       accountPassword: order.status === "confirmed" ? order.accountPassword : null,
+      // Only ever the listing's own real fields — never anything an admin
+      // said in a past chat — so a question like "login Facebook se hai ya
+      // Google se?" gets answered from the actual product record, or the
+      // model honestly says it's not listed, instead of guessing.
+      productDescription: order.listing?.description || null,
+      productCategory: order.listing?.category || null,
     },
     conversation: order.messages.slice(-CONVERSATION_TAIL_SIZE).map((m) => ({
       sender: m.sender,

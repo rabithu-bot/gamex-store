@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { isOrderStatusQuestion } from "@/app/lib/aiIntent";
 
 // gemini-1.5-pro/gemini-2.5-flash are both retired or pro-gated on this
 // key's free tier. The "lite" tier turned out to matter for more than
@@ -16,14 +17,17 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 - Language: Strictly Hinglish (Hindi in Roman script), casual and direct.
 - Length: Maximum 1-2 short, sharp sentences. No paragraphs, no fluff, no repeating the question back.
 
+### TOPIC DISCIPLINE (read this before anything else)
+- Answer ONLY the specific thing the customer actually asked. Order status, payment, and decline/rejection are a COMPLETELY SEPARATE topic from product/account questions (login method, features, game UID, server, etc.) — never blend them.
+- If the customer is asking about the product/account itself (e.g. "login Facebook se hai ya Google se?", "kaunsa server hai?", "kitna level hai?") — answer strictly from the PRODUCT RECORD below. Do NOT mention order status, payment, pending, or declined AT ALL in this case, even if that's the order's current status. Bringing up rejection/payment on an unrelated product question is a serious mistake.
+- If the product record doesn't have the answer, say so naturally and defer — e.g. "Bhai account direct ID login hai, main payment verify hote hi login setup aur details bhej dunga." Never guess a login method or feature that isn't in the data.
+- Only talk about order status, payment, verification, or decline/rejection when the customer is actually asking about THAT (their order, payment, or why something failed) — see ORDER STATUS below for whether that applies right now.
+
 ### RESPONSE RULES
-1. Check the order record below and answer only from what's actually true there — never invent a status, reason, or outcome that isn't in the data.
+1. Never invent a status, product detail, or outcome that isn't literally in the data below.
 2. Match the tone of the past reply samples given below — that's genuinely how this store talks to customers.
 3. Never promise a refund or cancellation unless the data explicitly says so.
-4. If payment is submitted but not yet verified, tell them directly you're checking it yourself — e.g. "Bhai maine dekha hai, verify kar raha hoon, 2 min do."
-5. If the order is confirmed, give the account ID/password straight away, no waiting language.
-6. If the status is "declined" or failed: tell them straight and in first person that it's rejected — the payment either wasn't received or the screenshot looks fake — and to redo it properly. Do NOT tell them to wait. Example: "Bhai aapka order declined show ho raha hai. Iska matlab aapne payment sahi se nahi kiya ya fir aapka screenshot/payment fake hai. Ek baar check karo aur sahi se payment karo."
-7. Not sure what the data means? Say less, don't guess.`;
+4. Not sure what the data means? Say less, don't guess.`;
 
 let client = null;
 function getClient() {
@@ -36,6 +40,10 @@ function getClient() {
 // Maps every real order status to an unambiguous, literal, first-person
 // directive — the model is told exactly what to say for the status it was
 // actually given, rather than having to infer meaning from a bare string.
+// Only ever shown to the model when the customer is actually asking about
+// their order/payment (see isOrderStatusQuestion) — a real incident showed
+// this leaking into unrelated product questions just because it happened
+// to be the order's current status, which is exactly what this gate stops.
 const STATUS_DIRECTIVES = {
   pending: "Customer hasn't paid/uploaded a screenshot yet. Tell them to pay and send the screenshot. Don't say anything is under review.",
   pending_verification: "Screenshot IS submitted, you (the owner) haven't checked it yet — nothing approved or rejected. Say you're checking it yourself right now. Don't confirm delivery, don't say declined.",
@@ -44,22 +52,25 @@ const STATUS_DIRECTIVES = {
   expired: "This order's session expired before payment was completed. Tell them it expired and to place a fresh order — don't tell them to wait.",
 };
 
-function formatContext({ order, conversation, styleSamples }) {
-  const orderBlock = `ORDER RECORD:
-- Order ID: ${order.id}
-- Buyer: ${order.buyerName || "Unknown"}
-- Product: ${order.listingTitle} (₹${order.listingPrice})
+function formatContext({ order, conversation, styleSamples }, statusRelevant) {
+  const productBlock = `PRODUCT RECORD (use this for questions about the account/product itself — login method, features, server, level, etc.):
+- Title: ${order.listingTitle}
+- Category: ${order.productCategory || "not specified"}
+- Description: ${order.productDescription || "(no extra description on file)"}`;
+
+  const orderBlock = statusRelevant
+    ? `ORDER STATUS (customer is asking about their order/payment — this is relevant right now):
 - Status: ${order.status}
 - WHAT TO SAY (follow literally, do not contradict): ${
-  STATUS_DIRECTIVES[order.status] || "Unrecognized status — do not guess, just say you'll check it yourself."
-}
+        STATUS_DIRECTIVES[order.status] || "Unrecognized status — do not guess, just say you'll check it yourself."
+      }
 - Payment screenshot attached: ${order.hasPaymentScreenshot ? "yes" : "no"}
-- Placed at: ${order.createdAt}
 ${
   order.status === "confirmed"
     ? `- CREDENTIALS TO GIVE — Account ID: ${order.accountId} | Password: ${order.accountPassword}`
     : "- Credentials: not released yet (order not confirmed)"
-}`;
+}`
+    : `ORDER STATUS: not relevant to the customer's current message — do NOT bring up order status, payment, or decline/rejection here, even though the order's actual status is "${order.status}". Answer only the product/general question being asked.`;
 
   const historyBlock = conversation.length
     ? conversation
@@ -76,7 +87,9 @@ ${
     ? styleSamples.map((s) => `- ${s}`).join("\n")
     : "(no past reply samples yet)";
 
-  return `${orderBlock}
+  return `${productBlock}
+
+${orderBlock}
 
 CONVERSATION SO FAR (this order):
 ${historyBlock}
@@ -102,7 +115,8 @@ export async function generateSupportReply(context, latestBuyerMessage) {
       maxOutputTokens: 80,
     },
   });
-  const prompt = `${formatContext(context)}
+  const statusRelevant = isOrderStatusQuestion(latestBuyerMessage);
+  const prompt = `${formatContext(context, statusRelevant)}
 
 Customer's new message: "${latestBuyerMessage}"
 

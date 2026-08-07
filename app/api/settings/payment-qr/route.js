@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/app/lib/prisma";
-
-const DEFAULT_QR_URL = "/upi-qr.jpg";
+import { getOfficialQrUrl } from "@/app/lib/paymentQr";
 
 export async function GET() {
-  const setting = await prisma.setting.findUnique({ where: { key: "paymentQrUrl" } });
-  return NextResponse.json({ url: setting?.value || DEFAULT_QR_URL });
+  return NextResponse.json({ url: await getOfficialQrUrl() });
 }
