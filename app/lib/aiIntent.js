@@ -153,3 +153,61 @@ export function isOrderStatusQuestion(text) {
   const lower = String(text || "").toLowerCase();
   return STATUS_KEYWORDS.some((kw) => lower.includes(kw));
 }
+
+// Deterministic language detection for the general Gemini fallback — a
+// real test showed the model defaulting to Hinglish even for a plain
+// English message, apparently pattern-matching the (all-Hinglish)
+// past-reply style samples over the customer's actual current language.
+// Rather than trust instruction-following alone for this, the detected
+// language is stated explicitly in the prompt as a hard fact.
+const HINGLISH_MARKER_WORDS = new Set([
+  "hai",
+  "hain",
+  "kya",
+  "kaise",
+  "kab",
+  "kahan",
+  "kyun",
+  "kyu",
+  "mera",
+  "meri",
+  "mere",
+  "aapka",
+  "aapki",
+  "aap",
+  "nahi",
+  "nahin",
+  "kar",
+  "karo",
+  "kro",
+  "krdo",
+  "raha",
+  "rha",
+  "rahi",
+  "hua",
+  "hogaya",
+  "ho",
+  "tha",
+  "thi",
+  "milega",
+  "bhejo",
+  "bhej",
+  "diya",
+  "diyo",
+  "sahi",
+  "abhi",
+  "batao",
+  "bataiye",
+  "chahiye",
+]);
+
+export function detectLanguage(text) {
+  const cleaned = String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .trim();
+  if (!cleaned) return "english";
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const hasHinglishMarker = words.some((w) => HINGLISH_MARKER_WORDS.has(w));
+  return hasHinglishMarker ? "hinglish" : "english";
+}

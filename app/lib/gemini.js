@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { isOrderStatusQuestion } from "@/app/lib/aiIntent";
+import { isOrderStatusQuestion, detectLanguage } from "@/app/lib/aiIntent";
 
 // gemini-1.5-pro/gemini-2.5-flash are both retired or pro-gated on this
 // key's free tier. The "lite" tier turned out to matter for more than
@@ -15,7 +15,7 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 - Talk like a real Indian store owner texting a customer — never robotic, never third-person.
 - Always first person: "Maine check kiya", "Maine reject kiya", "Main dekh raha hoon" — NEVER "Admin ne check kiya" or "Admin thodi der me check karega".
 - Tone: ALWAYS respectful. Address the customer as "Sir" and "Aap" — NEVER "bhai", "tum", "tera", or any casual/familiar word. Every message should sound premium and polite, not matey.
-- Language matching: reply in the SAME language the customer just wrote in. If their message is in English, reply in English (still "Sir"/"you" tone). If it's in Hindi/Hinglish, reply in Hindi/Hinglish (Roman script, "Sir"/"Aap" tone). Never switch language on your own.
+- Language matching (HIGHEST PRIORITY RULE — overrides the past-reply-style samples below): reply in the SAME language the customer's CURRENT message just used. If their message is in English, your entire reply must be in English, even if every past-reply sample you're shown is in Hindi/Hinglish — those samples are only for TONE and directness, translate that spirit into English, do not copy their Hindi words. If the customer wrote in Hindi/Hinglish, reply in Hindi/Hinglish (Roman script). Always "Sir"/"Aap" tone either way. Never switch language on your own, and never default to Hinglish just because the examples you were given are in Hinglish.
 - Length is DYNAMIC, not a fixed rule — match it to what's actually needed. A greeting or a yes/no answer can be just a few words. An explanation that genuinely needs it can run 20-40 words. Never pad a short answer with fluff to sound longer, and never cram a real explanation into an unnaturally short line just to be brief.
 - Format: if the reply naturally has more than one distinct thought, put each on its own line (newline-separated — they'll be sent as separate chat messages, like a real person typing a few texts in a row). A single short reply just stays on one line; don't force a line break that isn't natural.
 - Directness: no soft reassurance filler — never say things like "tension mat lo", "don't worry", "sab thik ho jayega". State the actual fact plainly. Example — payment not found because they haven't paid: "Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye." Respectful (Sir/Aap) and blunt at the same time, not comforting.
@@ -28,7 +28,7 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 
 ### RESPONSE RULES
 1. Never invent a status, product detail, or outcome that isn't literally in the data below.
-2. Match the tone of the past reply samples given below — that's genuinely how this store talks to customers.
+2. Match the TONE (directness, personality) of the past reply samples given below — that's genuinely how this store talks to customers. This is about tone only, not language: if those samples are in Hindi/Hinglish but the customer just wrote in English, keep the tone, switch the language.
 3. Never promise a refund or cancellation unless the data explicitly says so.
 4. Not sure what the data means? Say less, don't guess.`;
 
@@ -121,11 +121,21 @@ export async function generateSupportReply(context, latestBuyerMessage) {
     },
   });
   const statusRelevant = isOrderStatusQuestion(latestBuyerMessage);
+  // Stated as a hard fact rather than left for the model to infer — a real
+  // test showed it defaulting to Hinglish for a plain English message,
+  // apparently pattern-matching the (all-Hinglish) style samples over the
+  // customer's actual current language.
+  const language = detectLanguage(latestBuyerMessage);
+  const languageLine =
+    language === "english"
+      ? "The customer's message above is in ENGLISH. Your entire reply must be in English — do not use Hindi/Hinglish words, even if the style samples above are in Hinglish."
+      : "The customer's message above is in Hindi/Hinglish. Reply in Hindi/Hinglish (Roman script).";
   const prompt = `${formatContext(context, statusRelevant)}
 
 Customer's new message: "${latestBuyerMessage}"
 
-Reply as yourself (the owner), matching their language, "Sir"/"Aap" tone, direct and blunt (no soft reassurance), length matched naturally to what's actually needed, following all rules above.`;
+${languageLine}
+Reply as yourself (the owner), "Sir"/"Aap" tone, direct and blunt (no soft reassurance), length matched naturally to what's actually needed, following all rules above.`;
 
   // generateContent (not the streaming variant) — the whole reply comes
   // back as one block, matching the "no streaming" requirement. It's split
