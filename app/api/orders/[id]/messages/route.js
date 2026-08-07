@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { saveMessageAttachment } from "@/app/lib/uploads";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
-import { notifyAdminsOfMessage } from "@/app/lib/push";
+import { notifyAdminsOfMessage, notifyBuyerOfReply } from "@/app/lib/push";
+import { buildOrderAiContext } from "@/app/lib/aiSupportContext";
+import { generateSupportReply } from "@/app/lib/gemini";
 
 export async function POST(request, { params }) {
   const { id } = await params;
@@ -51,6 +53,15 @@ export async function POST(request, { params }) {
     data: { orderId, sender: "buyer", body: text, attachmentPath, attachmentType },
   });
 
+  const notifyBody =
+    attachmentType === "audio"
+      ? "🎤 Voice message"
+      : attachmentType === "video" && !text
+        ? "🎥 Video"
+        : attachmentPath && !text
+          ? "📷 Photo"
+          : text;
+
   // Awaited (rather than fire-and-forget) since a serverless function can be
   // torn down the moment the response is sent, before an un-awaited promise
   // gets to finish.
@@ -58,15 +69,28 @@ export async function POST(request, { params }) {
     orderId,
     buyerName: order.buyerName,
     tag: order.tag,
-    body:
-      attachmentType === "audio"
-        ? "🎤 Voice message"
-        : attachmentType === "video" && !text
-          ? "🎥 Video"
-          : attachmentPath && !text
-            ? "📷 Photo"
-            : text,
+    body: notifyBody,
   }).catch(() => {});
+
+  // Untagged orders get an instant AI-generated reply — tagging a customer
+  // (VIP, priority, etc.) is the admin's own signal that they're handling
+  // this one personally, so the bot stays out of the way once that happens.
+  // Failures here must never break the buyer's own message from saving —
+  // worst case, no auto-reply goes out and a human picks it up as normal.
+  if (!order.tag) {
+    try {
+      const context = await buildOrderAiContext(orderId);
+      const reply = context ? await generateSupportReply(context, notifyBody) : null;
+      if (reply) {
+        await prisma.message.create({
+          data: { orderId, sender: "admin", body: reply },
+        });
+        await notifyBuyerOfReply({ orderId, body: reply }).catch(() => {});
+      }
+    } catch {
+      // Swallowed — see comment above.
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }
