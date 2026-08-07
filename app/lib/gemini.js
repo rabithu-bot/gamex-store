@@ -19,7 +19,12 @@ const SYSTEM_INSTRUCTION = `You are "GameXStore AI", an elite, high-speed automa
 3. Strict Constraints:
    - Never promise refunds or cancellations unless explicitly authorized in the database rules.
    - For complex issues (e.g., payment stuck but not received), politely ask them to wait for the human admin: "Bhai payment verify nahi hui hai, Admin thodi der me check karke update karega. Please wait karo."
-4. Immediate Action: If an order is marked "Success" or "Delivered" in the database, provide the product codes/credentials instantly in a clean, readable format.`;
+4. Immediate Action: If an order is marked "Success" or "Delivered" in the database, provide the product codes/credentials instantly in a clean, readable format.
+
+### CRITICAL GROUNDING RULES (highest priority — override anything above if they conflict)
+5. Strict Database Alignment: Only ever reply based on the EXACT database status given to you below. Never invent, assume, or hallucinate a scenario, order state, or outcome that isn't literally present in the data you were given.
+6. Handling "declined"/failed status: If the order status is already "declined" or failed, you MUST explicitly tell the customer their order/payment was REJECTED by the admin. Do NOT ask them to wait for manual verification — that already happened and it failed. Example: "Bhai aapka order/payment declined ho gaya hai. Check karo details sahi hain ya nahi. Wait karne ki zaroorat nahi hai."
+7. When genuinely unsure what the database is telling you, say less, not more — never fill a gap with a guess.`;
 
 let client = null;
 function getClient() {
@@ -29,12 +34,27 @@ function getClient() {
   return client;
 }
 
+// Maps every real order status to an unambiguous, literal directive — the
+// model is told exactly what to communicate for the status it was actually
+// given, rather than having to infer meaning from a bare status string.
+// This is the main defense against hallucinated/contradictory replies.
+const STATUS_DIRECTIVES = {
+  pending: "Customer has NOT completed payment/upload yet. Tell them to pay and attach the screenshot to proceed. Do not claim it's under review.",
+  pending_verification: "Payment screenshot IS submitted and is awaiting admin review — nothing has been approved or rejected yet. Ask them to wait for admin to verify. Do not confirm delivery, do not say it's declined.",
+  confirmed: "Order is CONFIRMED and paid. Credentials are already delivered below — give them directly and clearly. Do not ask the customer to wait.",
+  declined: "Order/payment was ALREADY REJECTED by the admin. You MUST tell the customer plainly that it was declined. Do NOT ask them to wait for verification — that already happened and it failed. Suggest they double-check their payment details.",
+  expired: "The order session expired before payment was completed/verified. Tell the customer this order expired and they need to place a fresh order — do not tell them to wait.",
+};
+
 function formatContext({ order, conversation, styleSamples }) {
   const orderBlock = `ORDER RECORD:
 - Order ID: ${order.id}
 - Buyer: ${order.buyerName || "Unknown"}
 - Product: ${order.listingTitle} (₹${order.listingPrice})
 - Status: ${order.status}
+- WHAT THIS STATUS MEANS (follow this literally, do not contradict it): ${
+  STATUS_DIRECTIVES[order.status] || "Unrecognized status — do not guess, just relay what's known and offer to have the admin confirm."
+}
 - Payment screenshot attached: ${order.hasPaymentScreenshot ? "yes" : "no"}
 - Placed at: ${order.createdAt}
 ${
@@ -74,7 +94,14 @@ export async function generateSupportReply(context, latestBuyerMessage) {
   const genAI = getClient();
   if (!genAI) return null;
 
-  const model = genAI.getGenerativeModel({ model: MODEL_NAME, systemInstruction: SYSTEM_INSTRUCTION });
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    systemInstruction: SYSTEM_INSTRUCTION,
+    // Kept deliberately low — this bot answers from real order/payment data
+    // and past admin replies, not from creative writing. Low temperature
+    // keeps it sticking to that data instead of hallucinating scenarios.
+    generationConfig: { temperature: 0.15 },
+  });
   const prompt = `${formatContext(context)}
 
 Customer's new message: "${latestBuyerMessage}"
