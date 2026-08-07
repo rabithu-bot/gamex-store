@@ -16,7 +16,9 @@ const SYSTEM_INSTRUCTION = `You are the owner of gamexstore.com, personally repl
 - Always first person: "Maine check kiya", "Maine reject kiya", "Main dekh raha hoon" — NEVER "Admin ne check kiya" or "Admin thodi der me check karega".
 - Tone: ALWAYS respectful. Address the customer as "Sir" and "Aap" — NEVER "bhai", "tum", "tera", or any casual/familiar word. Every message should sound premium and polite, not matey.
 - Language matching: reply in the SAME language the customer just wrote in. If their message is in English, reply in English (still "Sir"/"you" tone). If it's in Hindi/Hinglish, reply in Hindi/Hinglish (Roman script, "Sir"/"Aap" tone). Never switch language on your own.
-- Length & format: 2-3 very short sentences, each on its OWN line (separate lines with a newline — this is important, they'll be sent as separate chat messages, like a real person typing several short texts in a row). Never one long paragraph.
+- Length is DYNAMIC, not a fixed rule — match it to what's actually needed. A greeting or a yes/no answer can be just a few words. An explanation that genuinely needs it can run 20-40 words. Never pad a short answer with fluff to sound longer, and never cram a real explanation into an unnaturally short line just to be brief.
+- Format: if the reply naturally has more than one distinct thought, put each on its own line (newline-separated — they'll be sent as separate chat messages, like a real person typing a few texts in a row). A single short reply just stays on one line; don't force a line break that isn't natural.
+- Directness: no soft reassurance filler — never say things like "tension mat lo", "don't worry", "sab thik ho jayega". State the actual fact plainly. Example — payment not found because they haven't paid: "Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye." Respectful (Sir/Aap) and blunt at the same time, not comforting.
 
 ### TOPIC DISCIPLINE (read this before anything else)
 - Answer ONLY the specific thing the customer actually asked. Order status, payment, and decline/rejection are a COMPLETELY SEPARATE topic from product/account questions (features, game UID, server, etc.) — never blend them.
@@ -46,7 +48,7 @@ function getClient() {
 // this leaking into unrelated product questions just because it happened
 // to be the order's current status, which is exactly what this gate stops.
 const STATUS_DIRECTIVES = {
-  pending: "Customer hasn't paid/uploaded a screenshot yet. Tell them to pay and send the screenshot. Don't say anything is under review.",
+  pending: "Customer hasn't paid/uploaded a screenshot yet — that's exactly why nothing has come through. State that plainly and directly, no soft reassurance, then ask for the payment screenshot. Example: \"Sir, apne pay nahi kara eslia nahi milaa hai. Screenshot bhejiye check karne ke liye.\" Don't say anything is under review.",
   pending_verification: "Screenshot IS submitted, you (the owner) haven't checked it yet — nothing approved or rejected. Say you're checking it yourself right now. Don't confirm delivery, don't say declined.",
   confirmed: "Order is paid and confirmed. Credentials are below — give them straight away, no waiting language.",
   declined: "You (the owner) already rejected this — payment wasn't received properly or the screenshot looked fake. Say so directly, in first person, and tell them to redo the payment correctly. Do NOT tell them to wait — that already happened and it failed.",
@@ -111,10 +113,11 @@ export async function generateSupportReply(context, latestBuyerMessage) {
     systemInstruction: SYSTEM_INSTRUCTION,
     generationConfig: {
       // Kept low on purpose: this replies from real order data, not
-      // creative writing. maxOutputTokens is a little higher than a single
-      // short line since the reply is now meant to be 2-3 short lines.
+      // creative writing. maxOutputTokens allows for the upper end of the
+      // dynamic length range (a genuine ~40-word explanation), not just a
+      // single short line.
       temperature: 0.1,
-      maxOutputTokens: 120,
+      maxOutputTokens: 180,
     },
   });
   const statusRelevant = isOrderStatusQuestion(latestBuyerMessage);
@@ -122,7 +125,7 @@ export async function generateSupportReply(context, latestBuyerMessage) {
 
 Customer's new message: "${latestBuyerMessage}"
 
-Reply as yourself (the owner), matching their language, "Sir"/"Aap" tone, 2-3 short lines (one short sentence per line), following all rules above.`;
+Reply as yourself (the owner), matching their language, "Sir"/"Aap" tone, direct and blunt (no soft reassurance), length matched naturally to what's actually needed, following all rules above.`;
 
   // generateContent (not the streaming variant) — the whole reply comes
   // back as one block, matching the "no streaming" requirement. It's split
