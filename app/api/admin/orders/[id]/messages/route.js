@@ -61,6 +61,7 @@ export async function POST(request, { params }) {
     attachmentType = attachment.type?.startsWith("audio/") ? "audio" : "image";
   }
 
+  const replyCreatedAt = new Date();
   await prisma.message.create({
     data: {
       orderId,
@@ -90,12 +91,21 @@ export async function POST(request, { params }) {
       resolveMessageText({ body: text, attachmentType, attachmentPath }),
     ]);
 
+    // How long the admin took to reply once they'd actually seen this
+    // message (Message.readAt, set when they opened the thread) — null
+    // when there's no read receipt to measure against, e.g. they replied
+    // without the admin panel ever marking it read.
+    const seenToReplySeconds = lastBuyerMessage.readAt
+      ? Math.max(0, Math.round((replyCreatedAt.getTime() - lastBuyerMessage.readAt.getTime()) / 1000))
+      : null;
+
     await recordObservation({
       orderId,
       customerMessage,
       customerAttachmentType: lastBuyerMessage.attachmentType,
       adminReply: adminReplyText,
       adminAttachmentType: attachmentType,
+      seenToReplySeconds,
     });
   });
 

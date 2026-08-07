@@ -8,7 +8,7 @@ import { generateSupportReply } from "@/app/lib/gemini";
 import { getOfficialQrUrl } from "@/app/lib/paymentQr";
 import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
 import { sendChunkedReply } from "@/app/lib/chunkReply";
-import { isAiAutoReplyEnabled } from "@/app/lib/aiLearning";
+import { isAiAutoReplyEnabled, estimateTypingSeconds } from "@/app/lib/aiLearning";
 import {
   isGreetingOnly,
   pickGreetingReply,
@@ -37,12 +37,36 @@ import {
 const AI_DEBOUNCE_MIN_MS = 2000;
 const AI_DEBOUNCE_MAX_MS = 3000;
 
+// How often the "admin is typing..." flag gets re-touched while the AI is
+// simulating a natural typing delay — must stay comfortably under the
+// buyer UI's own staleness window (SupportChat.js's TYPING_STALE_MS, 4s) so
+// the indicator never flickers off mid-wait.
+const TYPING_PING_INTERVAL_MS = 2500;
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function randomDebounceMs() {
   return AI_DEBOUNCE_MIN_MS + Math.floor(Math.random() * (AI_DEBOUNCE_MAX_MS - AI_DEBOUNCE_MIN_MS));
+}
+
+async function pingAdminTyping(orderId) {
+  await prisma.order.update({ where: { id: orderId }, data: { adminTypingAt: new Date() } }).catch(() => {});
+}
+
+// Keeps "admin is typing..." alive for the full simulated duration by
+// re-touching adminTypingAt at the start of every chunk, rather than one
+// ping followed by a single long sleep that would go stale well before the
+// reply actually sends.
+async function waitWithTypingPings(orderId, totalSeconds) {
+  let remainingMs = Math.round(totalSeconds * 1000);
+  while (remainingMs > 0) {
+    await pingAdminTyping(orderId);
+    const step = Math.min(TYPING_PING_INTERVAL_MS, remainingMs);
+    await sleep(step);
+    remainingMs -= step;
+  }
 }
 
 export async function POST(request, { params }) {
@@ -127,16 +151,26 @@ export async function POST(request, { params }) {
         // Shadow learning mode: the AI observes and logs (see the admin
         // reply route) but never replies on its own until this is switched
         // on — which itself is hard-gated at 100% learning progress, see
-        // app/lib/aiLearning.js. Checked first, before the debounce wait,
-        // so a disabled shop does zero extra work per message.
+        // app/lib/aiLearning.js. Checked first, before touching anything
+        // below, so a disabled shop does zero extra work per message.
         if (!(await isAiAutoReplyEnabled())) return;
+
+        // Live mode: the AI opens the chat like a real person would the
+        // instant a message lands — mark it seen and start showing
+        // "typing..." right away, well before it has actually decided
+        // what to say.
+        await prisma.message.updateMany({
+          where: { orderId, sender: "buyer", readAt: null },
+          data: { readAt: new Date() },
+        });
+        await pingAdminTyping(orderId);
 
         await sleep(randomDebounceMs());
 
         // A newer buyer message may have landed while this one was
-        // waiting out its debounce window — if so, back off silently and
-        // let THAT message's own after() callback (running the same
-        // check) be the one that eventually replies.
+        // settling — if so, back off silently and let THAT message's own
+        // after() callback (running the same check) be the one that
+        // eventually decides + replies.
         const latestBuyerMessage = await prisma.message.findFirst({
           where: { orderId, sender: "buyer" },
           orderBy: { createdAt: "desc" },
@@ -163,85 +197,81 @@ export async function POST(request, { params }) {
           effectiveText = transcript;
         }
 
+        // Decide WHAT to say without sending it yet — actually sending
+        // only happens after the simulated typing delay further down, so
+        // the buyer sees a natural "typing..." stretch before the message
+        // itself appears, instead of it landing the instant it's decided.
         // A handful of questions have exactly one correct, policy-level
         // answer that has nothing to do with the LLM — handled directly
         // instead of trusting a model to phrase store policy right every
         // time. Checked in this order because a message can't be more
         // than one of these anyway (each check is fairly specific).
+        let decision = null;
         if (isGreetingOnly(effectiveText)) {
-          const chunks = pickGreetingReply();
-          const combined = await sendChunkedReply({ orderId, chunks, voiceReply: wantsVoiceReply });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
-        }
-
-        // Sale-closing takes priority over a bare "QR do" — the customer
-        // has just committed to a specific ID, so the reply is the closing
-        // line, not the plain "here's the QR" one, even though both send
-        // the same real QR image pulled from the global settings row
-        // (never from chat history or any other order's data).
-        if (isBuyIntent(effectiveText)) {
+          decision = { chunks: pickGreetingReply() };
+        } else if (isBuyIntent(effectiveText)) {
+          // Sale-closing takes priority over a bare "QR do" — the customer
+          // has just committed to a specific ID, so the reply is the
+          // closing line, not the plain "here's the QR" one, even though
+          // both send the same real QR image pulled from the global
+          // settings row (never from chat history or any other order's data).
           const qrUrl = await getOfficialQrUrl();
-          const combined = await sendChunkedReply({
-            orderId,
-            chunks: CLOSING_REPLY_CHUNKS,
-            attachmentPath: qrUrl,
-            attachmentType: "image",
-            voiceReply: wantsVoiceReply,
-          });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
-        }
-
-        if (isQrRequest(effectiveText)) {
+          decision = { chunks: CLOSING_REPLY_CHUNKS, attachmentPath: qrUrl, attachmentType: "image" };
+        } else if (isQrRequest(effectiveText)) {
           // The ONLY source for this is the global settings row — never a
           // URL pulled from this or any other order's past chat history.
           const qrUrl = await getOfficialQrUrl();
-          const combined = await sendChunkedReply({
-            orderId,
-            chunks: QR_REPLY_CHUNKS,
-            attachmentPath: qrUrl,
-            attachmentType: "image",
-            voiceReply: wantsVoiceReply,
-          });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
+          decision = { chunks: QR_REPLY_CHUNKS, attachmentPath: qrUrl, attachmentType: "image" };
+        } else if (isLoginQuestion(effectiveText)) {
+          decision = { chunks: LOGIN_REPLY_CHUNKS };
+        } else if (isBuyingGuidanceQuestion(effectiveText)) {
+          decision = { chunks: BUYING_GUIDANCE_CHUNKS };
+        } else if (isTrustQuestion(effectiveText)) {
+          decision = { chunks: TRUST_REPLY_CHUNKS };
+        } else {
+          const context = await buildOrderAiContext(orderId, effectiveText);
+          const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
+          if (reply) {
+            // A real screenshot of the top matching listing rides along
+            // when the customer was asking about budget/availability —
+            // "ye lo ID ki details aur screenshot", with an actual photo
+            // attached, not just a claim.
+            decision = {
+              chunks: [reply],
+              attachmentPath: context.topListingImage || undefined,
+              attachmentType: context.topListingImage ? "image" : undefined,
+            };
+          }
         }
 
-        if (isLoginQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: LOGIN_REPLY_CHUNKS, voiceReply: wantsVoiceReply });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
-        }
+        if (!decision) return;
 
-        if (isBuyingGuidanceQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: BUYING_GUIDANCE_CHUNKS, voiceReply: wantsVoiceReply });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
-        }
+        // How long to keep "typing..." showing before the reply actually
+        // lands — the learned average of how long the admin themselves
+        // takes to reply once they've seen a message, or a length-based
+        // guess while there isn't enough real data yet (see
+        // app/lib/aiLearning.js). Re-pings adminTypingAt throughout so the
+        // indicator survives the full wait instead of going stale partway.
+        const combinedPreview = decision.chunks.filter(Boolean).join(" ").trim();
+        const typingSeconds = await estimateTypingSeconds(combinedPreview);
+        await waitWithTypingPings(orderId, typingSeconds);
 
-        if (isTrustQuestion(effectiveText)) {
-          const combined = await sendChunkedReply({ orderId, chunks: TRUST_REPLY_CHUNKS, voiceReply: wantsVoiceReply });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-          return;
-        }
+        // The typing wait can run several seconds — re-check once more
+        // that nothing newer has come in before actually sending.
+        const latestBeforeSend = await prisma.message.findFirst({
+          where: { orderId, sender: "buyer" },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!latestBeforeSend || latestBeforeSend.id !== buyerMessage.id) return;
 
-        const context = await buildOrderAiContext(orderId, effectiveText);
-        const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
-        if (reply) {
-          // A real screenshot of the top matching listing rides along when
-          // the customer was asking about budget/availability — "ye lo ID
-          // ki details aur screenshot", with an actual photo attached, not
-          // just a claim.
-          const combined = await sendChunkedReply({
-            orderId,
-            chunks: [reply],
-            attachmentPath: context.topListingImage || undefined,
-            attachmentType: context.topListingImage ? "image" : undefined,
-            voiceReply: wantsVoiceReply,
-          });
-          await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
-        }
+        const combined = await sendChunkedReply({
+          orderId,
+          chunks: decision.chunks,
+          attachmentPath: decision.attachmentPath,
+          attachmentType: decision.attachmentType,
+          voiceReply: wantsVoiceReply,
+        });
+        await notifyBuyerOfReply({ orderId, body: combined }).catch(() => {});
       } catch {
         // AI failures must never surface to the buyer — worst case, no
         // auto-reply goes out and a human picks it up as normal.

@@ -196,6 +196,12 @@ model AiObservation {
   customerAttachmentType String? // "image" | "video" | "audio" | null
   adminReply             String
   adminAttachmentType    String? // "image" | "video" | "audio" | null
+  // Seconds between the admin marking the customer's message "seen" (see
+  // Message.readAt) and this reply landing — null when the admin replied
+  // without that read-receipt ever being set (so there's nothing to measure
+  // against). Used to learn a realistic "typing" delay for live AI replies
+  // instead of a made-up constant.
+  seenToReplySeconds     Int?
   createdAt              DateTime @default(now())
 
   @@index([orderId])
