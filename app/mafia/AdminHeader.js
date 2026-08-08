@@ -6,12 +6,13 @@ import { ArrowLeft, Settings, ShieldCheck } from "lucide-react";
 import AdminDrawer from "./AdminDrawer";
 import EnableNotifications from "@/app/components/EnableNotifications";
 
-// Individual chat threads render as their own fixed, full-screen overlay
-// (see .admin-chat-page) with a complete self-contained header — avatar,
-// name, and its own "Back" link to the messages list. Rendering this shared
+// Individual chat threads — both the single-order view and the merged
+// per-customer view — render as their own fixed, full-screen overlay (see
+// .admin-chat-page) with a complete self-contained header — avatar, name,
+// and its own "Back" link to the messages list. Rendering this shared
 // header underneath it too just stacked a second back button on top of
-// theirs, so it's skipped entirely on that one route.
-const CHAT_THREAD_PATTERN = /^\/mafia\/messages\/[^/]+$/;
+// theirs, so it's skipped entirely on both of those routes.
+const CHAT_THREAD_PATTERN = /^\/mafia\/messages\/(customer\/)?[^/]+$/;
 
 export default function AdminHeader() {
   const pathname = usePathname();
