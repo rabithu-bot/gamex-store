@@ -231,17 +231,24 @@ export async function POST(request, { params }) {
           decision = { chunks: TRUST_REPLY_CHUNKS };
         } else {
           const context = await buildOrderAiContext(orderId, effectiveText);
-          const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
-          if (reply) {
-            // A real screenshot of the top matching listing rides along
-            // when the customer was asking about budget/availability —
-            // "ye lo ID ki details aur screenshot", with an actual photo
-            // attached, not just a claim.
-            decision = {
-              chunks: [reply],
-              attachmentPath: context.topListingImage || undefined,
-              attachmentType: context.topListingImage ? "image" : undefined,
-            };
+          // The one case where a past admin line gets reused word-for-word
+          // instead of generating a fresh reply — see findVerbatimMatch for
+          // exactly how narrow/safe that match has to be.
+          if (context?.verbatimReply) {
+            decision = { chunks: [context.verbatimReply] };
+          } else {
+            const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
+            if (reply) {
+              // A real screenshot of the top matching listing rides along
+              // when the customer was asking about budget/availability —
+              // "ye lo ID ki details aur screenshot", with an actual photo
+              // attached, not just a claim.
+              decision = {
+                chunks: [reply],
+                attachmentPath: context.topListingImage || undefined,
+                attachmentType: context.topListingImage ? "image" : undefined,
+              };
+            }
           }
         }
 

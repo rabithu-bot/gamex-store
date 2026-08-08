@@ -237,3 +237,42 @@ export function isOrderStatusQuestion(text) {
   const lower = String(text || "").toLowerCase();
   return STATUS_KEYWORDS.some((kw) => lower.includes(kw));
 }
+
+const DISCOUNT_KEYWORDS = [
+  "discount",
+  "kam kar",
+  "kam nahi",
+  "thoda kam",
+  "less price",
+  "price kam",
+  "sasta",
+  "rate kam",
+  "final price",
+  "kam me de",
+  "kam mein de",
+  "negotiat",
+];
+
+export function isDiscountQuestion(text) {
+  const lower = String(text || "").toLowerCase();
+  return DISCOUNT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+// Buckets any buyer message into ONE label, in the same priority order the
+// live bot itself checks these in (a message can only ever match one of
+// these anyway) — this is the single source of truth both the repetition
+// counter and the historical style-sample filter key off of, so "the same
+// question" always means the same thing everywhere.
+export function classifyIntent(text) {
+  if (isGreetingOnly(text)) return "greeting";
+  if (isBuyIntent(text)) return "buy_intent";
+  if (isQrRequest(text)) return "qr_request";
+  if (isLoginQuestion(text)) return "login";
+  if (isBuyingGuidanceQuestion(text)) return "buying_guidance";
+  if (isTrustQuestion(text)) return "trust";
+  if (isDiscountQuestion(text)) return "discount";
+  if (isOrderStatusQuestion(text)) return "order_status";
+  if (isBudgetQuestion(text)) return "budget";
+  if (isAvailabilityQuestion(text)) return "availability";
+  return "general";
+}

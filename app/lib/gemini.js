@@ -100,7 +100,21 @@ AVAILABLE LISTINGS (checked live, right now — the ONLY real stock, describe th
 ${list}`;
 }
 
-function formatContext({ order, conversation, styleSamples, budgetAmount, matchingListings }, statusRelevant) {
+// Deliberately blunt, not diplomatic — an admin who's answered the same
+// thing 3+ times in real life stops re-explaining and starts being short,
+// this mirrors that shift instead of politely repeating the first answer.
+function formatEscalationBlock(repeatCount) {
+  if (!repeatCount) return "";
+  return `\nREPEAT QUESTION ALERT: customer has asked this exact same thing ${repeatCount} times now. Drop the explaining — respond short and blunt, like you're mildly done repeating yourself. No re-justifying, no re-listing details they already have.\n`;
+}
+
+function formatStageBlock(stage) {
+  return stage === "late"
+    ? "CONVERSATION STAGE: late (checkout/decline-retry territory) — be fast, transactional, precise. Skip warm-up small talk, get straight to the point."
+    : "CONVERSATION STAGE: early — this is still trust-building territory. Normal warm greeting energy is fine here.";
+}
+
+function formatContext({ order, conversation, styleSamples, budgetAmount, matchingListings, stage, escalate, repeatCount }, statusRelevant) {
   const productBlock = `PRODUCT RECORD (this order's own product — login method, features, server, level, etc.):
 - Title: ${order.listingTitle}
 - Category: ${order.productCategory || "not specified"}
@@ -141,10 +155,12 @@ ${
 ${availabilityBlock ? `\n${availabilityBlock}\n` : ""}
 ${orderBlock}
 
+${formatStageBlock(stage)}
+${formatEscalationBlock(escalate ? repeatCount : 0)}
 CONVERSATION SO FAR (this order):
 ${historyBlock}
 
-YOUR OWN PAST REPLY ENERGY (from other orders — match the vibe, not the exact words):
+YOUR OWN REAL PAST REPLIES (from the Reply Patterns Learned dataset, stage-matched to this conversation) — lock onto THESE exact words, slang, and emoji choices. Don't paraphrase into your own default phrasing; reuse the vocabulary you already see below wherever it fits:
 ${styleBlock}`;
 }
 
