@@ -200,6 +200,7 @@ export default function OrderPage() {
             </div>
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
+            <span className="payment-upload-hint">⚠️ Please upload screenshot for fast verification</span>
             <form onSubmit={handleSubmitProof}>
               {order.status === "declined" && (
                 <p className="error-text" style={{ marginBottom: "0.75rem" }}>

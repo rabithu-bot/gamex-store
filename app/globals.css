@@ -846,6 +846,15 @@ select:focus-visible {
 
 /* ---- Styled payment-screenshot uploader ---- */
 
+.payment-upload-hint {
+  display: block;
+  margin-top: 0.3rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e879f9;
+}
+
 .file-upload-input {
   position: absolute;
   width: 1px;
@@ -861,16 +870,34 @@ select:focus-visible {
   gap: 0.9rem;
   padding: 1rem 1.1rem;
   border-radius: 14px;
-  border: 1.5px dashed var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid transparent;
+  background:
+    linear-gradient(160deg, rgba(168, 85, 247, 0.16), rgba(217, 70, 239, 0.08)) padding-box,
+    linear-gradient(120deg, #a855f7, #e879f9, #a855f7) border-box;
   color: var(--foreground);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  animation: upload-dropzone-pulse 2.2s ease-in-out infinite;
+  transition: transform 0.15s ease;
 }
 
 .file-upload-dropzone:hover {
-  border-color: rgba(196, 181, 253, 0.55);
-  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+@keyframes upload-dropzone-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px 2px rgba(217, 70, 239, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-upload-dropzone {
+    animation: none;
+  }
 }
 
 .file-upload-input:focus-visible + .file-upload-dropzone {
@@ -887,6 +914,8 @@ select:focus-visible {
   border-style: solid;
   border-color: rgba(74, 222, 128, 0.4);
   background: rgba(74, 222, 128, 0.06);
+  animation: none;
+  box-shadow: none;
 }
 
 .file-upload-preview {
