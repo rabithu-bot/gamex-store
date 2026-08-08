@@ -56,32 +56,6 @@ export default function MessagesPanel() {
     fetchSupportName();
   }, [fetchSupportName]);
 
-  // Warms the cache for the most-recently-active conversations while the
-  // admin is just browsing the inbox, so opening any of them renders
-  // instantly from cache instead of waiting on a fresh round trip — see
-  // ChatThread/CustomerChatThread reading from the same cache on mount.
-  // Skips a conversation entirely if it's already cached with no newer
-  // message since the last prefetch, so this doesn't refetch unchanged
-  // threads on every 4s inbox poll.
-  useEffect(() => {
-    conversations.slice(0, PREFETCH_COUNT).forEach((conversation) => {
-      const cacheKey = conversation.sessionId ? `customer:${conversation.sessionId}` : `order:${conversation.orderId}`;
-      const latestAt = conversation.last.createdAt;
-      if (!shouldPrefetch(cacheKey, latestAt)) return;
-      markPrefetched(cacheKey, latestAt);
-
-      const apiUrl = conversation.sessionId
-        ? `/api/admin/customers/${conversation.sessionId}`
-        : `/api/admin/orders/${conversation.orderId}`;
-      fetch(apiUrl, { cache: "no-store" })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (json) setCachedThread(cacheKey, json);
-        })
-        .catch(() => {});
-    });
-  }, [conversations]);
-
   function startEditingName() {
     setNameInput(supportName);
     setEditingName(true);
@@ -166,6 +140,32 @@ export default function MessagesPanel() {
       return new Date(b.last.createdAt) - new Date(a.last.createdAt);
     });
   }, [orders]);
+
+  // Warms the cache for the most-recently-active conversations while the
+  // admin is just browsing the inbox, so opening any of them renders
+  // instantly from cache instead of waiting on a fresh round trip — see
+  // ChatThread/CustomerChatThread reading from the same cache on mount.
+  // Skips a conversation entirely if it's already cached with no newer
+  // message since the last prefetch, so this doesn't refetch unchanged
+  // threads on every 4s inbox poll.
+  useEffect(() => {
+    conversations.slice(0, PREFETCH_COUNT).forEach((conversation) => {
+      const cacheKey = conversation.sessionId ? `customer:${conversation.sessionId}` : `order:${conversation.orderId}`;
+      const latestAt = conversation.last.createdAt;
+      if (!shouldPrefetch(cacheKey, latestAt)) return;
+      markPrefetched(cacheKey, latestAt);
+
+      const apiUrl = conversation.sessionId
+        ? `/api/admin/customers/${conversation.sessionId}`
+        : `/api/admin/orders/${conversation.orderId}`;
+      fetch(apiUrl, { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json) setCachedThread(cacheKey, json);
+        })
+        .catch(() => {});
+    });
+  }, [conversations]);
 
   function customerName(conversation) {
     return conversation.buyerName || "Buyer";
