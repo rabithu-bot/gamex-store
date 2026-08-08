@@ -27,6 +27,7 @@ import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audi
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
 import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+import { getCachedThread, setCachedThread } from "@/app/mafia/chatCache";
 
 function isVideoFile(file) {
   return Boolean(file?.type?.startsWith("video/"));
@@ -53,7 +54,11 @@ function formatSeconds(total) {
 const MAX_SUGGESTIONS = 5;
 
 export default function ChatThread({ orderId }) {
-  const [order, setOrder] = useState(null);
+  const cacheKey = `order:${orderId}`;
+  // Renders whatever was last cached for this order immediately on mount
+  // (e.g. warmed by the inbox's background prefetch) instead of a blank
+  // shell — fetchOrder below still runs right away to refresh it.
+  const [order, setOrder] = useState(() => getCachedThread(cacheKey));
   const [notFound, setNotFound] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replyFile, setReplyFile] = useState(null);
@@ -94,8 +99,10 @@ export default function ChatThread({ orderId }) {
       return;
     }
     if (!res.ok) return;
-    setOrder(await res.json());
-  }, [orderId]);
+    const json = await res.json();
+    setOrder(json);
+    setCachedThread(cacheKey, json);
+  }, [orderId, cacheKey]);
 
   const fetchQuickReplies = useCallback(async () => {
     const res = await fetch("/api/admin/quick-replies", { cache: "no-store" });

@@ -27,6 +27,7 @@ import { pickSupportedRecordingMimeType, extensionForMime } from "@/app/lib/audi
 import { formatDayDivider, isNewDay, formatTime } from "@/app/lib/chatDate";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
 import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+import { getCachedThread, setCachedThread } from "@/app/mafia/chatCache";
 
 function isVideoFile(file) {
   return Boolean(file?.type?.startsWith("video/"));
@@ -62,9 +63,15 @@ const MAX_SUGGESTIONS = 5;
 // order, never the selected one — nothing about ownership changes, this
 // component just displays and composes across more than one order at once.
 export default function CustomerChatThread({ sessionId }) {
-  const [data, setData] = useState(null);
+  const cacheKey = `customer:${sessionId}`;
+  // Renders whatever was last cached for this customer immediately on
+  // mount (e.g. warmed by the inbox's background prefetch) instead of a
+  // blank shell — fetchData below still runs right away to refresh it.
+  const [data, setData] = useState(() => getCachedThread(cacheKey));
   const [notFound, setNotFound] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(
+    () => getCachedThread(cacheKey)?.orders[0]?.id ?? null
+  );
   const [replyText, setReplyText] = useState("");
   const [replyFile, setReplyFile] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -106,11 +113,12 @@ export default function CustomerChatThread({ sessionId }) {
     if (!res.ok) return;
     const json = await res.json();
     setData(json);
+    setCachedThread(cacheKey, json);
     // Keep whatever the admin already picked if it's still valid; otherwise
     // (first load, or that order somehow vanished) fall back to the most
     // recent one — orders are already sorted newest-first by the API.
     setSelectedOrderId((prev) => (prev && json.orders.some((o) => o.id === prev) ? prev : json.orders[0]?.id ?? null));
-  }, [sessionId]);
+  }, [sessionId, cacheKey]);
 
   const fetchQuickReplies = useCallback(async () => {
     const res = await fetch("/api/admin/quick-replies", { cache: "no-store" });
@@ -592,21 +600,32 @@ export default function CustomerChatThread({ sessionId }) {
         </button>
       </div>
 
-      {data.orders.length > 1 && (
-        <div className="customer-order-picker">
-          <span className="muted">Replying about:</span>
-          {data.orders.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className={`customer-order-pill ${o.id === selectedOrderId ? "active" : ""}`}
-              onClick={() => setSelectedOrderId(o.id)}
-            >
-              {o.listingTitle}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Stationary metadata bar — sits between the header and the
+          scrollable message body (a sibling of .admin-chat-body, not
+          inside it), so it never scrolls, shifts, or overlaps messages no
+          matter how far up/down the thread is scrolled. Replaces the old
+          per-message inline chips, which used to pop in/out as you
+          scrolled past an order boundary. */}
+      <div className="customer-order-header">
+        <span className="customer-order-header-label">
+          Replying about: <strong>{selectedOrder?.listingTitle || "—"}</strong> | Order ID:{" "}
+          <strong>{selectedOrderId || "—"}</strong>
+        </span>
+        {data.orders.length > 1 && (
+          <div className="customer-order-picker">
+            {data.orders.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={`customer-order-pill ${o.id === selectedOrderId ? "active" : ""}`}
+                onClick={() => setSelectedOrderId(o.id)}
+              >
+                {o.listingTitle}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="admin-chat-body">
         {messages.length === 0 && (
@@ -618,23 +637,12 @@ export default function CustomerChatThread({ sessionId }) {
           const original = m.replyToId ? messages.find((msg) => msg.id === m.replyToId) : null;
           const dragging = swipeState?.id === m.id;
           const showDayDivider = isNewDay(m.createdAt, messages[i - 1]?.createdAt);
-          const showOrderChip = data.orders.length > 1 && (i === 0 || m.orderId !== messages[i - 1].orderId);
           return (
             <Fragment key={m.id}>
               {showDayDivider && (
                 <div className="chat-day-divider">
                   <span>{formatDayDivider(m.createdAt)}</span>
                 </div>
-              )}
-              {showOrderChip && (
-                <button
-                  type="button"
-                  className="chat-order-context-chip"
-                  onClick={() => setSelectedOrderId(m.orderId)}
-                  title="Reply in this order's context"
-                >
-                  {m.listingTitle} • Order #{m.orderId}
-                </button>
               )}
               <div className={`admin-chat-bubble-row ${m.sender === "admin" ? "sent" : "received"}`}>
                 {!dragging && (

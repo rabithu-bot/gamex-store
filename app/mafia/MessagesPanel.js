@@ -6,6 +6,13 @@ import { Check, Pencil } from "lucide-react";
 import CustomerTagBadge from "./CustomerTagBadge";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
+import { setCachedThread, shouldPrefetch, markPrefetched } from "@/app/mafia/chatCache";
+
+// How many of the most-recently-active conversations get warmed in the
+// background while the admin is just sitting on the inbox — enough that
+// clicking into any of the ones actually near the top feels instant,
+// without quietly fetching the admin's entire message history every poll.
+const PREFETCH_COUNT = 8;
 
 function truncate(text, max) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -48,6 +55,32 @@ export default function MessagesPanel() {
   useEffect(() => {
     fetchSupportName();
   }, [fetchSupportName]);
+
+  // Warms the cache for the most-recently-active conversations while the
+  // admin is just browsing the inbox, so opening any of them renders
+  // instantly from cache instead of waiting on a fresh round trip — see
+  // ChatThread/CustomerChatThread reading from the same cache on mount.
+  // Skips a conversation entirely if it's already cached with no newer
+  // message since the last prefetch, so this doesn't refetch unchanged
+  // threads on every 4s inbox poll.
+  useEffect(() => {
+    conversations.slice(0, PREFETCH_COUNT).forEach((conversation) => {
+      const cacheKey = conversation.sessionId ? `customer:${conversation.sessionId}` : `order:${conversation.orderId}`;
+      const latestAt = conversation.last.createdAt;
+      if (!shouldPrefetch(cacheKey, latestAt)) return;
+      markPrefetched(cacheKey, latestAt);
+
+      const apiUrl = conversation.sessionId
+        ? `/api/admin/customers/${conversation.sessionId}`
+        : `/api/admin/orders/${conversation.orderId}`;
+      fetch(apiUrl, { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json) setCachedThread(cacheKey, json);
+        })
+        .catch(() => {});
+    });
+  }, [conversations]);
 
   function startEditingName() {
     setNameInput(supportName);
@@ -106,6 +139,7 @@ export default function MessagesPanel() {
       return {
         key: group.key,
         sessionId: group.sessionId,
+        orderId: latestOrder.id,
         href: group.sessionId
           ? `/mafia/messages/customer/${group.sessionId}`
           : `/mafia/messages/${latestOrder.id}`,

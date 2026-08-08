@@ -5410,19 +5410,40 @@ select:focus-visible {
 
 /* ---- Merged customer thread (multiple orders, one conversation) ---- */
 
-.customer-order-picker {
+/* Stationary metadata bar directly under the chat header — a normal-flow
+   sibling of .admin-chat-body (which owns the only overflow-y:auto in this
+   layout), so it's structurally incapable of scrolling, shifting, or
+   overlapping the message list no matter what's happening below it. */
+.customer-order-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  overflow-x: auto;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
 }
 
-.customer-order-picker .muted {
+.customer-order-header-label {
   font-size: 0.78rem;
-  flex-shrink: 0;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-order-header-label strong {
+  opacity: 1;
+  font-weight: 700;
+}
+
+.customer-order-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .customer-order-pill {
@@ -5444,22 +5465,4 @@ select:focus-visible {
   color: var(--accent);
   background: var(--accent-soft);
   opacity: 1;
-}
-
-.chat-order-context-chip {
-  align-self: center;
-  margin: 0.5rem 0;
-  padding: 0.3rem 0.85rem;
-  border-radius: 999px;
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: rgba(241, 238, 252, 0.6);
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.chat-order-context-chip:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
