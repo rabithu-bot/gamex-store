@@ -600,31 +600,20 @@ export default function CustomerChatThread({ sessionId }) {
         </button>
       </div>
 
-      {/* Stationary metadata bar — sits between the header and the
-          scrollable message body (a sibling of .admin-chat-body, not
-          inside it), so it never scrolls, shifts, or overlaps messages no
-          matter how far up/down the thread is scrolled. Replaces the old
-          per-message inline chips, which used to pop in/out as you
-          scrolled past an order boundary. */}
+      {/* Stationary metadata bar — a normal-flow sibling of .admin-chat-body
+          (which owns the only overflow-y:auto in this layout), sitting
+          between the header and the scrollable message list. It never
+          scrolls, shifts, or overlaps messages no matter where the thread
+          is scrolled to, and this text line is deliberately the ONLY thing
+          in it — no pills, no buttons, nothing that could be mistaken for
+          the old per-message inline chips (removed entirely; switching
+          which order a reply targets now happens only by swiping/tapping
+          reply on one of that order's own messages). */}
       <div className="customer-order-header">
         <span className="customer-order-header-label">
           Replying about: <strong>{selectedOrder?.listingTitle || "—"}</strong> | Order ID:{" "}
           <strong>{selectedOrderId || "—"}</strong>
         </span>
-        {data.orders.length > 1 && (
-          <div className="customer-order-picker">
-            {data.orders.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                className={`customer-order-pill ${o.id === selectedOrderId ? "active" : ""}`}
-                onClick={() => setSelectedOrderId(o.id)}
-              >
-                {o.listingTitle}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="admin-chat-body">
