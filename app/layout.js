@@ -6,6 +6,7 @@ import SplashScreen from "./components/SplashScreen";
 import MobileTabBar from "./components/MobileTabBar";
 import InAppBrowserBanner from "./components/InAppBrowserBanner";
 import RegisterServiceWorker from "./components/RegisterServiceWorker";
+import DisableInspect from "./components/DisableInspect";
 import { SITE_URL } from "./lib/siteUrl";
 
 const geistSans = Geist({
@@ -101,6 +102,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <RegisterServiceWorker />
+        <DisableInspect />
         <AuroraBackground />
         <SplashScreen />
         <InAppBrowserBanner />
