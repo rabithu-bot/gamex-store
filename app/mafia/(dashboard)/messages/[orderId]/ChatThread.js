@@ -376,6 +376,51 @@ export default function ChatThread({ orderId }) {
     textareaRef.current?.focus();
   }
 
+  // Fires the link straight off as its own message instead of dropping it
+  // in the composer — used for proof links, where there's nothing for the
+  // admin to add; the link IS the whole message. Kept separate from
+  // handleReply's state (replyText/audioBlob/etc.) so it never clobbers
+  // whatever the admin was already mid-typing.
+  async function sendQuickShareLink(link) {
+    if (!order || sending) return;
+    setSending(true);
+
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                id: -Date.now(),
+                sender: "admin",
+                body: link,
+                attachmentPath: null,
+                attachmentType: null,
+                replyToId: null,
+                readAt: null,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }
+        : prev
+    );
+
+    const formData = new FormData();
+    formData.set("body", link);
+    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
+    await fetchOrder();
+    setSending(false);
+  }
+
+  function handleQuickShareSelect(link, opts) {
+    if (opts?.send) {
+      sendQuickShareLink(link);
+    } else {
+      insertQuickShareLink(link);
+    }
+  }
+
   function handleBubblePointerDown(e, message) {
     lastPointerTypeRef.current = e.pointerType;
     if (e.pointerType === "mouse") return; // desktop uses right-click (menu) + the hover reply icon instead
@@ -842,7 +887,7 @@ export default function ChatThread({ orderId }) {
       {zoomSrc && <Lightbox src={zoomSrc} alt="Attachment" onClose={() => setZoomSrc(null)} />}
 
       {quickShareOpen && (
-        <QuickShareModal onSelect={insertQuickShareLink} onClose={() => setQuickShareOpen(false)} />
+        <QuickShareModal onSelect={handleQuickShareSelect} onClose={() => setQuickShareOpen(false)} />
       )}
 
       {activeMenu && (

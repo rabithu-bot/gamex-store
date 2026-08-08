@@ -16,7 +16,7 @@ function getClient() {
   return client;
 }
 
-function guessMimeType(url) {
+export function guessMimeType(url) {
   const clean = url.split("?")[0].toLowerCase();
   if (clean.endsWith(".mp3")) return "audio/mpeg";
   if (clean.endsWith(".wav")) return "audio/wav";

@@ -6,17 +6,39 @@ import { notifyBuyerOfReply } from "@/app/lib/push";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
 import { recordObservation } from "@/app/lib/aiLearning";
 import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
+import { analyzeAdminImage, analyzeAdminVoiceReply } from "@/app/lib/adminMediaAnalysis";
 
-// Resolves a message down to real, readable text for the shadow-learning
-// log — transcribing a voice note via Gemini's audio input (same module
-// the live bot uses to understand voice input) rather than logging a
-// blind "[voice note]" placeholder that would be useless to learn from.
-async function resolveMessageText(message) {
+// Resolves the CUSTOMER's message down to real, readable text for the
+// shadow-learning log — transcribing a voice note via Gemini's audio input
+// rather than logging a blind "[voice note]" placeholder that would be
+// useless to learn from. No image analysis on this side — only the
+// admin's own media is analyzed (see resolveAdminReply below).
+async function resolveCustomerMessageText(message) {
   if (message.attachmentType === "audio" && message.attachmentPath) {
     const transcript = await transcribeVoiceNote(message.attachmentPath);
     return transcript || "[voice note — transcription failed]";
   }
   return message.body || "";
+}
+
+// Resolves the ADMIN's own reply, additionally capturing what makes it
+// worth learning from beyond the words: what an image attachment actually
+// showed (adminImageContext), or how a voice note was actually delivered —
+// pacing/pauses/tone (adminVoiceStyleNotes) — alongside its transcript.
+async function resolveAdminReply({ body, attachmentType, attachmentPath }, customerMessage) {
+  if (attachmentType === "audio" && attachmentPath) {
+    const { transcript, styleNotes } = await analyzeAdminVoiceReply(attachmentPath);
+    return {
+      text: transcript || "[voice note — transcription failed]",
+      imageContext: null,
+      voiceStyleNotes: styleNotes,
+    };
+  }
+  if (attachmentType === "image" && attachmentPath) {
+    const imageContext = await analyzeAdminImage(attachmentPath, customerMessage);
+    return { text: body || "", imageContext, voiceStyleNotes: null };
+  }
+  return { text: body || "", imageContext: null, voiceStyleNotes: null };
 }
 
 export async function POST(request, { params }) {
@@ -75,10 +97,11 @@ export async function POST(request, { params }) {
 
   // Shadow learning: log this real admin reply paired with the customer
   // message it responded to, while the AI auto-reply stays switched off.
-  // Deferred via after() — transcribing a voice note on either side takes
-  // real time (a Gemini call), and that must never delay the admin's own
-  // reply from sending. Never blocks or fails the actual reply either way;
-  // see resolveMessageText/recordObservation.
+  // Deferred via after() — transcribing/analyzing a voice note or image on
+  // either side takes real time (a Gemini call), and that must never delay
+  // the admin's own reply from sending. Never blocks or fails the actual
+  // reply either way; see resolveCustomerMessageText/resolveAdminReply/
+  // recordObservation.
   after(async () => {
     const lastBuyerMessage = await prisma.message.findFirst({
       where: { orderId, sender: "buyer" },
@@ -86,9 +109,9 @@ export async function POST(request, { params }) {
     });
     if (!lastBuyerMessage) return;
 
-    const [customerMessage, adminReplyText] = await Promise.all([
-      resolveMessageText(lastBuyerMessage),
-      resolveMessageText({ body: text, attachmentType, attachmentPath }),
+    const [customerMessage, adminResolved] = await Promise.all([
+      resolveCustomerMessageText(lastBuyerMessage),
+      resolveAdminReply({ body: text, attachmentType, attachmentPath }, lastBuyerMessage.body),
     ]);
 
     // How long the admin took to reply once they'd actually seen this
@@ -103,9 +126,11 @@ export async function POST(request, { params }) {
       orderId,
       customerMessage,
       customerAttachmentType: lastBuyerMessage.attachmentType,
-      adminReply: adminReplyText,
+      adminReply: adminResolved.text,
       adminAttachmentType: attachmentType,
       seenToReplySeconds,
+      adminImageContext: adminResolved.imageContext,
+      adminVoiceStyleNotes: adminResolved.voiceStyleNotes,
     });
   });
 

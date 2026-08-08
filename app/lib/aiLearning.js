@@ -3,14 +3,11 @@ import { prisma } from "@/app/lib/prisma";
 const SETTING_KEY = "aiAutoReplyEnabled";
 
 // How much "shadow learning" counts as ready — deliberately conservative,
-// arbitrary numbers picked as a reasonable bar rather than derived from
-// anything scientific. Observations (real admin-reply patterns captured)
-// count for more of the score than conversions (successful sales), since
-// there are naturally far fewer of the latter.
+// an arbitrary bar rather than derived from anything scientific. This is
+// the ONLY input to the AI Auto-Reply unlock gate — a single, clean signal
+// instead of a blended score, so "is it ready" always has one obvious
+// answer traceable to one number.
 export const TARGET_OBSERVATIONS = 10000;
-export const TARGET_CONVERSIONS = 1000;
-const OBSERVATION_WEIGHT = 0.6;
-const CONVERSION_WEIGHT = 0.4;
 
 // Bounds for the simulated "typing" delay a live AI reply waits out after
 // marking a customer's message seen — never instant (which would look
@@ -31,20 +28,23 @@ const MAX_NATURAL_SEEN_TO_REPLY_SECONDS = 60;
 // Always computed live from real data — never a stored/cached number that
 // could drift out of sync with what's actually in the database.
 export async function getLearningStats() {
-  const [observations, conversions] = await Promise.all([
+  const [observations, imagesLogged, voiceNotesAnalyzed] = await Promise.all([
     prisma.aiObservation.count(),
-    prisma.order.count({ where: { status: "confirmed" } }),
+    // "Logged" — every admin image reply counts, independent of whether
+    // the Gemini-vision description of it (adminImageContext) succeeded.
+    prisma.aiObservation.count({ where: { adminAttachmentType: "image" } }),
+    // "Analyzed" — only counts once the speech-style read actually landed,
+    // since a failed analysis produced no real insight to show for it.
+    prisma.aiObservation.count({ where: { adminVoiceStyleNotes: { not: null } } }),
   ]);
 
-  const observationRatio = Math.min(1, observations / TARGET_OBSERVATIONS);
-  const conversionRatio = Math.min(1, conversions / TARGET_CONVERSIONS);
-  const progress = Math.round((observationRatio * OBSERVATION_WEIGHT + conversionRatio * CONVERSION_WEIGHT) * 100);
+  const progress = Math.min(100, Math.round((observations / TARGET_OBSERVATIONS) * 100));
 
   return {
     observations,
-    conversions,
     targetObservations: TARGET_OBSERVATIONS,
-    targetConversions: TARGET_CONVERSIONS,
+    imagesLogged,
+    voiceNotesAnalyzed,
     progress,
     readyToEnable: progress >= 100,
   };
@@ -85,6 +85,8 @@ export async function recordObservation({
   adminReply,
   adminAttachmentType,
   seenToReplySeconds,
+  adminImageContext,
+  adminVoiceStyleNotes,
 }) {
   await prisma.aiObservation
     .create({
@@ -95,6 +97,8 @@ export async function recordObservation({
         adminReply: adminReply || "",
         adminAttachmentType: adminAttachmentType || null,
         seenToReplySeconds: Number.isFinite(seenToReplySeconds) ? Math.round(seenToReplySeconds) : null,
+        adminImageContext: adminImageContext || null,
+        adminVoiceStyleNotes: adminVoiceStyleNotes || null,
       },
     })
     .catch(() => {

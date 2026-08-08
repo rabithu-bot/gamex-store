@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { X, ShieldCheck, Tag } from "lucide-react";
 
-// Lets the admin drop a real, clickable link to a specific listing or proof
-// straight into the chat composer — instead of the customer being told
-// "check the proofs page" with no way to jump to the actual thing being
-// talked about.
+// Lets the admin share a real, clickable link straight from chat — a
+// specific listing's product page (dropped into the composer to send
+// manually), or the full verified-proofs page (sent immediately, since
+// every proof item points at the same real library rather than a single
+// item) — instead of the customer being told "check the proofs page" with
+// nothing to actually click.
 export default function QuickShareModal({ onSelect, onClose }) {
   const [tab, setTab] = useState("listings"); // "listings" | "proofs"
   const [listings, setListings] = useState(null);
@@ -31,8 +33,8 @@ export default function QuickShareModal({ onSelect, onClose }) {
       .catch(() => setProofs([]));
   }, []);
 
-  function pick(link) {
-    onSelect(link);
+  function pick(link, opts) {
+    onSelect(link, opts);
     onClose();
   }
 
@@ -96,7 +98,12 @@ export default function QuickShareModal({ onSelect, onClose }) {
                 key={proof.id}
                 type="button"
                 className="quick-share-item quick-share-item-proof"
-                onClick={() => pick(`${window.location.origin}/proofs#proof-${proof.id}`)}
+                // Every proof click sends the same real, general proofs page
+                // link (not a deep link to this one item) — the thumbnail is
+                // just how the admin picks which delivery to reference in
+                // conversation, the customer always lands on the full,
+                // genuine library of every verified delivery.
+                onClick={() => pick(`${window.location.origin}/proofs`, { send: true })}
               >
                 {proof.type === "video" ? (
                   <video src={proof.url} className="quick-share-thumb" muted />

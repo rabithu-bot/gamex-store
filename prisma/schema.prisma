@@ -202,6 +202,16 @@ model AiObservation {
   // against). Used to learn a realistic "typing" delay for live AI replies
   // instead of a made-up constant.
   seenToReplySeconds     Int?
+  // One-line Gemini-vision description of what an admin-sent image showed
+  // and why (see app/lib/adminMediaAnalysis.js) — null when the admin's
+  // reply had no image attachment, or analysis failed.
+  adminImageContext      String?
+  // Qualitative notes on the admin's own voice-note delivery (pacing,
+  // pauses, tone) captured for future TTS style-matching — NOT real
+  // acoustic feature extraction (no audio DSP/vector store in this stack),
+  // just a text description from listening to the clip. Null when the
+  // admin's reply wasn't a voice note, or analysis failed.
+  adminVoiceStyleNotes   String?
   createdAt              DateTime @default(now())
 
   @@index([orderId])

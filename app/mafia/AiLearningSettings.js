@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, Bot } from "lucide-react";
+import { Eye, Image as ImageIcon, Mic } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 
 export default function AiLearningSettings() {
@@ -52,7 +52,8 @@ export default function AiLearningSettings() {
       </h3>
       <p className="muted" style={{ marginTop: "0.3rem" }}>
         The AI only observes right now — every real reply you send gets logged as a learning
-        example. It won&apos;t message a customer on its own until this reaches 100% and you turn it on.
+        example. It won&apos;t message a customer on its own until Reply Patterns Learned reaches
+        100% and you turn it on.
       </p>
 
       <div style={{ marginTop: "1.25rem" }}>
@@ -77,15 +78,32 @@ export default function AiLearningSettings() {
             <span className="stat-label">Reply Patterns Learned</span>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon revenue">
-            <Bot size={16} />
+      </div>
+
+      <div style={{ marginTop: "1.25rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+        <strong style={{ fontSize: "0.9rem" }}>Media &amp; Voice Insights Capture</strong>
+        <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.15rem" }}>
+          Doesn&apos;t count toward the gate above — just what&apos;s being picked up from your
+          images and voice notes as you reply.
+        </p>
+        <div className="stats-bar" style={{ marginTop: "0.75rem" }}>
+          <div className="stat-card">
+            <div className="stat-icon available">
+              <ImageIcon size={16} />
+            </div>
+            <div>
+              <span className="stat-value">{stats.imagesLogged}</span>
+              <span className="stat-label">Images Logged for Learning</span>
+            </div>
           </div>
-          <div>
-            <span className="stat-value">
-              {stats.conversions}/{stats.targetConversions}
-            </span>
-            <span className="stat-label">Conversions Observed</span>
+          <div className="stat-card">
+            <div className="stat-icon messages">
+              <Mic size={16} />
+            </div>
+            <div>
+              <span className="stat-value">{stats.voiceNotesAnalyzed}</span>
+              <span className="stat-label">Voice Notes Analyzed</span>
+            </div>
           </div>
         </div>
       </div>
@@ -109,7 +127,7 @@ export default function AiLearningSettings() {
               ? "Live — the AI is replying to customers on its own."
               : stats.readyToEnable
                 ? "Ready. Turn on when you want the AI live."
-                : "Locked until learning reaches 100%."}
+                : "Locked until Reply Patterns Learned reaches 100%."}
           </p>
         </div>
         <button
