@@ -28,14 +28,16 @@ const MAX_NATURAL_SEEN_TO_REPLY_SECONDS = 60;
 // Always computed live from real data — never a stored/cached number that
 // could drift out of sync with what's actually in the database.
 export async function getLearningStats() {
-  const [observations, imagesLogged, voiceNotesAnalyzed] = await Promise.all([
+  const [observations, voiceNotesAnalyzed] = await Promise.all([
     prisma.aiObservation.count(),
-    // "Logged" — every admin image reply counts, independent of whether
-    // the Gemini-vision description of it (adminImageContext) succeeded.
-    prisma.aiObservation.count({ where: { adminAttachmentType: "image" } }),
-    // "Analyzed" — only counts once the speech-style read actually landed,
-    // since a failed analysis produced no real insight to show for it.
-    prisma.aiObservation.count({ where: { adminVoiceStyleNotes: { not: null } } }),
+    // Counts every logged admin voice-note reply, full stop — NOT gated on
+    // whether the deep style analysis (adminVoiceStyleNotes) succeeded.
+    // It used to be gated on that, which meant a Gemini failure (quota,
+    // a bad JSON parse, whatever) silently dropped a real voice note out
+    // of the count instead of just missing its style notes — the counter
+    // looked "stuck" even though the admin kept sending voice notes that
+    // were, in fact, being logged the whole time.
+    prisma.aiObservation.count({ where: { adminAttachmentType: "audio" } }),
   ]);
 
   const progress = Math.min(100, Math.round((observations / TARGET_OBSERVATIONS) * 100));
@@ -43,7 +45,6 @@ export async function getLearningStats() {
   return {
     observations,
     targetObservations: TARGET_OBSERVATIONS,
-    imagesLogged,
     voiceNotesAnalyzed,
     progress,
     readyToEnable: progress >= 100,
