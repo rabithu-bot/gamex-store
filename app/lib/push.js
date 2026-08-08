@@ -48,13 +48,17 @@ async function logPushSend({ type, title, body, url, sent, failed, total }) {
 
 // Pinged when a buyer sends a message on any order — every admin browser
 // that's granted notification permission gets one. `tag` is optional and
-// just dresses up the title when the order happens to have one.
-export async function notifyAdminsOfMessage({ orderId, buyerName, tag, body }) {
+// just dresses up the title when the order happens to have one. Deep-links
+// to the merged per-customer thread (see the admin messages inbox) when a
+// sessionId is available, so tapping the notification lands on the same
+// unified conversation the inbox itself would open — falls back to the
+// old per-order link for pre-sessionId legacy orders.
+export async function notifyAdminsOfMessage({ orderId, sessionId, buyerName, tag, body }) {
   const subs = await prisma.pushSubscription.findMany({ where: { role: "admin" } });
   const prefix = tag ? `${tag[0].toUpperCase() + tag.slice(1)} customer` : "New message";
   const title = `${prefix}: ${buyerName || "Buyer"}`;
   const msgBody = body || "Sent a new message";
-  const url = `/mafia/messages/${orderId}`;
+  const url = sessionId ? `/mafia/messages/customer/${sessionId}` : `/mafia/messages/${orderId}`;
   const { sent, failed } = await sendToSubscriptions(subs, { title, body: msgBody, url, tag: `order-${orderId}` });
   await logPushSend({ type: "admin-alert", title, body: msgBody, url, sent, failed, total: subs.length });
 }

@@ -18,6 +18,11 @@ export async function GET() {
       screenshotPath: true,
       status: true,
       tag: true,
+      // Lets the inbox group every order from the same device/buyer into
+      // one conversation (see MessagesPanel.js) instead of one row per
+      // purchase — null for pre-existing orders from before this cookie
+      // existed, which just stay as their own standalone row.
+      sessionId: true,
       buyerLastSeenAt: true,
       listing: { select: { id: true, status: true } },
       messages: {

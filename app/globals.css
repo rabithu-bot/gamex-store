@@ -292,6 +292,12 @@ select:focus-visible {
   animation: card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+.card.tilt-card:hover {
+  border-color: rgba(168, 139, 255, 0.5);
+  box-shadow: 0 30px 60px -20px rgba(139, 92, 246, 0.4), 0 20px 25px -5px rgba(0, 0, 0, 0.45),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -911,11 +917,25 @@ select:focus-visible {
 }
 
 .panel {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.25rem;
   margin-top: 1rem;
-  background: var(--surface);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)), var(--surface);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.55);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.panel:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 32px 60px -28px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
 }
 
 /* ---- Checkout payment card (glassmorphic, elevated) ---- */
@@ -1234,16 +1254,27 @@ select:focus-visible {
   padding: 1.25rem;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)), var(--surface);
+  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.55);
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-nav-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.01);
   border-color: var(--accent);
+  box-shadow: 0 28px 52px -20px rgba(139, 92, 246, 0.4), 0 20px 40px -24px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-nav-card {
+    transition: none;
+  }
+  .dashboard-nav-card:hover {
+    transform: none;
+  }
 }
 
 .dashboard-nav-icon {
@@ -1255,6 +1286,12 @@ select:focus-visible {
   justify-content: center;
   background: var(--accent-soft);
   color: #c4b5fd;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 16px -8px rgba(139, 92, 246, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.dashboard-nav-card:hover .dashboard-nav-icon {
+  transform: scale(1.08) rotate(-4deg);
 }
 
 /* ---- Dashboard section (focused view) ---- */
@@ -1282,7 +1319,24 @@ select:focus-visible {
   padding: 0.9rem 1rem;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)), var(--surface);
+  box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 20px 40px -18px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card {
+    transition: none;
+  }
+  .stat-card:hover {
+    transform: none;
+  }
 }
 
 .stat-icon {
@@ -1293,6 +1347,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
 }
 
 .stat-icon.revenue {
@@ -1953,8 +2008,15 @@ select:focus-visible {
   padding: 0.65rem 0.9rem;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)), var(--surface);
+  box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   color: #c4b5fd;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px -16px rgba(139, 92, 246, 0.35);
 }
 
 .stat-box div {
@@ -1976,7 +2038,8 @@ select:focus-visible {
   padding: 0.65rem 1rem;
   border-radius: 12px;
   border: 1px solid rgba(74, 222, 128, 0.3);
-  background: rgba(74, 222, 128, 0.1);
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.14), rgba(74, 222, 128, 0.06));
+  box-shadow: 0 14px 28px -18px rgba(74, 222, 128, 0.35);
   color: #4ade80;
   font-weight: 600;
   font-size: 0.85rem;
@@ -2054,31 +2117,6 @@ select:focus-visible {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-}
-
-.btn-proof {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 1.1rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--foreground);
-  font-weight: 600;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
-}
-
-.btn-proof:hover {
-  border-color: rgba(196, 181, 253, 0.55);
-  background: var(--accent-soft);
-  color: #c4b5fd;
-}
-
-.btn-proof:active {
-  transform: scale(0.96);
 }
 
 .btn-buy-now {
@@ -2179,10 +2217,17 @@ select:focus-visible {
   padding: 0.6rem 0.9rem;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)), var(--surface);
+  box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.5);
   font-size: 0.8rem;
   font-weight: 600;
   color: #c4b5fd;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trust-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px -16px rgba(139, 92, 246, 0.35);
 }
 
 /* ---- Buy bar: inline on desktop, sticky app-style CTA bar on mobile ---- */
@@ -3258,9 +3303,13 @@ select:focus-visible {
 }
 
 .tilt-card-inner {
-  transform: rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
+  transform: translateY(var(--lift, 0px)) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
   transition: transform 0.15s ease-out;
   transform-style: preserve-3d;
+}
+
+.tilt-card:hover .tilt-card-inner {
+  --lift: -6px;
 }
 
 .tilt-card-glare {
@@ -5328,4 +5377,60 @@ select:focus-visible {
   100% {
     box-shadow: 0 0 0 3px transparent;
   }
+}
+
+/* ---- Merged customer thread (multiple orders, one conversation) ---- */
+
+.customer-order-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.customer-order-picker .muted {
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.customer-order-pill {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.customer-order-pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  opacity: 1;
+}
+
+.chat-order-context-chip {
+  align-self: center;
+  margin: 0.5rem 0;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: rgba(241, 238, 252, 0.6);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-order-context-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }

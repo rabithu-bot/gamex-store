@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { X, ShieldCheck, Loader2, Zap } from "lucide-react";
 
 export default function BuyForm({ listingId, listingTitle, listingPrice }) {
@@ -74,10 +73,6 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
     <div style={{ marginTop: "1.25rem" }}>
       {error && !modalOpen && <p className="error-text">{error}</p>}
       <div className="buy-cta-row">
-        <Link href="/proofs" className="btn-proof">
-          <ShieldCheck size={16} />
-          Proof
-        </Link>
         <button className="btn-buy-now" onClick={handleStart} disabled={checking}>
           {checking ? (
             <>

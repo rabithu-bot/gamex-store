@@ -130,6 +130,7 @@ export async function POST(request, { params }) {
   // gets to finish.
   await notifyAdminsOfMessage({
     orderId,
+    sessionId: order.sessionId,
     buyerName: order.buyerName,
     tag: order.tag,
     body: notifyBody,

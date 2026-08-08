@@ -70,25 +70,71 @@ export default function MessagesPanel() {
     setSavingName(false);
   }
 
+  // Groups every order from the same buyer (their persistent
+  // gamex_session_id) into one inbox row instead of one row per purchase —
+  // so the same customer buying a second or third ID never splinters into
+  // a separate thread in the admin panel. Orders from before this cookie
+  // existed have no sessionId and just stay as their own standalone row,
+  // exactly as they always have.
   const conversations = useMemo(() => {
     if (!orders) return [];
-    return orders
-      .filter((o) => o.messages.length > 0)
-      .sort((a, b) => {
-        const aLast = a.messages[a.messages.length - 1];
-        const bLast = b.messages[b.messages.length - 1];
-        // Only jumps above normal recency sorting while a tagged customer
-        // has a fresh, unread message waiting — once it's read/replied to,
-        // it settles back into its normal spot by recency like anyone else.
-        const aPriority = Boolean(a.tag) && aLast.sender === "buyer" && !aLast.readAt;
-        const bPriority = Boolean(b.tag) && bLast.sender === "buyer" && !bLast.readAt;
-        if (aPriority !== bPriority) return aPriority ? -1 : 1;
-        return new Date(bLast.createdAt) - new Date(aLast.createdAt);
+    const withMessages = orders.filter((o) => o.messages.length > 0);
+
+    const groups = new Map();
+    for (const order of withMessages) {
+      const key = order.sessionId || `order-${order.id}`;
+      if (!groups.has(key)) {
+        groups.set(key, { key, sessionId: order.sessionId, orders: [] });
+      }
+      groups.get(key).orders.push(order);
+    }
+
+    const merged = Array.from(groups.values()).map((group) => {
+      // Each order's `messages` here is just its latest message (see the
+      // /api/admin/orders select) — recency across the group is still just
+      // the max of those.
+      const byRecency = [...group.orders].sort(
+        (a, b) => new Date(b.messages[0].createdAt) - new Date(a.messages[0].createdAt)
+      );
+      const latestOrder = byRecency[0];
+      const last = latestOrder.messages[0];
+      const unread = group.orders.some((o) => {
+        const m = o.messages[0];
+        return m.sender === "buyer" && !m.readAt;
       });
+      const tag = byRecency.find((o) => o.tag)?.tag || null;
+      return {
+        key: group.key,
+        sessionId: group.sessionId,
+        href: group.sessionId
+          ? `/mafia/messages/customer/${group.sessionId}`
+          : `/mafia/messages/${latestOrder.id}`,
+        buyerName: latestOrder.buyerName,
+        buyerLastSeenAt: byRecency.reduce(
+          (max, o) => (o.buyerLastSeenAt && (!max || o.buyerLastSeenAt > max) ? o.buyerLastSeenAt : max),
+          null
+        ),
+        notificationsEnabled: group.orders.some((o) => o.notificationsEnabled),
+        tag,
+        orderCount: group.orders.length,
+        listingTitle: group.orders.length > 1 ? `${group.orders.length} orders` : latestOrder.listingTitle,
+        last,
+      };
+    });
+
+    return merged.sort((a, b) => {
+      // Only jumps above normal recency sorting while a tagged customer
+      // has a fresh, unread message waiting — once it's read/replied to,
+      // it settles back into its normal spot by recency like anyone else.
+      const aPriority = Boolean(a.tag) && a.last.sender === "buyer" && !a.last.readAt;
+      const bPriority = Boolean(b.tag) && b.last.sender === "buyer" && !b.last.readAt;
+      if (aPriority !== bPriority) return aPriority ? -1 : 1;
+      return new Date(b.last.createdAt) - new Date(a.last.createdAt);
+    });
   }, [orders]);
 
-  function customerName(order) {
-    return order.buyerName || "Buyer";
+  function customerName(conversation) {
+    return conversation.buyerName || "Buyer";
   }
 
   const supportNameControl = (
@@ -142,36 +188,38 @@ export default function MessagesPanel() {
         <p className="muted">No support conversations yet.</p>
       ) : (
         <div className="messages-list">
-          {conversations.map((order) => {
-            const last = order.messages[order.messages.length - 1];
+          {conversations.map((conversation) => {
+            const { last } = conversation;
             const unread = last.sender === "buyer" && !last.readAt;
             return (
               <Link
-                key={order.id}
-                href={`/mafia/messages/${order.id}`}
+                key={conversation.key}
+                href={conversation.href}
                 className="messages-list-item"
               >
                 <span className="dm-avatar-wrap">
-                  <span className="dm-avatar">{initials(customerName(order))}</span>
-                  {isBuyerOnline(order.buyerLastSeenAt) && (
+                  <span className="dm-avatar">{initials(customerName(conversation))}</span>
+                  {isBuyerOnline(conversation.buyerLastSeenAt) && (
                     <span className="dm-online-dot" role="img" aria-label="Online now" />
                   )}
                 </span>
                 <span className="dm-list-body">
                   <span className="dm-list-top">
                     <span className="dm-list-name-group">
-                      <strong>{customerName(order)}</strong>
+                      <strong>{customerName(conversation)}</strong>
                       <span
-                        className={`notify-status-dot ${order.notificationsEnabled ? "on" : "off"}`}
-                        title={order.notificationsEnabled ? "Notifications ON" : "Notifications OFF"}
+                        className={`notify-status-dot ${conversation.notificationsEnabled ? "on" : "off"}`}
+                        title={conversation.notificationsEnabled ? "Notifications ON" : "Notifications OFF"}
                         role="img"
-                        aria-label={order.notificationsEnabled ? "Notifications enabled" : "Notifications disabled"}
+                        aria-label={
+                          conversation.notificationsEnabled ? "Notifications enabled" : "Notifications disabled"
+                        }
                       />
-                      {order.tag && <CustomerTagBadge tag={order.tag} />}
+                      {conversation.tag && <CustomerTagBadge tag={conversation.tag} />}
                     </span>
                     <span className="dm-time">{relativeTime(last.createdAt)}</span>
                   </span>
-                  <span className="muted dm-preview-listing">{order.listingTitle}</span>
+                  <span className="muted dm-preview-listing">{conversation.listingTitle}</span>
                   <span className={`muted dm-preview ${unread ? "unread" : ""}`}>
                     {last.sender === "admin" ? "You: " : ""}
                     {last.attachmentPath && !last.body ? "📷 Photo" : truncate(last.body, 36)}
