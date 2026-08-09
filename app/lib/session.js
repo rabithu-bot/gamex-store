@@ -8,10 +8,12 @@ function getSessionOptions() {
     cookieName: "storefront_admin_session",
     password: process.env.SESSION_SECRET ?? fallbackSessionSecret,
     cookieOptions: {
-      // Hardcoded false: this runs over plain HTTP (localhost + LAN/mobile testing),
-      // and a Secure cookie gets silently dropped by browsers on non-HTTPS, non-localhost
-      // origins. Flip to true once this is actually deployed behind HTTPS.
-      secure: false,
+      // Secure in production (Vercel is always HTTPS), off in dev so the
+      // cookie isn't silently dropped when testing from a phone over plain
+      // http:// on the LAN. Same pattern as the buyer's order-token cookie
+      // in orderAccessToken.js — this one guards the admin session, so it's
+      // the last cookie on the site that should be sent in the clear.
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: "lax",
     },

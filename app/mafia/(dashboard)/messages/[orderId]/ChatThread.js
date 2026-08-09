@@ -319,9 +319,17 @@ export default function ChatThread({ orderId }) {
     setShowSuggestions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
-    await fetchOrder();
-    setSending(false);
+    // finally, not a bare await pair: if the network drops mid-send the
+    // fetch rejects, and without this `sending` stayed true forever — the
+    // Send button silently dead until a full page reload.
+    try {
+      await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
+      await fetchOrder();
+    } catch {
+      setAttachmentError("Couldn't send that — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function handleDeleteMessage(messageId) {
@@ -415,9 +423,14 @@ export default function ChatThread({ orderId }) {
 
     const formData = new FormData();
     formData.set("body", link);
-    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
-    await fetchOrder();
-    setSending(false);
+    try {
+      await fetch(`/api/admin/orders/${order.id}/messages`, { method: "POST", body: formData });
+      await fetchOrder();
+    } catch {
+      setAttachmentError("Couldn't send that link — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleQuickShareSelect(link, opts) {

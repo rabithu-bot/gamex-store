@@ -7,9 +7,19 @@ const TOTAL_SECONDS = 5 * 60;
 export default function ConfirmingPayment() {
   const [secondsLeft, setSecondsLeft] = useState(TOTAL_SECONDS);
 
+  // Clears itself the moment it hits zero rather than ticking (and
+  // re-rendering) forever — the copy below switches to its timed-out
+  // message at 0 and never changes again. Kept as a single interval with an
+  // empty dep array so it isn't torn down and recreated on every tick.
   useEffect(() => {
     const interval = setInterval(() => {
-      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return s - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, []);

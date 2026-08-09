@@ -16,11 +16,15 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   useEffect(() => {
     if (!modalOpen) return;
     function onKeyDown(e) {
-      if (e.key === "Escape") setModalOpen(false);
+      // Same guard the backdrop click and close button already have — an
+      // order POST is in flight, so letting the modal vanish here would
+      // leave the buyer on the product page until the redirect fires out
+      // of nowhere a moment later.
+      if (e.key === "Escape" && !loading) setModalOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [modalOpen]);
+  }, [modalOpen, loading]);
 
   async function handleStart() {
     setError("");

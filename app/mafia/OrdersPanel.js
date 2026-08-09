@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
+import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
 function ProofThumb({ src, orderId, onZoom }) {
   const [failed, setFailed] = useState(false);
@@ -47,9 +48,12 @@ export default function OrdersPanel() {
     if (res.ok) setOrders(await res.json());
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  // This is the screen where incoming "Needs Review" payment proofs land,
+  // so it has to refresh on its own — it previously fetched once on mount,
+  // meaning an admin sitting on this tab wouldn't see a new order until
+  // they manually reloaded. Same visibility-aware polling every sibling
+  // panel already uses (messages 4s, listings 5s, stats 6s).
+  useVisiblePolling(fetchOrders, 5000);
 
   async function handleAction(orderId, action) {
     setBusyId(orderId);

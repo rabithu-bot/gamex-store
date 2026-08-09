@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRef } from "react";
 
-export default function ListingCard({ listing }) {
+// `priority` opts a card out of lazy-loading — the first row on the
+// homepage is above the fold and holds the page's LCP element, so lazily
+// loading it actively delays the metric it defines. Mirrors what
+// ImageGallery already does for its first slide.
+export default function ListingCard({ listing, priority = false }) {
   const images = JSON.parse(listing.images || "[]");
   const innerRef = useRef(null);
   const glareRef = useRef(null);
@@ -45,7 +49,8 @@ export default function ListingCard({ listing }) {
             className={`card-image${isSold ? " card-image-sold" : ""}`}
             src={images[0] || "/window.svg"}
             alt={`${listing.title} - GameX Store`}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : undefined}
             decoding="async"
           />
           <span className="badge card-image-badge">{listing.category}</span>

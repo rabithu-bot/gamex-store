@@ -7,12 +7,13 @@ import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
+import OrderNotFoundNotice from "../OrderNotFoundNotice";
 import ConfirmingPayment from "../ConfirmingPayment";
 
 export default function ConfirmingPaymentPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { order, accessDenied } = useOrderPoll(id);
+  const { order, accessDenied, notFound } = useOrderPoll(id);
 
   // This page only makes sense while a proof screenshot is actually under
   // review — any other status (confirmed, declined, expired, or even a
@@ -30,6 +31,17 @@ export default function ConfirmingPaymentPage() {
         <SiteHeader />
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
+        </main>
+      </>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="container" style={{ maxWidth: 560 }}>
+          <OrderNotFoundNotice />
         </main>
       </>
     );

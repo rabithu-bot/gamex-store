@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
+import { shouldWritePresence } from "@/app/lib/presenceThrottle";
 
 export async function GET(_request, { params }) {
   if (!(await requireAdmin())) {
@@ -42,8 +43,11 @@ export async function GET(_request, { params }) {
   // Piggybacks on the admin's own 1.5s poll (ChatThread's useVisiblePolling)
   // rather than a dedicated ping endpoint — mirrors the buyer-side route's
   // buyerLastSeenAt heartbeat so the buyer's support chat can show an
-  // "online" indicator for support too.
-  await prisma.order.update({ where: { id }, data: { adminLastSeenAt: new Date() } });
+  // "online" indicator for support too. Throttled so this doesn't become a
+  // row write every 1.5s for as long as a thread sits open.
+  if (shouldWritePresence(`admin:${id}`)) {
+    await prisma.order.update({ where: { id }, data: { adminLastSeenAt: new Date() } });
+  }
 
   return NextResponse.json(order);
 }

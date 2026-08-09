@@ -23,6 +23,7 @@ export default function ListingsPanel() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchListings = useCallback(async () => {
     const res = await fetch("/api/admin/listings", { cache: "no-store" });
@@ -64,12 +65,25 @@ export default function ListingsPanel() {
   async function confirmDelete() {
     const id = deleteTargetId;
     setDeleteTargetId(null);
-    await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
+      // Previously the response was ignored entirely, so a failed delete
+      // looked identical to a successful one — the row just reappeared on
+      // the next refetch with no explanation.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error || "Couldn't delete that listing.");
+      }
+    } catch {
+      setDeleteError("Couldn't delete that listing — check your connection.");
+    }
     fetchListings();
   }
 
   return (
     <div>
+      {deleteError && <p className="error-text">{deleteError}</p>}
       {!listings && (
         <div className="panel-skeleton-list">
           {Array.from({ length: 3 }).map((_, i) => (

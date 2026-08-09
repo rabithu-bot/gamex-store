@@ -1683,6 +1683,16 @@ select:focus-visible {
   z-index: 100;
 }
 
+/* Below 641px the fixed .mobile-tab-bar occupies the bottom of the screen,
+   and both storefront toasts ("Copied", "Payment screenshot submitted")
+   fire on pages that render it — without this they'd land on top of the
+   nav labels. Matches the same breakpoint that hides the bar above it. */
+@media (max-width: 640px) {
+  .toast-stack {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
+
 .toast {
   display: flex;
   align-items: center;

@@ -127,6 +127,7 @@ export default function MessagesPanel() {
         orderCount: group.orders.length,
         listingTitle: group.orders.length > 1 ? `${group.orders.length} orders` : latestOrder.listingTitle,
         last,
+        unread,
       };
     });
 
@@ -134,8 +135,10 @@ export default function MessagesPanel() {
       // Only jumps above normal recency sorting while a tagged customer
       // has a fresh, unread message waiting — once it's read/replied to,
       // it settles back into its normal spot by recency like anyone else.
-      const aPriority = Boolean(a.tag) && a.last.sender === "buyer" && !a.last.readAt;
-      const bPriority = Boolean(b.tag) && b.last.sender === "buyer" && !b.last.readAt;
+      // Uses the group-wide unread flag, not just the newest order's, so an
+      // unanswered message on an older order still counts.
+      const aPriority = Boolean(a.tag) && a.unread;
+      const bPriority = Boolean(b.tag) && b.unread;
       if (aPriority !== bPriority) return aPriority ? -1 : 1;
       return new Date(b.last.createdAt) - new Date(a.last.createdAt);
     });
@@ -223,8 +226,7 @@ export default function MessagesPanel() {
       ) : (
         <div className="messages-list">
           {conversations.map((conversation) => {
-            const { last } = conversation;
-            const unread = last.sender === "buyer" && !last.readAt;
+            const { last, unread } = conversation;
             return (
               <Link
                 key={conversation.key}

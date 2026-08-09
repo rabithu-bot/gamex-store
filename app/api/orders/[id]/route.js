@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { expireStaleOrders, ORDER_EXPIRY_MS } from "@/app/lib/orderExpiry";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
+import { shouldWritePresence } from "@/app/lib/presenceThrottle";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -24,8 +25,11 @@ export async function GET(request, { params }) {
 
   // Piggybacks on the buyer's own 1.5s poll (useOrderPoll) rather than a
   // dedicated ping endpoint — this route is already hit that often while
-  // any order-related page is open.
-  await prisma.order.update({ where: { id }, data: { buyerLastSeenAt: new Date() } });
+  // any order-related page is open. Throttled so an open order page isn't
+  // a row write every 1.5s just to keep the presence dot lit.
+  if (shouldWritePresence(`buyer:${id}`)) {
+    await prisma.order.update({ where: { id }, data: { buyerLastSeenAt: new Date() } });
+  }
 
   const response = {
     id: order.id,

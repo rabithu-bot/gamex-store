@@ -25,7 +25,7 @@ export async function POST(request) {
     );
   }
 
-  const { text, keyword } = await request.json();
+  const { text, keyword } = await request.json().catch(() => ({}));
   const trimmed = String(text || "").trim();
   // Instagram-style: the keyword is what the admin actually types to
   // trigger the suggestion, so it's required and kept short/single-word —

@@ -7,7 +7,7 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name } = await request.json();
+  const { name } = await request.json().catch(() => ({}));
   const trimmed = String(name || "").trim();
   if (!trimmed) {
     return NextResponse.json({ error: "Name can't be empty" }, { status: 400 });

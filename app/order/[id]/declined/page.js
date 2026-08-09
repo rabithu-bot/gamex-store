@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
+import OrderNotFoundNotice from "../OrderNotFoundNotice";
 import DeclinedNotice from "../DeclinedNotice";
 
 export default function DeclinedPaymentPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { order, accessDenied } = useOrderPoll(id);
+  const { order, accessDenied, notFound } = useOrderPoll(id);
 
   // Same idea as the confirming page — this route only makes sense while
   // the order is actually declined; any other status (including a fresh
@@ -28,6 +29,17 @@ export default function DeclinedPaymentPage() {
         <SiteHeader />
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
+        </main>
+      </>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="container" style={{ maxWidth: 560 }}>
+          <OrderNotFoundNotice />
         </main>
       </>
     );

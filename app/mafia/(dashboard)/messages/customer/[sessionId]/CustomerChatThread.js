@@ -311,9 +311,17 @@ export default function CustomerChatThread({ sessionId }) {
     setShowSuggestions(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "POST", body: formData });
-    await fetchData();
-    setSending(false);
+    // finally, not a bare await pair: if the network drops mid-send the
+    // fetch rejects, and without this `sending` stayed true forever — the
+    // Send button silently dead until a full page reload.
+    try {
+      await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "POST", body: formData });
+      await fetchData();
+    } catch {
+      setAttachmentError("Couldn't send that — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function handleDeleteMessage(message) {
@@ -405,9 +413,14 @@ export default function CustomerChatThread({ sessionId }) {
 
     const formData = new FormData();
     formData.set("body", link);
-    await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "POST", body: formData });
-    await fetchData();
-    setSending(false);
+    try {
+      await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "POST", body: formData });
+      await fetchData();
+    } catch {
+      setAttachmentError("Couldn't send that link — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleQuickShareSelect(link, opts) {
@@ -522,9 +535,15 @@ export default function CustomerChatThread({ sessionId }) {
 
   async function confirmDeleteConversation() {
     if (!selectedOrderId) return;
-    await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "DELETE" });
-    await fetchData();
+    // Close first: ConfirmDialog doesn't disable its own confirm button, so
+    // leaving it open across the round trip allowed double-submits, and any
+    // throw in here left it stuck open with no way to dismiss.
     setDeleteConfirmOpen(false);
+    try {
+      await fetch(`/api/admin/orders/${selectedOrderId}/messages`, { method: "DELETE" });
+    } finally {
+      fetchData();
+    }
   }
 
   if (notFound) {

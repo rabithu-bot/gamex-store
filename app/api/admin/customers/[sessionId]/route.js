@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
+import { shouldWritePresence } from "@/app/lib/presenceThrottle";
 
 // The admin-facing "one conversation per person" view — merges every order
 // a buyer (identified by their persistent gamex_session_id, see
@@ -65,7 +66,12 @@ export async function GET(_request, { params }) {
   // Same heartbeat the single-order route does (drives the buyer's "Support
   // is typing/online" indicator) — touched for every order in the group
   // since the admin has now effectively seen all of this buyer's threads.
-  await prisma.order.updateMany({ where: { sessionId }, data: { adminLastSeenAt: new Date() } });
+  // Throttled: this is an updateMany across every order the customer has,
+  // and it used to run on every 1.5s poll tick for as long as the thread
+  // stayed open.
+  if (shouldWritePresence(`customer:${sessionId}`)) {
+    await prisma.order.updateMany({ where: { sessionId }, data: { adminLastSeenAt: new Date() } });
+  }
 
   return NextResponse.json({
     sessionId,

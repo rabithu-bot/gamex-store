@@ -10,6 +10,7 @@ import EnableNotifications from "@/app/components/EnableNotifications";
 import { useToast } from "@/app/components/Toast";
 import OrderSteps from "./OrderSteps";
 import AccessDeniedNotice from "./AccessDeniedNotice";
+import OrderNotFoundNotice from "./OrderNotFoundNotice";
 import FacebookLogo from "./FacebookLogo";
 import { useOrderPoll } from "./useOrderPoll";
 
@@ -29,7 +30,7 @@ export default function OrderPage() {
   const { id } = useParams();
   const router = useRouter();
   const toast = useToast();
-  const { order, accessDenied, setAccessDenied, refetch: fetchOrder } = useOrderPoll(id);
+  const { order, accessDenied, setAccessDenied, notFound, refetch: fetchOrder } = useOrderPoll(id);
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,10 +38,15 @@ export default function OrderPage() {
   const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
   const [now, setNow] = useState(() => Date.now());
 
+  // Only the pending-payment countdown needs a per-second tick — once the
+  // order reaches any settled state there's nothing time-based left on
+  // screen, so keep re-rendering every second forever would be pure waste.
+  const needsCountdown = order?.status === "pending" && Boolean(order?.expiresAt);
   useEffect(() => {
+    if (!needsCountdown) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [needsCountdown]);
 
   useEffect(() => {
     if (!screenshot) {
@@ -109,17 +115,29 @@ export default function OrderPage() {
     const formData = new FormData();
     formData.set("screenshot", screenshot);
 
-    const res = await fetch(`/api/orders/${id}/submit-proof`, {
-      method: "POST",
-      body: formData,
-    });
+    // Wrapped because this upload happens right after the buyer has
+    // switched to their UPI app and back — a dropped mobile connection is
+    // genuinely likely here, and an unhandled rejection used to leave the
+    // button stuck on "Submitting..." forever with no way back but a
+    // reload (and re-picking the screenshot).
+    let res;
+    try {
+      res = await fetch(`/api/orders/${id}/submit-proof`, {
+        method: "POST",
+        body: formData,
+      });
+    } catch {
+      setSubmitting(false);
+      setSubmitError("Network error, please try again.");
+      return;
+    }
     setSubmitting(false);
     if (!res.ok) {
       if (res.status === 403) {
         setAccessDenied(true);
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setSubmitError(data.error || "Something went wrong");
       return;
     }
@@ -134,6 +152,17 @@ export default function OrderPage() {
         <SiteHeader />
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
+        </main>
+      </>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="container" style={{ maxWidth: 560 }}>
+          <OrderNotFoundNotice />
         </main>
       </>
     );

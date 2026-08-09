@@ -59,12 +59,18 @@ export default async function HomePage() {
           </div>
         )}
 
-        {categoryGroups.map(({ category, items }) => (
+        {categoryGroups.map(({ category, items }, groupIndex) => (
           <section key={category} style={{ marginTop: "1.5rem" }}>
             <h3 style={{ marginBottom: "0.75rem" }}>{category} Accounts</h3>
             <div className="listing-grid">
-              {items.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+              {items.map((listing, index) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  // Only the very first row of the very first category is
+                  // reliably above the fold — that's the LCP candidate.
+                  priority={groupIndex === 0 && index < 2}
+                />
               ))}
             </div>
           </section>

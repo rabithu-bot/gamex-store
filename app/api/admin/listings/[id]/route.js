@@ -74,6 +74,12 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
+  // Deleting an already-deleted id throws Prisma's P2025 and surfaced as a
+  // bare 500 — return the same clean 404 shape PUT already does above.
+  const existing = await prisma.listing.findUnique({ where: { id: Number(id) } });
+  if (!existing) {
+    return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+  }
   await prisma.listing.delete({ where: { id: Number(id) } });
   return NextResponse.json({ ok: true });
 }

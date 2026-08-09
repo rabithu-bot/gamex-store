@@ -10,7 +10,7 @@ export async function PATCH(request, { params }) {
   }
 
   const { id } = await params;
-  const { status } = await request.json();
+  const { status } = await request.json().catch(() => ({}));
 
   if (!VALID_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
