@@ -10,14 +10,17 @@ const globalForPrisma = globalThis;
 // future DATABASE_URL points back at a *.neon.tech host, PrismaNeon would
 // need to come back for that connection specifically.
 //
-// rejectUnauthorized: false — the self-hosted droplet's Postgres uses its
-// default self-signed certificate, not one signed by a trusted CA (Neon's
-// was). node-postgres, unlike libpq, still enforces Node's normal TLS
-// verification even with sslmode=require in the connection string unless
-// told not to, which would otherwise reject every connection outright.
-// This still encrypts the connection — it just doesn't verify the cert
-// chain, the same trust model sslmode=require has under libpq/Postgres
-// itself. Safe to revisit if a real CA-signed cert gets added later.
+// The self-hosted droplet's Postgres uses its default self-signed
+// certificate, not one signed by a trusted CA (Neon's was) — this still
+// encrypts the connection, it just doesn't verify the cert chain.
+//
+// Deliberately NOT done via a `?sslmode=...` query param on DATABASE_URL:
+// pg.Client honors sslmode fine, but pg.Pool (what PrismaPg actually uses
+// internally) does not reliably parse sslmode/uselibpqcompat from a
+// connection string — confirmed directly: identical URL, pg.Client
+// connects, pg.Pool fails with ECONNREFUSED. Passing `ssl` as an explicit
+// config object instead (with a plain connectionString, no query params)
+// is what actually works reliably through Pool. Keep DATABASE_URL plain.
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
