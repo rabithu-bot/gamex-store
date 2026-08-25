@@ -1,11 +1,15 @@
-// Server component, no props needed — pure static marketing copy now, no
-// DB-driven counts. (Previously showed a real "today" order count and a
-// real/admin-overridable lifetime count; both removed per request so the
-// banner no longer depends on any dynamic order data at all.)
-export default function TickerBar() {
+// Server component. `dealsCompleted` is the real figure computed in
+// page.js: the admin's own manually-attested override from /mafia/settings
+// when they've set one, otherwise the real auto-tracked on-site count.
+// Static until that setting changes — deliberately never a formula that
+// grows on its own with elapsed time.
+export default function TickerBar({ dealsCompleted }) {
   const items = [
-    "👑 VERIFIED FF ACCOUNTS STORE",
+    `🔥 ${dealsCompleted}+ TOTAL DEALS COMPLETED`,
     "⚡ 100% SAFE & INSTANT HANDOVER",
+    // "24/7 SUPPORT", not "24/7 WhatsApp Support" — support here runs
+    // through the site's own order chat (SupportChat.js), not WhatsApp,
+    // which isn't an integrated channel anywhere on this site.
     "💬 24/7 SUPPORT",
   ];
   // Duplicated once so the CSS marquee can loop seamlessly (scrolls

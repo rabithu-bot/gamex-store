@@ -1,6 +1,7 @@
 import { PackageOpen } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
+import { getEffectiveLifetimeDeals } from "@/app/lib/lifetimeOrderCount";
 import SiteHeader from "@/app/components/SiteHeader";
 import TickerBar from "@/app/components/TickerBar";
 import ListingCard from "@/app/components/ListingCard";
@@ -79,10 +80,18 @@ export default async function HomePage() {
   // Drafts (pending admin review) are deliberately excluded — "sold" stays
   // visible since buyers browsing still see it grayed out for trust/social
   // proof, but an unreviewed draft has no business being public yet.
-  const listings = await prisma.listing.findMany({
-    where: { status: { not: "draft" } },
-    orderBy: { price: "asc" },
-  });
+  const [listings, dealsCompleted] = await Promise.all([
+    prisma.listing.findMany({
+      where: { status: { not: "draft" } },
+      orderBy: { price: "asc" },
+    }),
+    // Real total — the admin's own manually-attested figure (set in
+    // /mafia/settings for pre-website/offline history this site's order
+    // table can't see) when they've saved one, otherwise the real
+    // auto-tracked on-site count. Static until that setting changes; never
+    // a formula that grows on its own with elapsed time.
+    getEffectiveLifetimeDeals(),
+  ]);
   const categoryGroups = groupByCategory(listings);
 
   return (
@@ -94,7 +103,7 @@ export default async function HomePage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(buildProductListJsonLd(listings)) }}
         />
       )}
-      <TickerBar />
+      <TickerBar dealsCompleted={dealsCompleted} />
       <SiteHeader />
       <main className="container">
         <h1>Buy Free Fire ID - Verified FF Accounts For Sale</h1>
