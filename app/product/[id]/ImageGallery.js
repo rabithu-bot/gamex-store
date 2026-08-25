@@ -14,6 +14,12 @@ export default function ImageGallery({ images, alt }) {
   const [direction, setDirection] = useState(1);
   const [zoomed, setZoomed] = useState(false);
   const [mainLoaded, setMainLoaded] = useState(false);
+  // Tracks which gallery URLs have failed to load (by src) so a single
+  // broken S3 object degrades to a clear placeholder instead of leaving
+  // the loading skeleton spinning forever — there was no onError handler
+  // here at all before, so any failed load (deleted object, network
+  // hiccup, bad URL) got stuck on the skeleton with no way out.
+  const [brokenSrcs, setBrokenSrcs] = useState(() => new Set());
   const thumbRefs = useRef([]);
   const touchStartX = useRef(null);
   const preloadedRef = useRef(new Set());
@@ -35,6 +41,11 @@ export default function ImageGallery({ images, alt }) {
     touchStartX.current = null;
     if (delta > SWIPE_THRESHOLD) goTo(active - 1, -1);
     else if (delta < -SWIPE_THRESHOLD) goTo(active + 1, 1);
+  }
+
+  function markBroken(src) {
+    setMainLoaded(true); // stop the skeleton — a placeholder is a resolved state, not a loading one
+    setBrokenSrcs((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
   }
 
   useEffect(() => {
@@ -82,10 +93,11 @@ export default function ImageGallery({ images, alt }) {
         <img
           key={active}
           className={`gallery-main ${direction === 1 ? "gallery-slide-next" : "gallery-slide-prev"}`}
-          src={gallery[active]}
+          src={brokenSrcs.has(gallery[active]) ? "/window.svg" : gallery[active]}
           alt={alt}
           loading={active === 0 ? "eager" : "lazy"}
           onLoad={() => setMainLoaded(true)}
+          onError={() => markBroken(gallery[active])}
         />
         {/* Single zoom badge — bottom-left, inside the fixed-size box above. */}
         <div className="gallery-zoom-hint" aria-hidden="true">
@@ -135,10 +147,11 @@ export default function ImageGallery({ images, alt }) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={src}
+                src={brokenSrcs.has(src) ? "/window.svg" : src}
                 alt={`${alt} thumbnail ${i + 1}`}
                 className="gallery-thumb-img"
                 loading="lazy"
+                onError={() => markBroken(src)}
               />
             </button>
           ))}

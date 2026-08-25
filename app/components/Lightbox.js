@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const SWIPE_THRESHOLD = 28;
+const FALLBACK_IMAGE = "/window.svg";
 
 // images/index/onNavigate are optional — callers with just a single image
 // (chat attachments, payment proof) pass `src` alone and get the plain
@@ -15,6 +16,11 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
   const canNavigate = Boolean(gallery && gallery.length > 1);
   const activeSrc = gallery ? gallery[index] : src;
   const touchStartX = useRef(null);
+  // No fallback existed before — a broken URL zoomed-into full screen just
+  // showed a bare broken-image icon over the backdrop with nothing to
+  // click past it. Keyed by src so navigating to a different (working)
+  // photo isn't permanently affected by an earlier one failing.
+  const [brokenSrc, setBrokenSrc] = useState(null);
 
   function goTo(rawIndex) {
     if (!canNavigate) return;
@@ -73,9 +79,10 @@ export default function Lightbox({ src, alt, onClose, images, index, onNavigate 
       <img
         key={activeSrc}
         className="lightbox-image"
-        src={activeSrc}
+        src={brokenSrc === activeSrc ? FALLBACK_IMAGE : activeSrc}
         alt={alt || ""}
         onClick={(e) => e.stopPropagation()}
+        onError={() => setBrokenSrc(activeSrc)}
       />
       {canNavigate && (
         <>

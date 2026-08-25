@@ -38,12 +38,27 @@ export async function PUT(request, { params }) {
   const accountPassword = String(formData.get("accountPassword") || "").trim();
   const status = String(formData.get("status") || existing.status);
   const newImageFiles = formData.getAll("images").filter((f) => typeof f !== "string");
-
+  // Which of the listing's CURRENT images to keep — sent explicitly by the
+  // edit form so an admin can remove a bad/duplicate photo, not just add
+  // more. Falls back to "keep everything currently saved" when the field
+  // is absent, so any other caller of this route (or an old cached form)
+  // keeps behaving exactly as it did before this could remove anything.
+  const keepImagesRaw = formData.get("keepImages");
   const existingImages = JSON.parse(existing.images);
+  const keptImages = keepImagesRaw ? JSON.parse(keepImagesRaw) : existingImages;
+
   const newImagePaths = [];
   for (const file of newImageFiles) {
     const savedPath = await saveListingImage(file);
     if (savedPath) newImagePaths.push(savedPath);
+  }
+
+  // Same rule as creating a new listing: never end up with zero photos.
+  if (keptImages.length + newImagePaths.length === 0) {
+    return NextResponse.json(
+      { error: "A listing needs at least one screenshot — add one before saving." },
+      { status: 400 }
+    );
   }
 
   const listing = await prisma.listing.update({
@@ -62,7 +77,7 @@ export async function PUT(request, { params }) {
       accountId: accountId || existing.accountId,
       accountPassword: accountPassword || existing.accountPassword,
       status,
-      images: JSON.stringify([...existingImages, ...newImagePaths]),
+      images: JSON.stringify([...keptImages, ...newImagePaths]),
     },
   });
 

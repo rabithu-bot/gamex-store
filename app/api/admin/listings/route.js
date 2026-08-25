@@ -25,12 +25,14 @@ export async function GET() {
       accountId: true,
       accountPassword: true,
       status: true,
+      images: true,
     },
   });
   return NextResponse.json(
     listings.map((listing) => ({
       ...listing,
       rareItems: JSON.parse(listing.rareItems),
+      images: JSON.parse(listing.images || "[]"),
     }))
   );
 }
@@ -60,11 +62,24 @@ export async function POST(request) {
   if (!title || !price || !category || !accountId || !accountPassword) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (imageFiles.length === 0) {
+    return NextResponse.json({ error: "At least one screenshot is required" }, { status: 400 });
+  }
 
   const imagePaths = [];
   for (const file of imageFiles) {
     const savedPath = await saveListingImage(file);
     if (savedPath) imagePaths.push(savedPath);
+  }
+  // Every file was rejected/failed to upload (e.g. corrupt file, S3
+  // hiccup) — this used to fail silently and create the listing anyway
+  // with images: "[]". Fail the request instead so the admin can retry
+  // rather than discover it later on the live listing.
+  if (imagePaths.length === 0) {
+    return NextResponse.json(
+      { error: "Couldn't upload the selected image(s) — please try again." },
+      { status: 500 }
+    );
   }
 
   const listing = await prisma.listing.create({

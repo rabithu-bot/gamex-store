@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { X } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 
@@ -24,6 +25,18 @@ export default function ListingsPanel() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
+  // Existing images this listing already has (removable), separate from
+  // brand-new files being added — the edit form previously had no image
+  // UI at all, so a listing that went live with none (or with a bad
+  // photo) had no way to be fixed short of deleting and recreating it.
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [editError, setEditError] = useState("");
+
+  const newImagePreviewUrls = useMemo(() => newImages.map((file) => URL.createObjectURL(file)), [newImages]);
+  useEffect(() => {
+    return () => newImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [newImagePreviewUrls]);
 
   const fetchListings = useCallback(async () => {
     const res = await fetch("/api/admin/listings", { cache: "no-store" });
@@ -48,17 +61,40 @@ export default function ListingsPanel() {
       accountPassword: listing.accountPassword,
       status: listing.status,
     });
+    setExistingImages(listing.images || []);
+    setNewImages([]);
+    setEditError("");
+  }
+
+  function removeExistingImage(url) {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  }
+
+  function removeNewImage(index) {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleUpdate(e, id) {
     e.preventDefault();
+    setEditError("");
+
+    if (existingImages.length + newImages.length === 0) {
+      setEditError("A listing needs at least one screenshot — add one before saving.");
+      return;
+    }
+
     const formData = new FormData();
     Object.entries(editForm).forEach(([key, value]) => formData.set(key, value));
+    formData.set("keepImages", JSON.stringify(existingImages));
+    newImages.forEach((file) => formData.append("images", file));
 
     const res = await fetch(`/api/admin/listings/${id}`, { method: "PUT", body: formData });
     if (res.ok) {
       setEditingId(null);
       fetchListings();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setEditError(data.error || "Couldn't save changes.");
     }
   }
 
@@ -192,6 +228,39 @@ export default function ListingsPanel() {
                   />
                 </div>
               </div>
+              <div className="form-field">
+                <label>Images (at least 1 required)</label>
+                {(existingImages.length > 0 || newImagePreviewUrls.length > 0) && (
+                  <div className="listing-image-preview-row">
+                    {existingImages.map((url) => (
+                      <div key={url} className="listing-image-preview-thumb existing">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="Listing screenshot" />
+                        <button type="button" aria-label="Remove this screenshot" onClick={() => removeExistingImage(url)}>
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+                    {newImagePreviewUrls.map((url, i) => (
+                      <div key={url} className="listing-image-preview-thumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`New screenshot ${i + 1}`} />
+                        <button type="button" aria-label={`Remove new screenshot ${i + 1}`} onClick={() => removeNewImage(i)}>
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ marginTop: "0.6rem" }}
+                  onChange={(e) => setNewImages((prev) => [...prev, ...Array.from(e.target.files || [])])}
+                />
+              </div>
+              {editError && <p className="error-text">{editError}</p>}
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button className="btn" type="submit">Save</button>
                 <button className="btn secondary" type="button" onClick={() => setEditingId(null)}>

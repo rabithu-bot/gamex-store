@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+
+const FALLBACK_IMAGE = "/window.svg";
 
 // `priority` opts a card out of lazy-loading — the first row on the
 // homepage is above the fold and holds the page's LCP element, so lazily
@@ -11,6 +13,10 @@ export default function ListingCard({ listing, priority = false }) {
   const images = JSON.parse(listing.images || "[]");
   const innerRef = useRef(null);
   const glareRef = useRef(null);
+  // No onError fallback existed before — a broken/deleted S3 object just
+  // showed the browser's bare broken-image icon with no recovery. Falls
+  // back to the same placeholder used when a listing has no photos at all.
+  const [imgSrc, setImgSrc] = useState(images[0] || FALLBACK_IMAGE);
   const hasDiscount = listing.originalPrice && listing.originalPrice > listing.price;
   const isSold = listing.status !== "available";
 
@@ -47,11 +53,12 @@ export default function ListingCard({ listing, priority = false }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className={`card-image${isSold ? " card-image-sold" : ""}`}
-            src={images[0] || "/window.svg"}
+            src={imgSrc}
             alt={`${listing.title} - GameX Store`}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : undefined}
             decoding="async"
+            onError={() => setImgSrc(FALLBACK_IMAGE)}
           />
           <span className="badge card-image-badge">{listing.category}</span>
           {isSold && <span className="sold-badge">Sold Out</span>}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 
 const emptyForm = {
   title: "",
@@ -28,10 +29,33 @@ export default function AddListingPanel() {
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Real thumbnail previews of what's actually selected — there was no
+  // visual confirmation before beyond the bare browser file-input label,
+  // so a selection that silently didn't register (or got cleared) was
+  // invisible until the listing went live with no photos at all.
+  const previewUrls = useMemo(() => images.map((file) => URL.createObjectURL(file)), [images]);
+  useEffect(() => {
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [previewUrls]);
+
+  function removeImage(index) {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
     setError("");
     setSaved(false);
+
+    // A listing with zero photos is exactly the bug this is fixing — a
+    // Free Fire ID for sale with no screenshot has nothing to show a
+    // buyer was ever real, and previously nothing stopped this from
+    // going live silently. Blocked here, not just discouraged.
+    if (images.length === 0) {
+      setError("Add at least one screenshot before saving — a listing can't go live with no photos.");
+      return;
+    }
+
     setSubmitting(true);
 
     const formData = new FormData();
@@ -143,8 +167,30 @@ export default function AddListingPanel() {
         </div>
       </div>
       <div className="form-field">
-        <label>Images</label>
-        <input type="file" accept="image/*" multiple onChange={(e) => setImages(Array.from(e.target.files || []))} />
+        <label>Images (at least 1 required)</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => setImages(Array.from(e.target.files || []))}
+        />
+        {previewUrls.length > 0 && (
+          <div className="listing-image-preview-row">
+            {previewUrls.map((url, i) => (
+              <div key={url} className="listing-image-preview-thumb">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Selected screenshot ${i + 1}`} />
+                <button
+                  type="button"
+                  aria-label={`Remove screenshot ${i + 1}`}
+                  onClick={() => removeImage(i)}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {error && <p className="error-text">{error}</p>}
       {saved && !error && <p className="muted">Listing added — it&apos;ll show up on the Listings page shortly.</p>}
