@@ -1,7 +1,6 @@
 import { PackageOpen } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
-import { getEffectiveLifetimeDeals } from "@/app/lib/lifetimeOrderCount";
 import SiteHeader from "@/app/components/SiteHeader";
 import TickerBar from "@/app/components/TickerBar";
 import ListingCard from "@/app/components/ListingCard";
@@ -75,38 +74,15 @@ function groupByCategory(listings) {
   return groups;
 }
 
-// Real start-of-day boundary in IST (this store's actual market), not UTC —
-// a naive UTC midnight would mislabel late-night/early-morning IST orders
-// as "yesterday" or "today" incorrectly. Used only to scope the ticker's
-// "completed today" count to genuinely today's confirmed orders.
-function startOfTodayIST() {
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const nowIST = new Date(Date.now() + IST_OFFSET_MS);
-  const istMidnight = Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate());
-  return new Date(istMidnight - IST_OFFSET_MS);
-}
-
 export default async function HomePage() {
   // Cheapest accounts surface first for buyers browsing the storefront.
   // Drafts (pending admin review) are deliberately excluded — "sold" stays
   // visible since buyers browsing still see it grayed out for trust/social
   // proof, but an unreviewed draft has no business being public yet.
-  const [listings, dealsToday, lifetimeDeals] = await Promise.all([
-    prisma.listing.findMany({
-      where: { status: { not: "draft" } },
-      orderBy: { price: "asc" },
-    }),
-    // Real count of orders actually confirmed today (IST) — never a fixed
-    // starting number with a timer mechanically adding to it regardless of
-    // whether anything real happened. If today's real number is small, it
-    // shows small; that's normal, not something to paper over.
-    prisma.order.count({ where: { status: "confirmed", confirmedAt: { gte: startOfTodayIST() } } }),
-    // Real lifetime total — the admin's own manually-attested figure (for
-    // pre-website/offline history this site's order table can't see) when
-    // they've set one in /mafia/settings, otherwise the real auto-tracked
-    // on-site count. Never a fabricated number, and never scoped to "today".
-    getEffectiveLifetimeDeals(),
-  ]);
+  const listings = await prisma.listing.findMany({
+    where: { status: { not: "draft" } },
+    orderBy: { price: "asc" },
+  });
   const categoryGroups = groupByCategory(listings);
 
   return (
@@ -118,7 +94,7 @@ export default async function HomePage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(buildProductListJsonLd(listings)) }}
         />
       )}
-      <TickerBar dealsToday={dealsToday} lifetimeDeals={lifetimeDeals} />
+      <TickerBar />
       <SiteHeader />
       <main className="container">
         <h1>Buy Free Fire ID - Verified FF Accounts For Sale</h1>
