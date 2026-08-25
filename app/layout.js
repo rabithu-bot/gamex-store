@@ -27,14 +27,32 @@ const rajdhani = Rajdhani({
   weight: ["600", "700"],
 });
 
-const SITE_TITLE = "GameX Store - Official Gaming Accounts Marketplace | Buy & Sell";
+// Title: 59 chars. Description: 137 chars — both measured, not guessed,
+// to stay under Google's ~60/~155 practical snippet-truncation limits.
+const SITE_TITLE = "Buy Free Fire ID Cheap - Verified FF Accounts | GameX Store";
 const SITE_DESCRIPTION =
-  "Buy verified Free Fire, PUBG, and mobile gaming accounts safely on GameX Store. 100% secure transactions directly with verified owners.";
+  "Buy verified Free Fire ID cheap — Max Level and Evo Gun accounts, instant delivery, secure UPI payment. India's most trusted FF ID store.";
+// Real terms this store actually sells under (confirmed against live
+// listing categories) — not a ranking factor (Google has publicly
+// ignored the keywords meta tag since 2009), included only because it's
+// harmless and a small number of other crawlers/tools still read it.
+const SITE_KEYWORDS = [
+  "free fire id",
+  "buy free fire id",
+  "free fire account for sale",
+  "ff id buy sell",
+  "max level free fire account",
+  "free fire evo gun account",
+  "free fire cobra gun id",
+  "cheap free fire id india",
+  "verified free fire account",
+];
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
   alternates: {
     canonical: `${SITE_URL}/`,
   },
@@ -43,7 +61,7 @@ export const metadata = {
     description: SITE_DESCRIPTION,
     url: `${SITE_URL}/`,
     siteName: "GameX Store",
-    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "GameX Store" }],
+    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "GameX Store - Buy Free Fire ID" }],
     locale: "en_IN",
     type: "website",
   },
@@ -70,7 +88,16 @@ export const metadata = {
 
 // Organization + WebSite JSON-LD — trains Google's Knowledge Graph on the
 // exact brand name/alternateName so "GameX Store" / "GameXStore" searches
-// resolve to this site with a proper sitelinks search box entry.
+// resolve to this site correctly.
+//
+// Deliberately NOT included: a WebSite "SearchAction" (the thing that
+// earns a sitelinks search box) and any Product "aggregateRating"/review
+// markup. The first would point at a search feature this site doesn't
+// actually have; the second would be star ratings google displays with
+// no real reviews behind them, which is a documented structured-data
+// spam violation Google issues manual actions for. Both are easy to add
+// for real later — once there's an actual search page, and an actual
+// review system — but not before.
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -81,6 +108,8 @@ const organizationJsonLd = {
       alternateName: "GameXStore",
       url: SITE_URL,
       logo: `${SITE_URL}/icon.svg`,
+      description: "Buy and sell verified Free Fire (FF) IDs — Max Level accounts, Evo and Cobra gun IDs, instant delivery.",
+      slogan: "India's trusted marketplace to buy Free Fire ID.",
     },
     {
       "@type": "WebSite",

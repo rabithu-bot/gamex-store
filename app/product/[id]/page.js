@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
   const title = `${listing.title} - GameX Store`;
   const description =
     listing.description?.slice(0, 155) ||
-    `Buy ${listing.title} safely on GameX Store — verified account, secure payment, instant delivery.`;
+    `Buy ${listing.title} safely — 100% verified Free Fire ID, secure UPI payment, instant delivery. ₹${listing.price} only.`;
   const url = `${SITE_URL}/product/${listing.id}`;
   const images = JSON.parse(listing.images || "[]");
 
@@ -41,6 +41,33 @@ export async function generateMetadata({ params }) {
       title,
       description,
       images: images[0] ? [images[0]] : undefined,
+    },
+  };
+}
+
+// Real Product/Offer schema for this exact listing — name, price, image,
+// and availability all pulled straight from the same record the page
+// itself renders. Deliberately no aggregateRating/review block: there is
+// no review system behind this data, and Google treats invented rating
+// markup as structured-data spam (can cost the whole site rich-result
+// eligibility). Add it for real once there's an actual review feature.
+function buildProductJsonLd(listing, images) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.title,
+    description: listing.description || `${listing.title} — verified Free Fire ID.`,
+    image: images.length ? images : undefined,
+    category: listing.category,
+    sku: String(listing.id),
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/product/${listing.id}`,
+      priceCurrency: "INR",
+      price: listing.price,
+      availability:
+        listing.status === "available" ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+      itemCondition: "https://schema.org/UsedCondition",
     },
   };
 }
@@ -86,6 +113,10 @@ export default async function ProductPage({ params }) {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildProductJsonLd(listing, images)) }}
+      />
       <SiteHeader />
       <main className="container product-page-main">
         <div className="product-layout">
