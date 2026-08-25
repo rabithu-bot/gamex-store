@@ -1,12 +1,20 @@
 :root {
-  --background: #0d0b17;
-  --surface: #17142688;
-  --surface-solid: #171426;
-  --border: rgba(168, 139, 255, 0.18);
+  /* AAA Cyberpunk Esports palette. --accent stays the name every existing
+     component already keys off (buttons, focus rings, badges, glows) —
+     changing its value here is what re-themes the entire site to crimson
+     without touching a single component file. */
+  --background: #050609; /* Pitch Obsidian */
+  --surface: #0d0f1788;
+  --surface-solid: #0d0f17;
+  --border: rgba(255, 255, 255, 0.1);
   --foreground: #f1eefc;
-  --accent: #8b5cf6;
-  --accent-hover: #7c3aed;
-  --accent-soft: rgba(139, 92, 246, 0.16);
+  --accent: #ff0044; /* Crimson Red — primary CTA/interactive color */
+  --accent-hover: #e6003d;
+  --accent-soft: rgba(255, 0, 68, 0.16);
+  --accent-cyan: #00f0ff; /* Cyber Cyan — secondary highlight/focus glow */
+  --accent-cyan-soft: rgba(0, 240, 255, 0.16);
+  --accent-gold: #ffb800; /* Legend Gold — top-tier rarity only */
+  --accent-gold-soft: rgba(255, 184, 0, 0.16);
 }
 
 html {
@@ -32,7 +40,12 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--foreground);
-  background: var(--background);
+  background:
+    linear-gradient(rgba(5, 6, 9, 0.94), rgba(5, 6, 9, 0.98)),
+    repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.055) 0px, rgba(0, 240, 255, 0.055) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(0, 240, 255, 0.055) 0px, rgba(0, 240, 255, 0.055) 1px, transparent 1px, transparent 40px),
+    var(--background);
+  background-attachment: fixed;
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -56,8 +69,9 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-cyan);
   outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
 }
 
 /* ---- Storefront shared styles ---- */
@@ -286,16 +300,17 @@ select:focus-visible {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), var(--surface);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  background: rgba(13, 15, 23, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   animation: card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .card.tilt-card:hover {
-  border-color: rgba(168, 139, 255, 0.5);
-  box-shadow: 0 30px 60px -20px rgba(139, 92, 246, 0.4), 0 20px 25px -5px rgba(0, 0, 0, 0.45),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.25), 0 0 25px rgba(0, 0, 0, 0.9);
 }
 
 @keyframes card-in {
@@ -653,6 +668,52 @@ select:focus-visible {
   box-shadow: 0 2px 12px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
+/* Loot-rarity badge — top-right, opposite the category badge. Which
+   variant shows is decided entirely from real listing data (tier/level/
+   rareItems, see getRarityBadge in ListingCard.js) — never decorative. */
+.rarity-badge {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 3;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.rarity-badge-mythic {
+  background: linear-gradient(90deg, #f59e0b, #fde047);
+  color: #1a1200;
+  box-shadow: 0 0 12px var(--accent-gold);
+}
+
+.rarity-badge-evo {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent);
+  animation: rarity-pulse 1.6s ease-in-out infinite;
+}
+
+.rarity-badge-grandmaster {
+  background: var(--accent-cyan);
+  color: #001217;
+  font-weight: 900;
+  box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+@keyframes rarity-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rarity-badge-evo {
+    animation: none;
+  }
+}
+
 /* Diagonal "SOLD OUT" stamp, centered over the thumbnail rather than a
    corner pill — deliberately loud, this is the primary signal a listing
    is gone. */
@@ -736,13 +797,15 @@ select:focus-visible {
 .price {
   font-weight: 700;
   font-size: 1.1rem;
-  color: #d8cffc;
+  color: #39ff8a;
+  text-shadow: 0 0 10px rgba(57, 255, 138, 0.55);
 }
 
 .price-sold {
-  color: #ef4444;
+  color: #ff3b5c;
   text-decoration: line-through;
   text-decoration-thickness: 2px;
+  text-shadow: 0 0 10px rgba(255, 59, 92, 0.5);
 }
 
 .btn {
@@ -947,12 +1010,14 @@ select:focus-visible {
 
 .panel {
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 1.25rem;
   margin-top: 1rem;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)), var(--surface);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.55);
+  background: rgba(13, 15, 23, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
@@ -1382,36 +1447,43 @@ select:focus-visible {
 .stat-icon.revenue {
   background: rgba(74, 222, 128, 0.16);
   color: #4ade80;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(74, 222, 128, 0.45);
 }
 
 .stat-icon.pending {
   background: rgba(234, 179, 8, 0.16);
   color: #eab308;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(234, 179, 8, 0.45);
 }
 
 .stat-icon.available {
-  background: rgba(139, 92, 246, 0.16);
-  color: #c4b5fd;
+  background: var(--accent-cyan-soft);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(0, 240, 255, 0.45);
 }
 
 .stat-icon.sold {
-  background: rgba(248, 113, 113, 0.16);
-  color: #f87171;
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(255, 0, 68, 0.45);
 }
 
 .stat-icon.messages {
   background: rgba(34, 211, 238, 0.16);
   color: #22d3ee;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(34, 211, 238, 0.45);
 }
 
 .stat-icon.lifetime {
-  background: rgba(129, 140, 248, 0.16);
-  color: #a5b4fc;
+  background: var(--accent-gold-soft);
+  color: var(--accent-gold);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(255, 184, 0, 0.45);
 }
 
 .stat-icon.notify {
   background: rgba(34, 197, 94, 0.16);
   color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(34, 197, 94, 0.45);
 }
 
 .stat-value {
@@ -2175,9 +2247,9 @@ select:focus-visible {
   letter-spacing: 0.01em;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(90deg, #8b5cf6, #d946ef 55%, #f59e0b);
+  background: linear-gradient(90deg, var(--accent), #ff4d7a 55%, var(--accent-cyan));
   background-size: 200% 100%;
-  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  box-shadow: 0 0 22px rgba(255, 0, 68, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   animation: buy-now-glow 2.6s ease-in-out infinite;
   transition: transform 0.12s ease, filter 0.15s ease, background-position 0.4s ease;
 }
@@ -2224,10 +2296,10 @@ select:focus-visible {
 @keyframes buy-now-glow {
   0%,
   100% {
-    box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    box-shadow: 0 0 22px rgba(255, 0, 68, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   }
   50% {
-    box-shadow: 0 8px 30px rgba(217, 70, 239, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+    box-shadow: 0 0 34px rgba(0, 240, 255, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
   }
 }
 
@@ -3336,39 +3408,17 @@ select:focus-visible {
 }
 
 /* ---- 3D tilt card ---- */
+/* The actual rotateX/rotateY/scale physics on hover now live in
+   ListingCard.js itself via Framer Motion's whileHover + spring transition
+   — real per-frame animation instead of a CSS custom-property hack driven
+   by manual mousemove math. This block is just the wrapper/reset. */
+
+.card-link-wrap {
+  display: block;
+}
 
 .tilt-card {
-  perspective: 900px;
-}
-
-.tilt-card-inner {
-  transform: translateY(var(--lift, 0px)) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
-  transition: transform 0.15s ease-out;
-  transform-style: preserve-3d;
-}
-
-.tilt-card:hover .tilt-card-inner {
-  --lift: -6px;
-}
-
-.tilt-card-glare {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    circle at var(--glare-x, 50%) var(--glare-y, 50%),
-    rgba(255, 255, 255, 0.25),
-    transparent 55%
-  );
-  opacity: var(--glare-opacity, 0);
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-@media (hover: none), (pointer: coarse) {
-  .tilt-card-inner {
-    transform: none !important;
-  }
+  position: relative;
 }
 
 /* ---- Launch splash screen ---- */
@@ -5499,3 +5549,114 @@ select:focus-visible {
 .listing-image-preview-thumb.existing button {
   background: rgba(220, 38, 38, 0.85);
 }
+
+/* ---- Cyberpunk ticker bar ---- */
+
+.ticker-bar {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(255, 0, 68, 0.14), rgba(0, 240, 255, 0.14));
+  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  white-space: nowrap;
+  padding: 0.45rem 0;
+}
+
+.ticker-track {
+  display: inline-flex;
+  animation: ticker-scroll 28s linear infinite;
+}
+
+.ticker-item {
+  display: inline-block;
+  padding: 0 2.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* ---- Storefront search + quick-filter pills ---- */
+
+.storefront-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.storefront-search-input-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+
+.storefront-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.storefront-search-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem 0.65rem 2.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(13, 15, 23, 0.9);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.storefront-search-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.45);
+}
+
+.storefront-search-input::placeholder {
+  color: rgba(241, 238, 252, 0.45);
+  text-shadow: none;
+}
+
+.storefront-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.storefront-filter-pill {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(13, 15, 23, 0.9);
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.storefront-filter-pill.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
