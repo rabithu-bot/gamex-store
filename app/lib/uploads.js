@@ -39,37 +39,42 @@ export function savePaymentScreenshot(file) {
   return saveFile(file, "payment-screenshots", { maxDimension: 1600 });
 }
 
-// Listing photos: public, shown directly on the storefront. Stored at full
-// original resolution/quality (no maxDimension) — the product gallery is
-// the one place buyers need to zoom in and actually verify account detail,
-// so this is the one upload type that skips the usual downscale/recompress.
-export function saveListingImage(file) {
-  return saveFile(file, "listings");
-}
-
 // Chat attachments: public (both buyer and admin can view either side's uploads).
 export function saveMessageAttachment(file) {
   return saveFile(file, "messages", { maxDimension: 1280 });
 }
 
-// Videos are too large to proxy through a serverless function (see s3.js),
-// so the browser uploads them straight to S3 via a presigned URL — this
-// just mints the destination key/URL pair, no bytes pass through here.
-function getVideoUploadUrl(prefix, fileName, contentType) {
-  const ext = path.extname(fileName || "").slice(0, 10) || ".mp4";
+// Large/many-file uploads are too big to reliably proxy through a
+// serverless function (see s3.js — Vercel caps a Serverless Function's
+// request body at 4.5MB, enforced by Vercel's own edge layer before any
+// of this app's code runs), so the browser uploads straight to S3 via a
+// short-lived presigned PUT URL instead — this just mints the destination
+// key/URL pair, no bytes pass through here. Originally video-only; now
+// also used for listing photos, since a real batch of 25-100
+// full-resolution screenshots hits the exact same cap a single video does.
+function getPresignedMediaUploadUrl(prefix, fileName, defaultExt, contentType) {
+  const ext = path.extname(fileName || "").slice(0, 10) || defaultExt;
   const key = `${prefix}/${Date.now()}-${crypto.randomUUID()}${ext}`;
   return getPresignedUploadUrl(key, contentType);
 }
 
 // Chat video attachments.
 export function getMessageVideoUploadUrl(fileName, contentType) {
-  return getVideoUploadUrl("messages", fileName, contentType);
+  return getPresignedMediaUploadUrl("messages", fileName, ".mp4", contentType);
 }
 
 // Proof videos: same bucket/gallery as proof screenshots, just a video
 // instead of an image (see ProofImage.type).
 export function getProofVideoUploadUrl(fileName, contentType) {
-  return getVideoUploadUrl("proofs", fileName, contentType);
+  return getPresignedMediaUploadUrl("proofs", fileName, ".mp4", contentType);
+}
+
+// Listing photos: public, shown directly on the storefront, full original
+// resolution/quality — uploaded straight to S3 like the video types above,
+// so there's no server-side processing step (and none was happening here
+// before this either; saveListingImage never passed a maxDimension).
+export function getListingImageUploadUrl(fileName, contentType) {
+  return getPresignedMediaUploadUrl("listings", fileName, ".jpg", contentType);
 }
 
 // UPI payment QR: public, shown on every pending order's payment step.

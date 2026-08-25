@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
+import { uploadListingImages } from "@/app/lib/listingImageUpload";
 
 const emptyForm = {
   title: "",
@@ -32,6 +33,8 @@ export default function ListingsPanel() {
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [editError, setEditError] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editStatus, setEditStatus] = useState("");
 
   const newImagePreviewUrls = useMemo(() => newImages.map((file) => URL.createObjectURL(file)), [newImages]);
   useEffect(() => {
@@ -83,18 +86,46 @@ export default function ListingsPanel() {
       return;
     }
 
-    const formData = new FormData();
-    Object.entries(editForm).forEach(([key, value]) => formData.set(key, value));
-    formData.set("keepImages", JSON.stringify(existingImages));
-    newImages.forEach((file) => formData.append("images", file));
+    setEditSaving(true);
+    try {
+      // New files upload straight to S3 first (not proxied through this
+      // request) — a real batch of many full-resolution screenshots would
+      // otherwise blow past Vercel's 4.5MB serverless request-body cap and
+      // get rejected before anything was saved. This was the actual bug
+      // behind "Couldn't save changes" on real multi-image edits, not a
+      // data-format mismatch between existing URLs and new files.
+      let newImageUrls = [];
+      if (newImages.length > 0) {
+        setEditStatus(`Uploading ${newImages.length} image${newImages.length === 1 ? "" : "s"}...`);
+        const uploadResult = await uploadListingImages(newImages);
+        if (!uploadResult.ok) {
+          setEditError(uploadResult.error);
+          return;
+        }
+        newImageUrls = uploadResult.publicUrls;
+      }
 
-    const res = await fetch(`/api/admin/listings/${id}`, { method: "PUT", body: formData });
-    if (res.ok) {
-      setEditingId(null);
-      fetchListings();
-    } else {
+      setEditStatus("Saving changes...");
+      const formData = new FormData();
+      Object.entries(editForm).forEach(([key, value]) => formData.set(key, value));
+      formData.set("keepImages", JSON.stringify(existingImages));
+      formData.set("newImageUrls", JSON.stringify(newImageUrls));
+
+      const res = await fetch(`/api/admin/listings/${id}`, { method: "PUT", body: formData });
       const data = await res.json().catch(() => ({}));
-      setEditError(data.error || "Couldn't save changes.");
+      if (res.ok) {
+        setEditingId(null);
+        fetchListings();
+      } else {
+        setEditError(data.error || `Couldn't save changes (HTTP ${res.status}).`);
+      }
+    } catch (err) {
+      // Network failure or anything unexpected — always show something
+      // real rather than leaving the form looking stuck.
+      setEditError(err.message || "Network error — please check your connection and try again.");
+    } finally {
+      setEditSaving(false);
+      setEditStatus("");
     }
   }
 
@@ -262,8 +293,10 @@ export default function ListingsPanel() {
               </div>
               {editError && <p className="error-text">{editError}</p>}
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button className="btn" type="submit">Save</button>
-                <button className="btn secondary" type="button" onClick={() => setEditingId(null)}>
+                <button className="btn" type="submit" disabled={editSaving}>
+                  {editSaving ? editStatus || "Saving..." : "Save"}
+                </button>
+                <button className="btn secondary" type="button" onClick={() => setEditingId(null)} disabled={editSaving}>
                   Cancel
                 </button>
               </div>

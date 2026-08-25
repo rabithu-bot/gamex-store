@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { uploadListingImages } from "@/app/lib/listingImageUpload";
 
 const emptyForm = {
   title: "",
@@ -28,6 +29,7 @@ export default function AddListingPanel() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   // Real thumbnail previews of what's actually selected — there was no
   // visual confirmation before beyond the bare browser file-input label,
@@ -57,22 +59,43 @@ export default function AddListingPanel() {
     }
 
     setSubmitting(true);
+    try {
+      // Uploaded straight to S3 first (not proxied through the create
+      // request) — a real batch of many full-resolution screenshots would
+      // otherwise blow past Vercel's 4.5MB serverless request-body cap and
+      // get rejected before the listing was ever created, which is exactly
+      // what used to surface as a bare, unhelpful failure.
+      setUploadStatus(`Uploading ${images.length} image${images.length === 1 ? "" : "s"}...`);
+      const uploadResult = await uploadListingImages(images);
+      if (!uploadResult.ok) {
+        setError(uploadResult.error);
+        return;
+      }
 
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.set(key, value));
-    images.forEach((file) => formData.append("images", file));
+      setUploadStatus("Saving listing...");
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => formData.set(key, value));
+      formData.set("newImageUrls", JSON.stringify(uploadResult.publicUrls));
 
-    const res = await fetch("/api/admin/listings", { method: "POST", body: formData });
-    setSubmitting(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Something went wrong");
-      return;
+      const res = await fetch("/api/admin/listings", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || `Something went wrong (HTTP ${res.status})`);
+        return;
+      }
+      setForm(emptyForm);
+      setImages([]);
+      e.target.reset();
+      setSaved(true);
+    } catch (err) {
+      // Network failure, or anything else unexpected — always show
+      // something real instead of leaving the admin staring at a button
+      // that just stopped "Saving...".
+      setError(err.message || "Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+      setUploadStatus("");
     }
-    setForm(emptyForm);
-    setImages([]);
-    e.target.reset();
-    setSaved(true);
   }
 
   return (
@@ -195,7 +218,7 @@ export default function AddListingPanel() {
       {error && <p className="error-text">{error}</p>}
       {saved && !error && <p className="muted">Listing added — it&apos;ll show up on the Listings page shortly.</p>}
       <button className="btn" type="submit" disabled={submitting}>
-        {submitting ? "Saving..." : "Add listing"}
+        {submitting ? uploadStatus || "Saving..." : "Add listing"}
       </button>
     </form>
   );
