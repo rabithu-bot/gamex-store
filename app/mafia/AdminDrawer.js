@@ -1,12 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, ChevronRight, LogOut, QrCode, MessageSquareText, PackagePlus, ShieldCheck, Megaphone, Bot } from "lucide-react";
+import {
+  X,
+  ChevronRight,
+  LogOut,
+  QrCode,
+  MessageSquareText,
+  PackagePlus,
+  ShieldCheck,
+  Megaphone,
+  Bot,
+  Flame,
+} from "lucide-react";
+
+const SETTINGS_LINKS = [
+  { href: "/mafia/settings/payment-qr", label: "Payment QR Code", icon: QrCode },
+  { href: "/mafia/settings/quick-replies", label: "Saved Replies", icon: MessageSquareText },
+  { href: "/mafia/settings/add-listing", label: "Add New Listing", icon: PackagePlus },
+  { href: "/mafia/settings/proofs", label: "Proofs", icon: ShieldCheck },
+  { href: "/mafia/settings/broadcast", label: "Broadcast Push", icon: Megaphone },
+  { href: "/mafia/settings/ai-learning", label: "AI Learning", icon: Bot },
+  // Split out from the Payment QR page into its own settings page — see
+  // app/mafia/DealsCounterSettings.js. Uses the Flame icon component (not
+  // a literal 🔥 emoji glyph) so it stays visually consistent with every
+  // other row's vector icon — the label text keeps the 🔥 you asked for.
+  { href: "/mafia/settings/deals-counter", label: "🔥 Lifetime Deals Counter", icon: Flame },
+];
 
 export default function AdminDrawer({ open, onClose }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -45,53 +71,25 @@ export default function AdminDrawer({ open, onClose }) {
           </button>
         </div>
 
-        <Link href="/mafia/settings/payment-qr" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <QrCode size={16} />
-            Payment QR Code
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
-
-        <Link href="/mafia/settings/quick-replies" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <MessageSquareText size={16} />
-            Saved Replies
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
-
-        <Link href="/mafia/settings/add-listing" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <PackagePlus size={16} />
-            Add New Listing
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
-
-        <Link href="/mafia/settings/proofs" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <ShieldCheck size={16} />
-            Proofs
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
-
-        <Link href="/mafia/settings/broadcast" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <Megaphone size={16} />
-            Broadcast Push
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
-
-        <Link href="/mafia/settings/ai-learning" className="admin-drawer-row" onClick={onClose}>
-          <span className="admin-drawer-row-label">
-            <Bot size={16} />
-            AI Learning
-          </span>
-          <ChevronRight size={16} className="admin-drawer-chevron" />
-        </Link>
+        {SETTINGS_LINKS.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`admin-drawer-row${active ? " active" : ""}`}
+              onClick={onClose}
+            >
+              <span className="admin-drawer-row-label">
+                <span className="admin-drawer-row-icon">
+                  <Icon size={16} />
+                </span>
+                {label}
+              </span>
+              <ChevronRight size={16} className="admin-drawer-chevron" />
+            </Link>
+          );
+        })}
 
         <button type="button" className="btn danger admin-drawer-signout" onClick={handleLogout} disabled={loggingOut}>
           <LogOut size={16} />
