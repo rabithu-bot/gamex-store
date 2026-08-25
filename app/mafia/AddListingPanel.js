@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { X, ImageUp } from "lucide-react";
 import { uploadListingImages } from "@/app/lib/listingImageUpload";
 
 const emptyForm = {
@@ -190,13 +190,24 @@ export default function AddListingPanel() {
         </div>
       </div>
       <div className="form-field">
-        <label>Images (at least 1 required)</label>
+        <label htmlFor="listing-images">Images (at least 1 required)</label>
         <input
+          id="listing-images"
           type="file"
           accept="image/*"
           multiple
+          className="file-upload-input"
           onChange={(e) => setImages(Array.from(e.target.files || []))}
         />
+        <label htmlFor="listing-images" className={`file-upload-dropzone${images.length ? " has-file" : ""}`}>
+          <ImageUp size={20} />
+          <span className="file-upload-text">
+            <strong>
+              {images.length ? `${images.length} image${images.length > 1 ? "s" : ""} selected` : "Choose images"}
+            </strong>
+            <span className="muted">{images.length ? "Tap to change selection" : "PNG or JPG, multiple allowed"}</span>
+          </span>
+        </label>
         {previewUrls.length > 0 && (
           <div className="listing-image-preview-row">
             {previewUrls.map((url, i) => (

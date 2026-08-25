@@ -676,50 +676,16 @@ select:focus-visible {
   box-shadow: 0 2px 12px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
-/* Loot-rarity badge — top-right, opposite the category badge. Which
-   variant shows is decided entirely from real listing data (tier/level/
-   rareItems, see getRarityBadge in ListingCard.js) — never decorative. */
-.rarity-badge {
+/* Tier badge, top-right, opposite the category badge — same .badge
+   .badge-tier styling the product page already uses for this exact field
+   (uppercase via .badge's text-transform), just corner-positioned here.
+   Shows literally whatever the admin typed into Tier; no derived label,
+   no keyword-based variants — that was the bug (see ListingCard.js). */
+.card-tier-badge {
   position: absolute;
   top: 0.55rem;
   right: 0.55rem;
   z-index: 3;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-}
-
-.rarity-badge-mythic {
-  background: linear-gradient(90deg, #f59e0b, #fde047);
-  color: #1a1200;
-  box-shadow: 0 0 12px var(--accent-gold);
-}
-
-.rarity-badge-evo {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 0 12px var(--accent);
-  animation: rarity-pulse 1.6s ease-in-out infinite;
-}
-
-.rarity-badge-grandmaster {
-  background: var(--accent-cyan);
-  color: #001217;
-  font-weight: 900;
-  box-shadow: 0 0 12px var(--accent-cyan);
-}
-
-@keyframes rarity-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rarity-badge-evo {
-    animation: none;
-  }
 }
 
 /* Diagonal "SOLD OUT" stamp, centered over the thumbnail rather than a
@@ -4748,6 +4714,22 @@ select:focus-visible {
 .admin-light .support-name-form input,
 .admin-light .quick-reply-add input {
   background: #ffffff;
+}
+
+/* The rule above still applies inside .admin-settings-dark too — nesting
+   a new class deeper in the tree overrides the *custom properties*
+   .admin-light set (that's how the rest of the settings redesign works),
+   but it can't stop an ancestor-scoped literal color like `.admin-light
+   .form-field input { background: #ffffff }` from still matching, since
+   .admin-light is still a real ancestor. That was the actual cause of the
+   white-on-dark input contrast bug. Same specificity, later in source
+   order, wins it back for anything inside the settings dark zone. */
+.admin-settings-dark .form-field input,
+.admin-settings-dark .form-field textarea,
+.admin-settings-dark .form-field select,
+.admin-settings-dark .quick-reply-add input {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--foreground);
 }
 
 .admin-light .dashboard-nav-icon,

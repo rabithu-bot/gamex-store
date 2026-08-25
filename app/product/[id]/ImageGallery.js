@@ -23,6 +23,7 @@ export default function ImageGallery({ images, alt }) {
   const thumbRefs = useRef([]);
   const touchStartX = useRef(null);
   const preloadedRef = useRef(new Set());
+  const skipNextThumbScroll = useRef(true);
 
 
   function goTo(rawIndex, dir) {
@@ -48,13 +49,31 @@ export default function ImageGallery({ images, alt }) {
     setBrokenSrcs((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
   }
 
+  // Keeps the active thumbnail scrolled into view in its own strip when the
+  // user actually navigates (arrows/thumbnail click/swipe). useEffect also
+  // fires once on mount, though, and scrollIntoView isn't scoped to just the
+  // thumbnail strip's own scrolling — on a short viewport it was dragging the
+  // whole page down to bring thumbnail 0 into view before the visitor had
+  // done anything, hiding the main photo the instant the page opened. Skip
+  // the very first run so this only ever fires from real navigation.
   useEffect(() => {
+    if (skipNextThumbScroll.current) {
+      skipNextThumbScroll.current = false;
+      return;
+    }
     thumbRefs.current[active]?.scrollIntoView({
       behavior: "smooth",
       inline: "center",
       block: "nearest",
     });
   }, [active]);
+
+  // Explicit, instant (not CSS smooth-scroll) reset to the top on every
+  // fresh mount of this page — a hard guarantee the gallery always opens
+  // showing the main photo first, independent of the fix above.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
 
   // Resets the skeleton for the slide we just switched to — the main image
   // is served at full original resolution (unoptimized, no Next.js resizing)

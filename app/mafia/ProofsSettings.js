@@ -138,11 +138,21 @@ export default function ProofsSettings() {
               <div className="quick-reply-add">
                 <input
                   ref={fileInputRef}
+                  id="proof-files"
                   type="file"
                   accept="image/*,video/*"
                   multiple
+                  className="file-upload-input"
                   onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 />
+                {/* Native file input hidden, triggered by this label instead —
+                    its own default "No file chosen" text can't be restyled
+                    for contrast in most browsers. */}
+                <label htmlFor="proof-files" className="btn secondary" style={{ flex: 1, minWidth: 0 }}>
+                  {files.length
+                    ? `${files.length} file${files.length > 1 ? "s" : ""} selected`
+                    : "Choose files"}
+                </label>
                 <button type="submit" className="btn secondary" disabled={uploading || !files.length}>
                   {uploading && progress ? (
                     `${progress.done}/${progress.total}`
