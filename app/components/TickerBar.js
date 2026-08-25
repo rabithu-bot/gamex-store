@@ -1,11 +1,16 @@
-// Server component — no interactivity needed, just a real number pulled
-// from the DB (confirmed deliveries) plus static, factually-true copy.
-// Deliberately not a made-up count like "1,500+" — this store's actual
-// delivery volume is whatever it genuinely is.
-export default function TickerBar({ confirmedDeliveries }) {
+// Server component — no interactivity needed, just real numbers pulled
+// from the DB plus static, factually-true copy. Deliberately never a fixed
+// starting number with a timer mechanically incrementing it regardless of
+// real activity.
+export default function TickerBar({ dealsToday, lifetimeDeals }) {
   const items = [
     "⚡ INSTANT DELIVERY GUARANTEED",
-    `🔥 ${confirmedDeliveries}+ VERIFIED FF ACCOUNTS DELIVERED`,
+    `🔥 ${dealsToday} DEALS COMPLETED TODAY`,
+    // Lifetime, not "today" — this can include the admin's own manually
+    // entered pre-website/offline history (see /mafia/settings), so it's
+    // deliberately never given a same-day time frame the way the line
+    // above is.
+    `✅ ${lifetimeDeals}+ VERIFIED DEALS COMPLETED`,
     "🛡️ 100% ANTI-BAN SECURITY SEAL",
   ];
   // Duplicated once so the CSS marquee can loop seamlessly (scrolls

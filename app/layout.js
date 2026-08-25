@@ -48,6 +48,19 @@ const SITE_KEYWORDS = [
   "verified free fire account",
 ];
 
+// Next.js App Router's idiomatic mechanism for the viewport meta tag —
+// this renders <meta name="viewport" content="width=device-width,
+// initial-scale=1, maximum-scale=1, user-scalable=no" /> in <head>.
+// Deliberately used instead of a literal <meta> tag: Next already injects
+// its own default viewport tag, and a hand-written one alongside it would
+// just be a second, conflicting tag rather than replacing the default.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: SITE_TITLE,
