@@ -5,7 +5,7 @@ const TELEGRAM_URL = "https://t.me/FireUpdatesHub";
 // lucide "send" arrow standing in for it.
 function TelegramLogo() {
   return (
-    <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" className="telegram-banner-logo">
       <defs>
         <linearGradient id="tg-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
           <stop stopColor="#2AABEE" />
@@ -22,11 +22,11 @@ function TelegramLogo() {
 }
 
 // Below the listing grid, above where a site footer would go. No follower/
-// subscriber count here — Telegram's channel preview doesn't expose one
-// through this site's tooling, so there's no real number to show, and no
-// "verified" badge either: that's Telegram's own platform-granted mark for
-// accounts they've verified, not something this site can claim on the
-// channel's behalf just because it's the store's real official channel.
+// subscriber count and no "verified" checkmark — checked the live channel
+// again for this redesign specifically (t.me/FireUpdatesHub shows no
+// Telegram-granted verified badge), so a blue checkmark here would be a
+// false platform-verification claim, not just a color choice. Kept
+// everything else: minimal layout, no extra copy, premium glass card.
 export default function TelegramBanner() {
   return (
     <section className="telegram-banner">
@@ -35,12 +35,9 @@ export default function TelegramBanner() {
       <div className="telegram-banner-body">
         <div className="telegram-banner-title-row">
           <strong>GameX FF Store 🔥</strong>
-          <span className="telegram-banner-live-tag">
-            <span className="telegram-banner-live-dot" aria-hidden="true" />
-            OFFICIAL CHANNEL
-          </span>
+          <span className="telegram-banner-live-tag">⚡ OFFICIAL CHANNEL</span>
         </div>
-        <p className="muted">Daily restocks &amp; exclusive deals, straight from the store owner.</p>
+        <p className="muted">Official Telegram Channel</p>
       </div>
       <a
         href={TELEGRAM_URL}
@@ -48,7 +45,7 @@ export default function TelegramBanner() {
         rel="noopener noreferrer"
         className="btn telegram-banner-cta"
       >
-        Join Official Telegram
+        Join Official Telegram ↗
       </a>
     </section>
   );
