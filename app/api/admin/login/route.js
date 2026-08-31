@@ -26,6 +26,10 @@ export async function POST(request) {
 
   const session = await getSession();
   session.isAdmin = true;
+  // Start of the 24h window checked by getAdminSessionStatus() — every
+  // fresh login resets it, same as any normal "session expires 24h after
+  // you last signed in" scheme.
+  session.loginTime = Date.now();
   await session.save();
 
   return NextResponse.json({ ok: true });

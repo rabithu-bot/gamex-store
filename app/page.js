@@ -5,6 +5,7 @@ import { getEffectiveLifetimeDeals } from "@/app/lib/lifetimeOrderCount";
 import SiteHeader from "@/app/components/SiteHeader";
 import TickerBar from "@/app/components/TickerBar";
 import ListingCard from "@/app/components/ListingCard";
+import TelegramBanner from "@/app/components/TelegramBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +140,8 @@ export default async function HomePage() {
             </div>
           </section>
         ))}
+
+        <TelegramBanner />
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShoppingBag, Package, MessagesSquare } from "lucide-react";
 import StatsBar from "./StatsBar";
+import InstallAdminApp from "./InstallAdminApp";
 
 const SECTIONS = [
   {
@@ -33,6 +34,8 @@ export default function Dashboard() {
       </div>
 
       <StatsBar />
+
+      <InstallAdminApp />
 
       <div className="dashboard-nav-grid">
         {SECTIONS.map((section) => (

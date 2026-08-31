@@ -299,7 +299,12 @@ select:focus-visible {
 }
 
 .card {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* var(--border), not a hardcoded rgba — same reasoning as --surface
+     below: .admin-light redefines --border to a visible purple-tinted
+     value for its near-white background. The old hardcoded white-10%
+     border was nearly invisible there, same class of bug as the
+     background one, just never caught at the time. */
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
@@ -984,7 +989,8 @@ select:focus-visible {
 
 .panel {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* var(--border) — see .card above for why this, not a hardcoded rgba. */
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.25rem;
   margin-top: 1rem;
@@ -1363,6 +1369,35 @@ select:focus-visible {
 
 .dashboard-nav-card:hover .dashboard-nav-icon {
   transform: scale(1.08) rotate(-4deg);
+}
+
+.install-admin-app-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.install-admin-app-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: #c4b5fd;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 8px 16px -8px rgba(139, 92, 246, 0.4);
+}
+
+@media (max-width: 480px) {
+  .install-admin-app-panel {
+    flex-wrap: wrap;
+  }
+  .install-admin-app-panel .btn {
+    width: 100%;
+  }
 }
 
 /* ---- Dashboard section (focused view) ---- */
@@ -1987,6 +2022,108 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ---- Official Telegram channel banner ---- */
+
+.telegram-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 2.5rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid rgba(42, 171, 238, 0.3);
+  background: linear-gradient(135deg, rgba(42, 171, 238, 0.1), rgba(13, 15, 23, 0.6));
+  overflow: hidden;
+}
+
+.telegram-banner-glow {
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(42, 171, 238, 0.35), transparent 70%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.telegram-banner svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px rgba(42, 171, 238, 0.6));
+}
+
+.telegram-banner-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.telegram-banner-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.telegram-banner-title-row strong {
+  font-size: 1.05rem;
+}
+
+.telegram-banner-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(42, 171, 238, 0.16);
+  color: #6cc7f5;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.telegram-banner-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2aabee;
+  box-shadow: 0 0 6px #2aabee;
+  animation: telegram-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes telegram-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.telegram-banner-cta {
+  position: relative;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #2aabee, #229ed9);
+  box-shadow: 0 4px 18px rgba(42, 171, 238, 0.45);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .telegram-banner {
+    flex-wrap: wrap;
+    text-align: center;
+    justify-content: center;
+  }
+  .telegram-banner-title-row {
+    justify-content: center;
+  }
+  .telegram-banner-cta {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .telegram-banner-live-dot {
+    animation: none;
+  }
 }
 
 /* ---- Product gallery ---- */

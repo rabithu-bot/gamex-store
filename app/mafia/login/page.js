@@ -1,17 +1,33 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, KeyRound, User } from "lucide-react";
+import { useToast } from "@/app/components/Toast";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const showToast = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const submittingRef = useRef(false);
+
+  // Reading window.location.search directly (rather than useSearchParams)
+  // so this page can stay statically prerendered — useSearchParams forces
+  // a page into fully dynamic/client rendering unless wrapped in Suspense,
+  // which isn't worth it for a one-time mount check.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("expired") !== "1") return;
+    showToast("Session Expired (24h Limit). Please login again.", { type: "error" });
+    // getAdminSessionStatus() only reads the stale cookie's timestamp, it
+    // never clears it (Server Components can't write cookies) — this is
+    // the actual cleanup, through the one place that's allowed to.
+    fetch("/api/admin/logout", { method: "POST" }).catch(() => {});
+    router.replace("/mafia/login");
+  }, [router, showToast]);
 
   async function handleSubmit(e) {
     e.preventDefault();
