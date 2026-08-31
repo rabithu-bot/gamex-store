@@ -85,7 +85,14 @@ function ProofVideo({ url, onPlay }) {
     <>
       <video
         ref={videoRef}
-        src={url}
+        // #t=0.001 (a Media Fragments time offset) makes the browser
+        // decode and paint that first frame as the poster the moment
+        // metadata loads, instead of a black box until the user hits
+        // play — needs preload="metadata" below to actually fetch enough
+        // of the file to do that.
+        src={`${url}#t=0.001`}
+        preload="metadata"
+        playsInline
         controls
         controlsList="nodownload nofullscreen"
         onContextMenu={(e) => e.preventDefault()}

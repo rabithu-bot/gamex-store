@@ -109,7 +109,10 @@ export default function ProofsSettings() {
                 <div key={p.id} className="proof-settings-thumb">
                   {p.type === "video" ? (
                     <>
-                      <video src={p.url} muted playsInline />
+                      {/* Same #t=0.001 + preload="metadata" trick as the
+                          public proofs gallery — otherwise this shows a
+                          black box until tapped. */}
+                      <video src={`${p.url}#t=0.001`} preload="metadata" muted playsInline />
                       <span className="proof-settings-thumb-play">
                         <Play size={12} fill="currentColor" />
                       </span>
