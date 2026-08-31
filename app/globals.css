@@ -2029,16 +2029,16 @@ select:focus-visible {
 .telegram-banner {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 1.1rem;
+  flex-direction: column;
+  gap: 1.25rem;
   margin-top: 2.5rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 18px;
   /* Tailwind arbitrary-value equivalents, translated to plain CSS (this
      project doesn't use Tailwind — see .admin-settings-dark etc. for the
      established pattern of honoring the intent, not the class syntax):
-     border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.12)]
-     bg-slate-900/80 backdrop-blur-md */
+     p-6 (py-6 px-6) border-cyan-500/30 bg-slate-900/80 backdrop-blur-md
+     shadow-[0_0_20px_rgba(6,182,212,0.12)] */
+  padding: 1.5rem;
+  border-radius: 20px;
   border: 1px solid rgba(6, 182, 212, 0.3);
   box-shadow: 0 0 20px rgba(6, 182, 212, 0.12);
   background: rgba(15, 23, 42, 0.8);
@@ -2046,26 +2046,45 @@ select:focus-visible {
   -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  animation: telegram-card-pulse 3.5s ease-in-out infinite;
 }
 
 .telegram-banner:hover {
-  border-color: rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 28px rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.55);
+  box-shadow: 0 0 32px rgba(6, 182, 212, 0.28);
+  animation-play-state: paused;
+}
+
+@keyframes telegram-card-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.12); }
+  50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.22); }
 }
 
 .telegram-banner-glow {
   position: absolute;
   inset: -40% -10% auto auto;
-  width: 220px;
-  height: 220px;
+  width: 260px;
+  height: 260px;
   background: radial-gradient(circle, rgba(6, 182, 212, 0.3), transparent 70%);
   filter: blur(10px);
   pointer-events: none;
 }
 
+.telegram-banner-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
 .telegram-banner-logo {
   flex-shrink: 0;
-  filter: drop-shadow(0 0 14px rgba(42, 171, 238, 0.65));
+  filter: drop-shadow(0 0 16px rgba(42, 171, 238, 0.7));
+  transition: filter 0.25s ease;
+}
+
+.telegram-banner:hover .telegram-banner-logo {
+  filter: drop-shadow(0 0 22px rgba(42, 171, 238, 0.9));
 }
 
 .telegram-banner-body {
@@ -2082,7 +2101,8 @@ select:focus-visible {
 }
 
 .telegram-banner-title-row strong {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
+  font-weight: 800;
 }
 
 .telegram-banner-live-tag {
@@ -2090,40 +2110,73 @@ select:focus-visible {
   align-items: center;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid rgba(6, 182, 212, 0.35);
+  border: 1px solid rgba(6, 182, 212, 0.4);
   background: rgba(6, 182, 212, 0.14);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
   color: #67e8f9;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.05em;
 }
 
+.telegram-banner-tagline {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #a5f3fc;
+}
+
 .telegram-banner-cta {
   position: relative;
-  flex-shrink: 0;
+  overflow: hidden;
+  width: 100%;
+  padding: 0.95rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 800;
   background: linear-gradient(90deg, #0ea5e9, #2563eb);
   box-shadow: 0 4px 18px rgba(14, 165, 233, 0.4);
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.15s ease;
 }
 
+.telegram-banner-cta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+
 .telegram-banner-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.55);
+  box-shadow: 0 6px 26px rgba(14, 165, 233, 0.6);
   filter: brightness(1.05);
 }
 
+.telegram-banner-cta:hover::before {
+  left: 125%;
+}
+
 @media (max-width: 640px) {
-  .telegram-banner {
-    flex-wrap: wrap;
-    text-align: center;
-    justify-content: center;
-  }
   .telegram-banner-title-row {
     justify-content: center;
   }
-  .telegram-banner-cta {
-    width: 100%;
+  .telegram-banner-top {
+    text-align: center;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .telegram-banner {
+    animation: none;
+  }
+  .telegram-banner-cta::before {
+    display: none;
   }
 }
 
