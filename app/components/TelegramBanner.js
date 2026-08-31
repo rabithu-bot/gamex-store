@@ -1,4 +1,4 @@
-const TELEGRAM_URL = "https://t.me/gamesXstore";
+const TELEGRAM_URL = "https://t.me/FireUpdatesHub";
 
 // Real, recognizable Telegram glyph (brand blue circle + paper plane) so the
 // button reads instantly as "this goes to Telegram" — not a generic
