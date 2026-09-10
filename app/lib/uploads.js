@@ -1,11 +1,12 @@
-import { uploadBuffer, getPresignedUploadUrl } from "./s3";
+import { uploadBuffer, getSignedUploadParams } from "./cloudinary";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
 
 // Serverless functions run on a read-only filesystem, so uploads can't be
 // written to local disk the way they can in local dev — everything goes to
-// S3 instead, keyed by a random, unguessable path.
+// Cloudinary (see cloudinary.js) instead, keyed by a random, unguessable
+// path.
 async function saveFile(file, prefix, { maxDimension } = {}) {
   if (!file || typeof file.arrayBuffer !== "function" || file.size === 0) return null;
 
@@ -45,36 +46,29 @@ export function saveMessageAttachment(file) {
 }
 
 // Large/many-file uploads are too big to reliably proxy through a
-// serverless function (see s3.js — Vercel caps a Serverless Function's
-// request body at 4.5MB, enforced by Vercel's own edge layer before any
-// of this app's code runs), so the browser uploads straight to S3 via a
-// short-lived presigned PUT URL instead — this just mints the destination
-// key/URL pair, no bytes pass through here. Originally video-only; now
-// also used for listing photos, since a real batch of 25-100
-// full-resolution screenshots hits the exact same cap a single video does.
-function getPresignedMediaUploadUrl(prefix, fileName, defaultExt, contentType) {
-  const ext = path.extname(fileName || "").slice(0, 10) || defaultExt;
-  const key = `${prefix}/${Date.now()}-${crypto.randomUUID()}${ext}`;
-  return getPresignedUploadUrl(key, contentType);
-}
+// serverless function (Vercel caps a Serverless Function's request body at
+// 4.5MB, enforced by its own edge layer before any of this app's code
+// runs), so the browser uploads straight to Cloudinary with a one-time
+// signed params set instead — no bytes pass through here. Originally
+// video-only; now also used for listing photos, since a real batch of
+// 25-100 full-resolution screenshots hits the exact same cap a single
+// video does. Cloudinary detects image vs video itself, so file type /
+// extension don't matter here.
 
 // Chat video attachments.
-export function getMessageVideoUploadUrl(fileName, contentType) {
-  return getPresignedMediaUploadUrl("messages", fileName, ".mp4", contentType);
+export function getMessageVideoUploadUrl(fileName) {
+  return getSignedUploadParams("messages", fileName);
 }
 
-// Proof videos: same bucket/gallery as proof screenshots, just a video
+// Proof videos: same folder/gallery as proof screenshots, just a video
 // instead of an image (see ProofImage.type).
-export function getProofVideoUploadUrl(fileName, contentType) {
-  return getPresignedMediaUploadUrl("proofs", fileName, ".mp4", contentType);
+export function getProofVideoUploadUrl(fileName) {
+  return getSignedUploadParams("proofs", fileName);
 }
 
-// Listing photos: public, shown directly on the storefront, full original
-// resolution/quality — uploaded straight to S3 like the video types above,
-// so there's no server-side processing step (and none was happening here
-// before this either; saveListingImage never passed a maxDimension).
-export function getListingImageUploadUrl(fileName, contentType) {
-  return getPresignedMediaUploadUrl("listings", fileName, ".jpg", contentType);
+// Listing photos: public, shown directly on the storefront.
+export function getListingImageUploadUrl(fileName) {
+  return getSignedUploadParams("listings", fileName);
 }
 
 // UPI payment QR: public, shown on every pending order's payment step.

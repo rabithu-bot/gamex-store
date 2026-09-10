@@ -20,9 +20,9 @@ const nextConfig = {
           // browsers that ignore X-Frame-Options; both are cheap to send.
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
-          // Chat/proof uploads land on S3 with a browser-supplied
-          // Content-Type; nosniff stops a browser from second-guessing that
-          // and executing something as script.
+          // Chat/proof uploads land in object storage with a browser-
+          // supplied Content-Type; nosniff stops a browser from second-
+          // guessing that and executing something as script.
           { key: "X-Content-Type-Options", value: "nosniff" },
           // Order URLs contain the order id — don't leak them to any
           // third-party origin a customer clicks through to.

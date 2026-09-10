@@ -1,11 +1,12 @@
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 // Mirrors uploadVideoAttachment (app/lib/videoUpload.js): ask the server
-// for a short-lived presigned PUT URL, then PUT the bytes straight to S3
-// from the browser. Listing photos go through this too now (not just
-// videos) because a real batch of many full-resolution screenshots hits
-// the exact same Vercel serverless request-body cap (4.5MB) a single
-// video does — proxying them through a Next.js route at all was the bug.
+// for a one-time signed params set, then POST the file + those params
+// straight to Cloudinary from the browser. Listing photos go through this
+// too (not just videos) because a real batch of many full-resolution
+// screenshots hits the exact same Vercel serverless request-body cap
+// (4.5MB) a single video does — proxying them through a Next.js route at
+// all was the bug.
 export async function uploadListingImage(file) {
   if (file.size > MAX_IMAGE_BYTES) {
     return { ok: false, error: `${file.name} is over 20MB.` };
@@ -20,18 +21,19 @@ export async function uploadListingImage(file) {
     const data = await urlRes.json().catch(() => ({}));
     return { ok: false, error: data.error || `Couldn't start the upload for ${file.name}.` };
   }
-  const { uploadUrl, publicUrl } = await urlRes.json();
+  const { uploadUrl, fields } = await urlRes.json();
 
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!putRes.ok) {
-    return { ok: false, error: `Upload failed for ${file.name}, please try again.` };
+  const form = new FormData();
+  form.append("file", file);
+  for (const [k, v] of Object.entries(fields || {})) form.append(k, v);
+
+  const res = await fetch(uploadUrl, { method: "POST", body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.secure_url) {
+    return { ok: false, error: data.error?.message || `Upload failed for ${file.name}, please try again.` };
   }
 
-  return { ok: true, publicUrl };
+  return { ok: true, publicUrl: data.secure_url };
 }
 
 // Uploads every file, stopping at the first failure (rather than a

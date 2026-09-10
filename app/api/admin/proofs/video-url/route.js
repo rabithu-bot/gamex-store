@@ -17,6 +17,6 @@ export async function POST(request) {
     return NextResponse.json({ error: "Video must be under 50MB" }, { status: 400 });
   }
 
-  const { uploadUrl, publicUrl } = await getProofVideoUploadUrl(fileName, contentType);
-  return NextResponse.json({ uploadUrl, publicUrl });
+  const { uploadUrl, fields } = getProofVideoUploadUrl(fileName);
+  return NextResponse.json({ uploadUrl, fields });
 }

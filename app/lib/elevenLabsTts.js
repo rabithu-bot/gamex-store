@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { uploadBuffer } from "@/app/lib/s3";
+import { uploadBuffer } from "@/app/lib/cloudinary";
 
 // "Adam" — a clear, natural default male voice on ElevenLabs. Paired with
 // eleven_multilingual_v2, which handles Hindi/Hinglish text correctly
@@ -11,8 +11,9 @@ import { uploadBuffer } from "@/app/lib/s3";
 const VOICE_ID = "pNInz6obpgDQGcFmaJgB";
 const MODEL_ID = "eleven_multilingual_v2";
 
-// Returns a public S3 URL for the synthesized voice note, or null if the
-// key isn't configured or the call fails — callers treat null as "skip
+// Returns a public URL for the synthesized voice note (stored in
+// Cloudinary, see cloudinary.js), or null if the key isn't configured or
+// the call fails — callers treat null as "skip
 // the voice reply", never as something to surface as an error to the
 // buyer (same resilience pattern as every other AI-pipeline step here).
 export async function synthesizeVoiceNote(text) {

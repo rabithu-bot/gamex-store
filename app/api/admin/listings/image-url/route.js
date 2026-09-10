@@ -19,6 +19,6 @@ export async function POST(request) {
     return NextResponse.json({ error: "Image must be under 20MB" }, { status: 400 });
   }
 
-  const { uploadUrl, publicUrl } = await getListingImageUploadUrl(fileName, contentType);
-  return NextResponse.json({ uploadUrl, publicUrl });
+  const { uploadUrl, fields } = getListingImageUploadUrl(fileName);
+  return NextResponse.json({ uploadUrl, fields });
 }
