@@ -125,11 +125,11 @@ export async function POST(request, { params }) {
 
   const notifyBody =
     attachmentType === "audio"
-      ? "🎤 Voice message"
+      ? "Voice message"
       : attachmentType === "video" && !text
-        ? "🎥 Video"
+        ? "Video"
         : attachmentPath && !text
-          ? "📷 Photo"
+          ? "Photo"
           : text;
 
   // Awaited (rather than fire-and-forget) since a serverless function can be

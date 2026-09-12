@@ -143,11 +143,11 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
                       Placing order...
                     </>
                   ) : (
-                    "Scan & Pay via QR Code ⚡"
+                    "Scan & Pay via QR Code"
                   )}
                 </button>
                 <p className="checkout-modal-trust">
-                  🔒 Secure SSL Encrypted Checkout • Instant Credentials Transfer
+                  <ShieldCheck size={14} /> Secure SSL Encrypted Checkout • Instant Credentials Transfer
                 </p>
               </form>
             </div>

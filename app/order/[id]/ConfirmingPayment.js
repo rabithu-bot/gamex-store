@@ -31,7 +31,7 @@ export default function ConfirmingPayment() {
 
   return (
     <div className="confirming-payment">
-      <span className="confirming-status-badge">⏳ Payment Verification in Progress</span>
+      <span className="confirming-status-badge">Payment Verification in Progress</span>
       <div className="confirming-ring">
         <div className="confirming-ring-spinner" />
         <div className="confirming-ring-inner">

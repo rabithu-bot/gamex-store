@@ -143,6 +143,10 @@ export default async function HomePage() {
                   // Only the very first row of the very first category is
                   // reliably above the fold — that's the LCP candidate.
                   priority={groupIndex === 0 && index < 2}
+                  // This section is already headed "{category} Accounts" —
+                  // repeating the same category as a badge on every card
+                  // under it added nothing.
+                  showCategoryBadge={false}
                 />
               ))}
             </div>

@@ -277,7 +277,7 @@ export default function MessagesPanel() {
                   <span className="muted dm-preview-listing">{conversation.listingTitle}</span>
                   <span className={`muted dm-preview ${unread ? "unread" : ""}`}>
                     {last.sender === "admin" ? "You: " : ""}
-                    {last.attachmentPath && !last.body ? "📷 Photo" : truncate(last.body, 36)}
+                    {last.attachmentPath && !last.body ? "Photo" : truncate(last.body, 36)}
                   </span>
                 </span>
                 {unread && (

@@ -259,7 +259,7 @@ select:focus-visible {
   width: 40px;
   height: 40px;
   margin: 0 auto 0.6rem;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--accent-soft);
   color: #c4b5fd;
   display: flex;
@@ -295,7 +295,7 @@ select:focus-visible {
      border was nearly invisible there, same class of bug as the
      background one, just never caught at the time. */
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -333,7 +333,7 @@ select:focus-visible {
 .proofs-hero {
   margin-top: 1.5rem;
   padding: 1.5rem 1.25rem;
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid rgba(56, 189, 248, 0.22);
   background: radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.14), transparent 60%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(23, 20, 38, 0.4));
@@ -374,7 +374,7 @@ select:focus-visible {
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(56, 189, 248, 0.2);
   background: rgba(14, 165, 233, 0.06);
   color: #7dd3fc;
@@ -505,7 +505,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
@@ -871,7 +871,7 @@ select:focus-visible {
 .form-field textarea,
 .form-field select {
   padding: 0.55rem 0.7rem;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: inherit;
@@ -910,28 +910,11 @@ select:focus-visible {
     linear-gradient(120deg, #a855f7, #e879f9, #a855f7) border-box;
   color: var(--foreground);
   cursor: pointer;
-  animation: upload-dropzone-pulse 2.2s ease-in-out infinite;
   transition: transform 0.15s ease;
 }
 
 .file-upload-dropzone:hover {
   transform: translateY(-1px);
-}
-
-@keyframes upload-dropzone-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 14px 2px rgba(217, 70, 239, 0.28);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .file-upload-dropzone {
-    animation: none;
-  }
 }
 
 .file-upload-input:focus-visible + .file-upload-dropzone {
@@ -955,7 +938,7 @@ select:focus-visible {
 .file-upload-preview {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
   border: 1px solid var(--border);
@@ -983,7 +966,7 @@ select:focus-visible {
   position: relative;
   /* var(--border) — see .card above for why this, not a hardcoded rgba. */
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 1.25rem;
   margin-top: 1rem;
   /* var(--surface), not a hardcoded dark rgba — see .card above for why:
@@ -1013,7 +996,7 @@ select:focus-visible {
   position: relative;
   margin-top: 1rem;
   padding: 1.5rem;
-  border-radius: 24px;
+  border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(40px);
@@ -1104,7 +1087,7 @@ select:focus-visible {
   background: radial-gradient(120% 140% at 100% 0%, rgba(34, 197, 94, 0.14), transparent 60%),
     rgba(34, 197, 94, 0.06);
   border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 1.1rem;
   margin-top: 1rem;
 }
@@ -1125,7 +1108,7 @@ select:focus-visible {
   justify-content: center;
   width: 48px;
   height: 48px;
-  border-radius: 13px;
+  border-radius: 14px;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 14px rgba(24, 119, 242, 0.35);
@@ -1186,7 +1169,7 @@ select:focus-visible {
   justify-content: space-between;
   gap: 0.6rem;
   padding: 0.6rem 0.8rem;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -1321,7 +1304,7 @@ select:focus-visible {
   gap: 0.5rem;
   text-align: left;
   padding: 1.25rem;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)), var(--surface);
   box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.55);
@@ -1349,7 +1332,7 @@ select:focus-visible {
 .dashboard-nav-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1374,7 +1357,7 @@ select:focus-visible {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1441,7 +1424,7 @@ select:focus-visible {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1517,7 +1500,7 @@ select:focus-visible {
   gap: 0.5rem;
   text-align: center;
   padding: 2rem 2.5rem;
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: inherit;
@@ -1838,7 +1821,7 @@ select:focus-visible {
   );
   background-size: 400% 100%;
   animation: skeleton-shimmer 1.4s ease infinite;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 @keyframes skeleton-shimmer {
@@ -1867,7 +1850,7 @@ select:focus-visible {
 
 .panel-skeleton-row {
   height: 52px;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .panel-skeleton-row.avatar {
@@ -1896,7 +1879,7 @@ select:focus-visible {
 
 .panel-skeleton-row.avatar .panel-skeleton-line {
   height: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .panel-skeleton-row.avatar .panel-skeleton-line.short {
@@ -2003,7 +1986,7 @@ select:focus-visible {
   text-align: center;
   padding: 3rem 1rem;
   border: 1px dashed var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   margin-top: 1.5rem;
 }
 
@@ -2041,18 +2024,11 @@ select:focus-visible {
   -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
-  animation: telegram-card-pulse 3.5s ease-in-out infinite;
 }
 
 .telegram-banner:hover {
   border-color: rgba(6, 182, 212, 0.55);
   box-shadow: 0 0 32px rgba(6, 182, 212, 0.28);
-  animation-play-state: paused;
-}
-
-@keyframes telegram-card-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.12); }
-  50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.22); }
 }
 
 .telegram-banner-glow {
@@ -2280,7 +2256,7 @@ select:focus-visible {
   flex: 1;
   min-width: 130px;
   padding: 0.65rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)), var(--surface);
   box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.5);
@@ -2310,7 +2286,7 @@ select:focus-visible {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(74, 222, 128, 0.3);
   background: linear-gradient(160deg, rgba(74, 222, 128, 0.14), rgba(74, 222, 128, 0.06));
   box-shadow: 0 14px 28px -18px rgba(74, 222, 128, 0.35);
@@ -2489,7 +2465,7 @@ select:focus-visible {
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)), var(--surface);
   box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.5);
@@ -2576,7 +2552,7 @@ select:focus-visible {
   aspect-ratio: 1 / 1;
   max-height: 320px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.4);
   cursor: zoom-in;
@@ -2699,7 +2675,7 @@ select:focus-visible {
   height: 64px;
   flex-shrink: 0;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface);
   cursor: pointer;
   border: 2px solid transparent;
@@ -2763,7 +2739,7 @@ select:focus-visible {
   gap: 0.6rem;
   text-align: left;
   padding: 0.7rem 0.8rem;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: inherit;
@@ -2948,7 +2924,7 @@ select:focus-visible {
   display: block;
   max-width: 200px;
   width: 100%;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 0.3rem;
   cursor: zoom-in;
 }
@@ -2966,7 +2942,7 @@ select:focus-visible {
   gap: 0.5rem;
   padding: 0.4rem 0.7rem;
   margin-bottom: 0.5rem;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
 }
@@ -3031,7 +3007,7 @@ select:focus-visible {
 .lightbox-image {
   max-width: min(90vw, 900px);
   max-height: 88vh;
-  border-radius: 12px;
+  border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.6);
   cursor: default;
@@ -3187,7 +3163,7 @@ select:focus-visible {
 .checkout-modal .form-field input {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .checkout-modal .form-field input:focus {
@@ -3203,7 +3179,10 @@ select:focus-visible {
 }
 
 .checkout-modal-trust {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   margin-top: 0.85rem;
   opacity: 0.6;
@@ -3435,7 +3414,7 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 1.05rem;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   color: #f1eefc;
@@ -3471,7 +3450,7 @@ select:focus-visible {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(0, 240, 255, 0.08);
   color: #00f0ff;
   flex-shrink: 0;
@@ -3542,7 +3521,7 @@ select:focus-visible {
 .deals-stat-card {
   flex: 1 1 200px;
   padding: 1.1rem 1.25rem;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--surface);
 }
@@ -3747,12 +3726,6 @@ select:focus-visible {
   font-weight: 700;
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
-  animation: confirming-badge-glow 2s ease-in-out infinite;
-}
-
-@keyframes confirming-badge-glow {
-  0%, 100% { box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
-  50% { box-shadow: 0 0 18px rgba(139, 92, 246, 0.55); }
 }
 
 .confirming-ring {
@@ -3851,13 +3824,7 @@ select:focus-visible {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
   filter: blur(50px);
-  animation: vault-glow-pulse 4.5s ease-in-out infinite;
   pointer-events: none;
-}
-
-@keyframes vault-glow-pulse {
-  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.12); }
 }
 
 .vault-card {
@@ -3866,7 +3833,7 @@ select:focus-visible {
   width: 100%;
   max-width: 380px;
   padding: 2.2rem 2rem 1.8rem;
-  border-radius: 22px;
+  border-radius: 20px;
   text-align: center;
   background: var(--surface);
   border: 1px solid rgba(168, 139, 255, 0.3);
@@ -3897,7 +3864,7 @@ select:focus-visible {
   width: 54px;
   height: 54px;
   margin: 0 auto 1rem;
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3978,21 +3945,6 @@ select:focus-visible {
   border-radius: 50%;
   background: #4ade80;
   box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
-  animation: vault-status-blink 1.8s ease-in-out infinite;
-}
-
-@keyframes vault-status-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vault-glow {
-    animation: none;
-  }
-  .vault-status-dot {
-    animation: none;
-  }
 }
 
 /* ---- Quick replies (saved messages) ---- */
@@ -4160,7 +4112,7 @@ select:focus-visible {
 .proof-settings-thumb {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border);
 }
@@ -4310,13 +4262,13 @@ select:focus-visible {
 .admin-chat-bubble.sent {
   background: var(--accent);
   color: #fff;
-  border-radius: 18px 18px 4px 18px;
+  border-radius: 20px 18px 4px 18px;
 }
 
 .admin-chat-bubble.received {
   background: rgba(255, 255, 255, 0.1);
   color: #f1eefc;
-  border-radius: 18px 18px 18px 4px;
+  border-radius: 20px 18px 18px 4px;
 }
 
 .admin-chat-bubble p {
@@ -4425,7 +4377,7 @@ select:focus-visible {
   align-items: center;
   gap: 0.5rem;
   padding: 0.55rem 0.75rem;
-  border-radius: 10px;
+  border-radius: 8px;
   border: none;
   background: transparent;
   color: inherit;
@@ -4504,7 +4456,7 @@ select:focus-visible {
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.4rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
@@ -5073,7 +5025,7 @@ select:focus-visible {
   margin-bottom: 0.35rem;
   border-left: 3px solid rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.78rem;
 }
 
@@ -5233,7 +5185,7 @@ select:focus-visible {
   gap: 0.55rem;
   padding: 0.5rem 0.75rem;
   margin: 0 0.75rem;
-  border-radius: 10px 10px 0 0;
+  border-radius: 8px 10px 0 0;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-bottom: none;
@@ -5328,7 +5280,7 @@ select:focus-visible {
   gap: 0.6rem;
   padding: 0.55rem 0.85rem;
   margin-bottom: 0.5rem;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(220, 38, 38, 0.12);
   border: 1px solid rgba(220, 38, 38, 0.3);
   color: #f87171;
@@ -5341,7 +5293,7 @@ select:focus-visible {
   gap: 0.6rem;
   padding: 0.6rem 0.85rem;
   margin-bottom: 0.5rem;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(14, 165, 233, 0.1);
   border: 1px solid rgba(56, 189, 248, 0.3);
   color: #7dd3fc;
@@ -5431,7 +5383,7 @@ select:focus-visible {
   flex-direction: column;
   min-width: 150px;
   padding: 0.35rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
@@ -5590,7 +5542,7 @@ select:focus-visible {
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: transparent;
   color: inherit;
@@ -5621,7 +5573,7 @@ select:focus-visible {
   gap: 0.7rem;
   width: 100%;
   padding: 0.6rem 0.7rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: inherit;
@@ -5764,42 +5716,31 @@ select:focus-visible {
   background: rgba(220, 38, 38, 0.85);
 }
 
-/* ---- Cyberpunk ticker bar ---- */
+/* ---- Store trust-badge row ---- */
 
 .ticker-bar {
-  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
   width: 100%;
-  overflow: hidden;
-  background: linear-gradient(90deg, rgba(217, 119, 6, 0.14), rgba(0, 240, 255, 0.14));
-  border-bottom: 1px solid rgba(0, 240, 255, 0.25);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
-  white-space: nowrap;
-  padding: 0.45rem 0;
-}
-
-.ticker-track {
-  display: inline-flex;
-  animation: ticker-scroll 28s linear infinite;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 1rem;
 }
 
 .ticker-item {
-  display: inline-block;
-  padding: 0 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 600;
   color: var(--foreground);
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  opacity: 0.85;
 }
 
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
-  }
+.ticker-item svg {
+  color: var(--accent);
+  flex-shrink: 0;
 }
 

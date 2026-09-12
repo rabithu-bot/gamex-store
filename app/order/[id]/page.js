@@ -239,7 +239,7 @@ export default function OrderPage() {
             <h3>1. Pay via UPI</h3>
             {order.status === "pending" && msRemaining !== null && (
               <p className="checkout-countdown">
-                ⏱️ Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
+                Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
               </p>
             )}
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
@@ -267,7 +267,7 @@ export default function OrderPage() {
             </div>
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
-            <span className="payment-upload-hint">⚠️ Please upload screenshot for fast verification</span>
+            <span className="payment-upload-hint">Please upload screenshot for fast verification</span>
             <form onSubmit={handleSubmitProof}>
               {order.status === "declined" && (
                 <p className="error-text" style={{ marginBottom: "0.75rem" }}>

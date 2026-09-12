@@ -10,7 +10,13 @@ const FALLBACK_IMAGE = "/window.svg";
 // homepage is above the fold and holds the page's LCP element, so lazily
 // loading it actively delays the metric it defines. Mirrors what
 // ImageGallery already does for its first slide.
-export default function ListingCard({ listing, priority = false }) {
+//
+// `showCategoryBadge` defaults on (the product page's "Similar Accounts"
+// can mix categories with no grouping heading, so the badge is real
+// information there) — the homepage passes false since it already groups
+// cards under a per-category "<Category> Accounts" heading, which made
+// the same badge on every card pure repetition.
+export default function ListingCard({ listing, priority = false, showCategoryBadge = true }) {
   const images = JSON.parse(listing.images || "[]");
   // No onError fallback existed before — a broken/deleted S3 object just
   // showed the browser's bare broken-image icon with no recovery. Falls
@@ -47,7 +53,7 @@ export default function ListingCard({ listing, priority = false }) {
             decoding="async"
             onError={() => setImgSrc(FALLBACK_IMAGE)}
           />
-          <span className="badge card-image-badge">{listing.category}</span>
+          {showCategoryBadge && <span className="badge card-image-badge">{listing.category}</span>}
           {isSold && <span className="sold-badge">Sold Out</span>}
         </div>
         <div className="card-body">

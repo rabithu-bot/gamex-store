@@ -149,11 +149,11 @@ export async function POST(request, { params }) {
       orderId,
       body:
         attachmentType === "audio"
-          ? "🎤 Voice message"
+          ? "Voice message"
           : attachmentType === "video" && !text
-            ? "🎥 Video"
+            ? "Video"
             : attachmentPath && !text
-              ? "📷 Photo"
+              ? "Photo"
               : text,
     }).catch(() => {});
   }

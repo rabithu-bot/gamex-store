@@ -1,4 +1,4 @@
-const TELEGRAM_URL = "https://t.me/FireUpdatesHub";
+const TELEGRAM_URL = "https://t.me/FreeFireDailyUp2date";
 
 // Real, recognizable Telegram glyph (brand blue circle + paper plane) so the
 // button reads instantly as "this goes to Telegram" — not a generic
@@ -22,10 +22,9 @@ function TelegramLogo() {
 }
 
 // Below the listing grid, above where a site footer would go. Still no
-// follower/subscriber count and no "verified" checkmark — checked the live
-// channel again for this pass (t.me/FireUpdatesHub shows no Telegram-
-// granted verified badge), so that stays off; a bigger badge/icon isn't
-// the same claim a fake checkmark would be.
+// follower/subscriber count and no "verified" checkmark — a bigger
+// badge/icon isn't the same claim a fake checkmark would be, and that
+// stays off regardless of which channel this points at.
 export default function TelegramBanner() {
   return (
     <section className="telegram-banner">
@@ -34,10 +33,10 @@ export default function TelegramBanner() {
         <TelegramLogo />
         <div className="telegram-banner-body">
           <div className="telegram-banner-title-row">
-            <strong>GameX FF Store 🔥</strong>
-            <span className="telegram-banner-live-tag">⚡ OFFICIAL CHANNEL</span>
+            <strong>GameX FF Store</strong>
+            <span className="telegram-banner-live-tag">Official Channel</span>
           </div>
-          <p className="telegram-banner-tagline">🔥 Instant Stock Drops &amp; VIP Offers 💎</p>
+          <p className="telegram-banner-tagline">Instant stock drops &amp; VIP offers</p>
         </div>
       </div>
       <a
@@ -46,7 +45,7 @@ export default function TelegramBanner() {
         rel="noopener noreferrer"
         className="btn telegram-banner-cta"
       >
-        Join Official Telegram Channel 🚀
+        Join Official Telegram Channel
       </a>
     </section>
   );

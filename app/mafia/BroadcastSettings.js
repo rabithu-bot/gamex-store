@@ -155,7 +155,7 @@ export default function BroadcastSettings() {
         </div>
         <div>
           <span className="stat-value">
-            {subscriberCount === null ? "…" : `🔔 ${subscriberCount}`}
+            {subscriberCount === null ? "…" : subscriberCount}
           </span>
           <span className="stat-label">Subscribed Users</span>
         </div>

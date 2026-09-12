@@ -212,9 +212,9 @@ export default function SupportChat({
 
   function quotePreview(message) {
     if (!message) return null;
-    if (message.attachmentType === "audio") return "🎤 Voice message";
-    if (message.attachmentType === "video" && !message.body) return "🎥 Video";
-    if (message.attachmentPath && !message.body) return "📷 Photo";
+    if (message.attachmentType === "audio") return "Voice message";
+    if (message.attachmentType === "video" && !message.body) return "Video";
+    if (message.attachmentPath && !message.body) return "Photo";
     return message.body;
   }
 
