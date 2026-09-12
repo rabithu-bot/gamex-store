@@ -35,7 +35,11 @@ export default function OrderPage() {
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [qrUrl, setQrUrl] = useState("/upi-qr.jpg");
+  // Deliberately starts null, not the bundled default QR — this is a real
+  // payment destination, so the buyer must never see *any* QR, right or
+  // wrong, until the server has actually confirmed which one is current.
+  // Renders a skeleton in its place until then (see the payment step below).
+  const [qrUrl, setQrUrl] = useState(null);
   const [now, setNow] = useState(() => Date.now());
 
   // Only the pending-payment countdown needs a per-second tick — once the
@@ -88,11 +92,37 @@ export default function OrderPage() {
     }
   }, [order?.status, id, router]);
 
+  // Retries on failure instead of silently giving up — a dropped request
+  // here used to leave qrUrl unset with no second attempt, so a flaky
+  // connection could strand the buyer on the skeleton with no way to pay.
+  // Only falls back to the bundled default QR after every retry is
+  // exhausted, and only as a last resort (see qrUrl's initializer above).
   useEffect(() => {
-    fetch("/api/settings/payment-qr", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => data.url && setQrUrl(data.url))
-      .catch(() => {});
+    let cancelled = false;
+    let attempt = 0;
+
+    async function loadQr() {
+      attempt += 1;
+      try {
+        const res = await fetch("/api/settings/payment-qr", { cache: "no-store" });
+        const data = await res.json();
+        if (!cancelled && data.url) setQrUrl(data.url);
+        return;
+      } catch {
+        // fall through to retry/give-up below
+      }
+      if (cancelled) return;
+      if (attempt < 4) {
+        setTimeout(loadQr, attempt * 1500);
+      } else {
+        setQrUrl("/upi-qr.jpg");
+      }
+    }
+
+    loadQr();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Ticks down locally so the buyer sees 00:00 the instant the window closes,
@@ -215,12 +245,20 @@ export default function OrderPage() {
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
               Scan this QR with any UPI app, then enter the amount below yourself.
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrUrl}
-              alt="UPI payment QR code"
-              style={{ width: 220, height: "auto", margin: "0.5rem auto", display: "block", borderRadius: 12 }}
-            />
+            {qrUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qrUrl}
+                alt="UPI payment QR code"
+                style={{ width: 220, height: "auto", margin: "0.5rem auto", display: "block", borderRadius: 12 }}
+              />
+            ) : (
+              <div
+                className="skeleton"
+                style={{ width: 220, height: 220, margin: "0.5rem auto", borderRadius: 12 }}
+                aria-hidden="true"
+              />
+            )}
             <div className="payable-badge-row">
               <span className="payable-badge">
                 <span>Total Payable</span>

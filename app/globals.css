@@ -1837,10 +1837,13 @@ select:focus-visible {
 /* ---- Skeleton loading ---- */
 
 .skeleton {
+  /* var(--accent-soft), not a hardcoded color — this is what keeps the
+     shimmer on-brand automatically in both zones: amber on the storefront,
+     purple inside .admin-light, without a separate override here. */
   background: linear-gradient(
     90deg,
     var(--surface) 25%,
-    rgba(139, 92, 246, 0.14) 37%,
+    var(--accent-soft) 37%,
     var(--surface) 63%
   );
   background-size: 400% 100%;
