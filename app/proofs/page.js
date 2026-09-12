@@ -90,6 +90,30 @@ export default async function ProofsPage() {
       <main className="container">
         <ProofsBackButton />
 
+        {proofs.length === 0 ? (
+          <div className="empty-state">
+            <div className="icon">
+              <ImageOff size={22} />
+            </div>
+            <strong>No proof uploaded yet</strong>
+            <p className="muted" style={{ marginTop: "0.3rem" }}>
+              Check back soon.
+            </p>
+          </div>
+        ) : (
+          <ProofGallery
+            proofs={proofs.map((p) => ({
+              id: p.id,
+              url: p.url,
+              type: p.type,
+              proofDate: p.proofDate ? p.proofDate.toISOString() : null,
+            }))}
+          />
+        )}
+
+        {/* Moved below the gallery — buyers land on this page to see the
+            actual proof immediately; the trust badge/stats banner now
+            reinforces it afterward instead of delaying it. */}
         <div className="proofs-hero">
           <span className="proofs-hero-eyebrow">
             <ShieldCheck size={14} />
@@ -118,27 +142,6 @@ export default async function ProofsPage() {
             </div>
           )}
         </div>
-
-        {proofs.length === 0 ? (
-          <div className="empty-state">
-            <div className="icon">
-              <ImageOff size={22} />
-            </div>
-            <strong>No proof uploaded yet</strong>
-            <p className="muted" style={{ marginTop: "0.3rem" }}>
-              Check back soon.
-            </p>
-          </div>
-        ) : (
-          <ProofGallery
-            proofs={proofs.map((p) => ({
-              id: p.id,
-              url: p.url,
-              type: p.type,
-              proofDate: p.proofDate ? p.proofDate.toISOString() : null,
-            }))}
-          />
-        )}
       </main>
     </>
   );
