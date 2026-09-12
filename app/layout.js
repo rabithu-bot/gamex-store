@@ -2,7 +2,6 @@ import { Geist, Geist_Mono, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/Toast";
 import AuroraBackground from "./components/AuroraBackground";
-import SplashScreen from "./components/SplashScreen";
 import MobileTabBar from "./components/MobileTabBar";
 import InAppBrowserBanner from "./components/InAppBrowserBanner";
 import RegisterServiceWorker from "./components/RegisterServiceWorker";
@@ -146,7 +145,6 @@ export default function RootLayout({ children }) {
         <RegisterServiceWorker />
         <DisableInspect />
         <AuroraBackground />
-        <SplashScreen />
         <InAppBrowserBanner />
         <ToastProvider>{children}</ToastProvider>
         <MobileTabBar />
