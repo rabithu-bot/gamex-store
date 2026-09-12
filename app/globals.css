@@ -2076,31 +2076,17 @@ select:focus-visible {
 
 /* ---- Official Telegram channel banner ---- */
 
+/* No card/box treatment (no background, border, shadow, or blur) — same
+   plain-on-page approach as .seo-footer-blurb. Layout/spacing/content of
+   everything inside is unchanged. */
 .telegram-banner {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   margin-top: 2.5rem;
-  /* Tailwind arbitrary-value equivalents, translated to plain CSS (this
-     project doesn't use Tailwind — see .admin-settings-dark etc. for the
-     established pattern of honoring the intent, not the class syntax):
-     p-6 (py-6 px-6) border-cyan-500/30 bg-slate-900/80 backdrop-blur-md
-     shadow-[0_0_20px_rgba(6,182,212,0.12)] */
-  padding: 1.5rem;
-  border-radius: 20px;
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.12);
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  padding: 1.5rem 0;
   overflow: hidden;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-
-.telegram-banner:hover {
-  border-color: rgba(6, 182, 212, 0.55);
-  box-shadow: 0 0 32px rgba(6, 182, 212, 0.28);
 }
 
 .telegram-banner-glow {
