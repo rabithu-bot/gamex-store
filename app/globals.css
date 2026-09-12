@@ -1,16 +1,18 @@
 :root {
   /* AAA Cyberpunk Esports palette. --accent stays the name every existing
      component already keys off (buttons, focus rings, badges, glows) —
-     changing its value here is what re-themes the entire site to crimson
-     without touching a single component file. */
+     changing its value here is what re-themes the entire site to amber
+     without touching a single component file. Kept deliberately distinct
+     from --accent-gold (a brighter, more yellow tone reserved for
+     top-tier rarity) so the two don't collapse into the same color. */
   --background: #050609; /* Pitch Obsidian */
   --surface: #0d0f1788;
   --surface-solid: #0d0f17;
   --border: rgba(255, 255, 255, 0.1);
   --foreground: #f1eefc;
-  --accent: #ff0044; /* Crimson Red — primary CTA/interactive color */
-  --accent-hover: #e6003d;
-  --accent-soft: rgba(255, 0, 68, 0.16);
+  --accent: #d97706; /* Amber — primary CTA/interactive color */
+  --accent-hover: #b45309;
+  --accent-soft: rgba(217, 119, 6, 0.16);
   --accent-cyan: #00f0ff; /* Cyber Cyan — secondary highlight/focus glow */
   --accent-cyan-soft: rgba(0, 240, 255, 0.16);
   --accent-gold: #ffb800; /* Legend Gold — top-tier rarity only */
@@ -805,7 +807,7 @@ select:focus-visible {
   touch-action: manipulation;
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   color: white;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
   transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1477,7 +1479,7 @@ select:focus-visible {
 .stat-icon.sold {
   background: var(--accent-soft);
   color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(255, 0, 68, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 14px rgba(217, 119, 6, 0.45);
 }
 
 .stat-icon.messages {
@@ -2415,9 +2417,9 @@ select:focus-visible {
   letter-spacing: 0.01em;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(90deg, var(--accent), #ff4d7a 55%, var(--accent-cyan));
+  background: linear-gradient(90deg, var(--accent), #fbbf24 55%, var(--accent-cyan));
   background-size: 200% 100%;
-  box-shadow: 0 0 22px rgba(255, 0, 68, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  box-shadow: 0 0 22px rgba(217, 119, 6, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   animation: buy-now-glow 2.6s ease-in-out infinite;
   transition: transform 0.12s ease, filter 0.15s ease, background-position 0.4s ease;
 }
@@ -2464,7 +2466,7 @@ select:focus-visible {
 @keyframes buy-now-glow {
   0%,
   100% {
-    box-shadow: 0 0 22px rgba(255, 0, 68, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    box-shadow: 0 0 22px rgba(217, 119, 6, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   }
   50% {
     box-shadow: 0 0 34px rgba(0, 240, 255, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
@@ -3376,7 +3378,7 @@ select:focus-visible {
   width: min(380px, 100vw);
   padding: 1.5rem;
   background: linear-gradient(180deg, rgba(9, 10, 16, 0.97), rgba(5, 6, 9, 0.99));
-  border-left: 1px solid rgba(255, 0, 68, 0.25);
+  border-left: 1px solid rgba(217, 119, 6, 0.25);
   box-shadow: -30px 0 80px rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -3459,9 +3461,9 @@ select:focus-visible {
 }
 
 .admin-drawer-row.active {
-  border-color: rgba(255, 0, 68, 0.55);
-  background: rgba(255, 0, 68, 0.09);
-  box-shadow: 0 0 20px rgba(255, 0, 68, 0.18);
+  border-color: rgba(217, 119, 6, 0.55);
+  background: rgba(217, 119, 6, 0.09);
+  box-shadow: 0 0 20px rgba(217, 119, 6, 0.18);
 }
 
 .admin-drawer-row-label {
@@ -3483,8 +3485,8 @@ select:focus-visible {
 }
 
 .admin-drawer-row.active .admin-drawer-row-icon {
-  background: rgba(255, 0, 68, 0.16);
-  color: #ff6b8f;
+  background: rgba(217, 119, 6, 0.16);
+  color: #fcd34d;
 }
 
 .admin-drawer-chevron {
@@ -3515,20 +3517,21 @@ select:focus-visible {
   --surface-solid: #0d0f17;
   --border: rgba(255, 255, 255, 0.12);
   --foreground: #f1eefc;
-  --accent: #ff0044;
-  --accent-hover: #e6003d;
-  --accent-soft: rgba(255, 0, 68, 0.16);
+  --accent: #d97706;
+  --accent-hover: #b45309;
+  --accent-soft: rgba(217, 119, 6, 0.16);
   background: var(--background);
   color: var(--foreground);
   border-radius: 20px;
   padding: 1.25rem;
 }
 
-/* .btn's glow is hardcoded purple site-wide (matches .admin-light's
-   accent) — re-tinted crimson here to match this zone's --accent instead,
-   without touching the shared .btn rule everywhere else it's used. */
+/* .btn's glow is amber site-wide (matches .admin-light's own purple accent
+   only inside that panel, via the override above) — re-affirmed amber here
+   to match this zone's --accent too, without touching the shared .btn rule
+   everywhere else it's used. */
 .admin-settings-dark .btn {
-  box-shadow: 0 6px 22px rgba(255, 0, 68, 0.35);
+  box-shadow: 0 6px 22px rgba(217, 119, 6, 0.35);
 }
 
 .btn-lg {
@@ -3552,8 +3555,8 @@ select:focus-visible {
 }
 
 .deals-stat-card-live {
-  border-color: rgba(255, 0, 68, 0.4);
-  box-shadow: 0 0 24px rgba(255, 0, 68, 0.12);
+  border-color: rgba(217, 119, 6, 0.4);
+  box-shadow: 0 0 24px rgba(217, 119, 6, 0.12);
 }
 
 .deals-stat-label {
@@ -4780,6 +4783,13 @@ select:focus-visible {
   min-height: 100vh;
 }
 
+/* .btn's glow is amber site-wide (matches the storefront's --accent) — this
+   panel keeps its own purple identity, so its buttons need the same purple
+   glow they've always had instead of picking up the new amber default. */
+.admin-light .btn {
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+}
+
 .admin-light .form-field input,
 .admin-light .form-field textarea,
 .admin-light .form-field select,
@@ -5767,7 +5777,7 @@ select:focus-visible {
   position: relative;
   width: 100%;
   overflow: hidden;
-  background: linear-gradient(90deg, rgba(255, 0, 68, 0.14), rgba(0, 240, 255, 0.14));
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.14), rgba(0, 240, 255, 0.14));
   border-bottom: 1px solid rgba(0, 240, 255, 0.25);
   box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
   white-space: nowrap;
