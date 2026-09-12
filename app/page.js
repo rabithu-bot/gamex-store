@@ -3,6 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
 import { getEffectiveLifetimeDeals } from "@/app/lib/lifetimeOrderCount";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import TickerBar from "@/app/components/TickerBar";
 import ListingCard from "@/app/components/ListingCard";
 import TelegramBanner from "@/app/components/TelegramBanner";
@@ -162,6 +163,7 @@ export default async function HomePage() {
           </p>
         </section>
       </main>
+      <Footer />
     </>
   );
 }

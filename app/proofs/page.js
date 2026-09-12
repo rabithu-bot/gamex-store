@@ -2,6 +2,7 @@ import { ShieldCheck, ImageOff, BadgeCheck } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import ProofGallery from "./ProofGallery";
 import ProofsBackButton from "./ProofsBackButton";
 
@@ -143,6 +144,7 @@ export default async function ProofsPage() {
           )}
         </div>
       </main>
+      <Footer />
     </>
   );
 }

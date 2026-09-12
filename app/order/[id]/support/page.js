@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
 import SupportChat from "../SupportChat";
@@ -128,6 +129,7 @@ export default function OrderSupportPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
         </main>
+        <Footer />
       </>
     );
   }

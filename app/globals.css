@@ -5867,3 +5867,116 @@ select:focus-visible {
   flex-shrink: 0;
 }
 
+/* ---- Legal pages (Terms & Conditions, Privacy Policy) ---- */
+
+.legal-page {
+  line-height: 1.65;
+}
+
+.legal-updated {
+  margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.legal-page h1 {
+  margin-top: 0.5rem;
+}
+
+.legal-page h2 {
+  font-size: 1.15rem;
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
+}
+
+.legal-page p {
+  margin-bottom: 0.9rem;
+}
+
+.legal-page ul {
+  margin: 0 0 1rem;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legal-page li {
+  padding-left: 0.2rem;
+}
+
+/* ---- Site footer ---- */
+
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 3rem;
+  padding: 2rem 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.site-footer-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.site-footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.site-footer-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.site-footer-social-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+}
+
+.site-footer-links a {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--foreground);
+  opacity: 0.75;
+}
+
+.site-footer-links a:hover {
+  opacity: 1;
+}
+
+.site-footer-copyright {
+  font-size: 0.78rem;
+  opacity: 0.5;
+}
+
+/* Below 641px the fixed .mobile-tab-bar sits on top of whatever's at the
+   very bottom of the page — same reason .toast-stack needs the identical
+   clearance at this breakpoint. Without it the footer's last line (and
+   the tab bar itself) would overlap. */
+@media (max-width: 640px) {
+  .site-footer {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
+

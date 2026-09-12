@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
 import OrderNotFoundNotice from "../OrderNotFoundNotice";
@@ -30,6 +31,7 @@ export default function DeclinedPaymentPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -41,6 +43,7 @@ export default function DeclinedPaymentPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <OrderNotFoundNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -62,6 +65,7 @@ export default function DeclinedPaymentPage() {
         <p className="muted">{order.listing.title}</p>
         <DeclinedNotice orderId={order.id} />
       </main>
+      <Footer />
     </>
   );
 }

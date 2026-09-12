@@ -14,6 +14,7 @@ import {
   Megaphone,
   Bot,
   Flame,
+  Share2,
 } from "lucide-react";
 
 const SETTINGS_LINKS = [
@@ -23,6 +24,7 @@ const SETTINGS_LINKS = [
   { href: "/mafia/settings/proofs", label: "Proofs", icon: ShieldCheck },
   { href: "/mafia/settings/broadcast", label: "Broadcast Push", icon: Megaphone },
   { href: "/mafia/settings/ai-learning", label: "AI Learning", icon: Bot },
+  { href: "/mafia/settings/social-links", label: "Social Links", icon: Share2 },
   // Split out from the Payment QR page into its own settings page — see
   // app/mafia/DealsCounterSettings.js. Uses the Flame icon component (not
   // a literal 🔥 emoji glyph) so it stays visually consistent with every

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import { useOrderPoll } from "../useOrderPoll";
 import AccessDeniedNotice from "../AccessDeniedNotice";
 import OrderNotFoundNotice from "../OrderNotFoundNotice";
@@ -32,6 +33,7 @@ export default function ConfirmingPaymentPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -43,6 +45,7 @@ export default function ConfirmingPaymentPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <OrderNotFoundNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -73,6 +76,7 @@ export default function ConfirmingPaymentPage() {
           </Link>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

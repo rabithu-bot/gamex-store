@@ -3,6 +3,7 @@ import { ShieldCheck, Zap, Headset, Star, Server, Gem } from "lucide-react";
 import { prisma } from "@/app/lib/prisma";
 import { SITE_URL } from "@/app/lib/siteUrl";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import ListingCard from "@/app/components/ListingCard";
 import BuyForm from "./BuyForm";
 import ImageGallery from "./ImageGallery";
@@ -261,6 +262,7 @@ export default async function ProductPage({ params }) {
           </section>
         )}
       </main>
+      <Footer />
     </>
   );
 }

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { MessageCircle, ImageUp, ShieldCheck } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import CopyButton from "@/app/components/CopyButton";
 import EnableNotifications from "@/app/components/EnableNotifications";
 import { useToast } from "@/app/components/Toast";
@@ -162,6 +163,7 @@ export default function OrderPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <AccessDeniedNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -173,6 +175,7 @@ export default function OrderPage() {
         <main className="container" style={{ maxWidth: 560 }}>
           <OrderNotFoundNotice />
         </main>
+        <Footer />
       </>
     );
   }
@@ -324,6 +327,7 @@ export default function OrderPage() {
           <EnableNotifications apiPath={`/api/orders/${order.id}/push/subscribe`} />
         </div>
       </main>
+      <Footer />
     </>
   );
 }

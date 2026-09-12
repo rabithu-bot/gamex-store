@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
+import Footer from "@/app/components/Footer";
 import { prisma } from "@/app/lib/prisma";
 import { getSessionId } from "@/app/lib/customerSession";
 
@@ -46,6 +47,7 @@ export default async function MyOrdersPage() {
           </div>
         )}
       </main>
+      <Footer />
     </>
   );
 }
