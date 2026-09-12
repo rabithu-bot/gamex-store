@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Rajdhani, Russo_One } from "next/font/google";
+import { Geist, Geist_Mono, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/Toast";
 import AuroraBackground from "./components/AuroraBackground";
@@ -26,14 +26,6 @@ const rajdhani = Rajdhani({
   weight: ["600", "700"],
 });
 
-// Chunky single-weight display face, used only for the "GameX Store"
-// brand mark itself (SiteHeader) — Rajdhani's heaviest weight still reads
-// too light/condensed to match the logo's actual blocky lettering.
-const russoOne = Russo_One({
-  variable: "--font-logo",
-  subsets: ["latin"],
-  weight: "400",
-});
 
 // Title: 59 chars. Description: 137 chars — both measured, not guessed,
 // to stay under Google's ~60/~155 practical snippet-truncation limits.
@@ -145,10 +137,7 @@ const organizationJsonLd = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${russoOne.variable}`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable}`}>
       <body>
         <script
           type="application/ld+json"
