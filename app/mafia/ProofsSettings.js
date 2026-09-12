@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Trash2, Upload, Play } from "lucide-react";
 import { uploadVideoAttachment } from "@/app/lib/videoUpload";
+import { getCached, setCached } from "./panelCache";
 
 const MAX_PROOFS = 150;
 
@@ -11,7 +12,10 @@ function isVideoFile(file) {
 }
 
 export default function ProofsSettings() {
-  const [proofs, setProofs] = useState(null);
+  // Lazy initializer: renders the last-known proofs instantly on mount
+  // (e.g. navigating back to this settings page) instead of flashing the
+  // skeleton grid every time, while the fetch below still refreshes it.
+  const [proofs, setProofs] = useState(() => getCached("proofs"));
   const [files, setFiles] = useState([]);
   const [batchDate, setBatchDate] = useState("");
   const [error, setError] = useState("");
@@ -21,7 +25,11 @@ export default function ProofsSettings() {
 
   const fetchProofs = useCallback(async () => {
     const res = await fetch("/api/admin/proofs", { cache: "no-store" });
-    if (res.ok) setProofs(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setProofs(data);
+      setCached("proofs", data);
+    }
   }, []);
 
   useEffect(() => {
@@ -82,12 +90,15 @@ export default function ProofsSettings() {
   // the request actually fails.
   async function handleDelete(id) {
     const prevProofs = proofs;
-    setProofs((p) => p?.filter((x) => x.id !== id));
+    const nextProofs = proofs?.filter((x) => x.id !== id);
+    setProofs(nextProofs);
+    setCached("proofs", nextProofs);
     try {
       const res = await fetch(`/api/admin/proofs/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("delete failed");
     } catch {
       setProofs(prevProofs);
+      setCached("proofs", prevProofs);
       setError("Couldn't delete that proof — try again.");
     }
   }

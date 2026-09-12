@@ -2,11 +2,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { getCached, setCached } from "./panelCache";
 
 const MAX_QUICK_REPLIES = 20;
 
 export default function QuickRepliesSettings() {
-  const [replies, setReplies] = useState(null);
+  // Lazy initializer: renders the last-known replies instantly on mount
+  // (e.g. navigating back to this settings page) instead of flashing the
+  // skeleton list every time, while the fetch below still refreshes it.
+  const [replies, setReplies] = useState(() => getCached("quickReplies"));
   const [newKeyword, setNewKeyword] = useState("");
   const [newText, setNewText] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +18,11 @@ export default function QuickRepliesSettings() {
 
   const fetchReplies = useCallback(async () => {
     const res = await fetch("/api/admin/quick-replies", { cache: "no-store" });
-    if (res.ok) setReplies(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setReplies(data);
+      setCached("quickReplies", data);
+    }
   }, []);
 
   useEffect(() => {
@@ -49,12 +57,15 @@ export default function QuickRepliesSettings() {
   async function handleDelete(id) {
     setError("");
     const prevReplies = replies;
-    setReplies((r) => r?.filter((x) => x.id !== id));
+    const nextReplies = replies?.filter((x) => x.id !== id);
+    setReplies(nextReplies);
+    setCached("quickReplies", nextReplies);
     try {
       const res = await fetch(`/api/admin/quick-replies/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("delete failed");
     } catch {
       setReplies(prevReplies);
+      setCached("quickReplies", prevReplies);
       setError("Couldn't delete that reply — try again.");
     }
   }

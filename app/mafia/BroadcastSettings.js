@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Send, BellRing } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
+import { getCached, setCached } from "./panelCache";
 
 export default function BroadcastSettings() {
   const [title, setTitle] = useState("");
@@ -13,13 +14,17 @@ export default function BroadcastSettings() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const [subscriberCount, setSubscriberCount] = useState(null);
+  // Lazy initializer: shows the last-known subscriber count instantly on
+  // mount instead of the "…" placeholder every time this page is
+  // revisited, while the fetch below still refreshes it.
+  const [subscriberCount, setSubscriberCount] = useState(() => getCached("subscriberCount"));
 
   async function loadSubscriberCount() {
     const res = await fetch("/api/admin/push-subscribers");
     if (res.ok) {
       const data = await res.json();
       setSubscriberCount(data.count);
+      setCached("subscriberCount", data.count);
     }
   }
 

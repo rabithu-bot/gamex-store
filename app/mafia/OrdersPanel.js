@@ -5,6 +5,7 @@ import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
+import { getCached, setCached } from "./panelCache";
 
 function ProofThumb({ src, orderId, onZoom }) {
   const [failed, setFailed] = useState(false);
@@ -47,16 +48,31 @@ const FILTER_LABELS = {
 };
 
 export default function OrdersPanel() {
-  const [orders, setOrders] = useState(null);
+  // Lazy initializer: renders the last-known orders instantly on mount
+  // (e.g. navigating back to /mafia/orders) instead of flashing the
+  // skeleton rows every time, while the poll below still refreshes it.
+  const [orders, setOrders] = useState(() => getCached("orders"));
   const [busyId, setBusyId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [zoomedProof, setZoomedProof] = useState(null);
 
+  // Every write to `orders` — the poll's fresh fetch, an optimistic
+  // action, or a rollback — also mirrors into the cache, so a remount
+  // right after any of those picks up the latest value instead of a
+  // slightly-stale one from the last poll tick.
+  const updateOrders = useCallback((updater) => {
+    setOrders((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      setCached("orders", next);
+      return next;
+    });
+  }, []);
+
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
-    if (res.ok) setOrders(await res.json());
-  }, []);
+    if (res.ok) updateOrders(await res.json());
+  }, [updateOrders]);
 
   // This is the screen where incoming "Needs Review" payment proofs land,
   // so it has to refresh on its own — it previously fetched once on mount,
@@ -74,7 +90,7 @@ export default function OrdersPanel() {
     const prevOrders = orders;
     const nextStatus = action === "confirm" ? "confirmed" : "declined";
     setBusyId(orderId);
-    setOrders((prev) =>
+    updateOrders((prev) =>
       prev?.map((o) => {
         if (o.id !== orderId) return o;
         const patched = { ...o, status: nextStatus };
@@ -86,7 +102,7 @@ export default function OrdersPanel() {
       const res = await fetch(`/api/admin/orders/${orderId}/${action}`, { method: "POST" });
       if (!res.ok) throw new Error("action failed");
     } catch {
-      setOrders(prevOrders);
+      updateOrders(prevOrders);
     } finally {
       setBusyId(null);
     }
@@ -96,10 +112,10 @@ export default function OrdersPanel() {
   // background poll (useVisiblePolling above) is what reconciles anything
   // this misses (e.g. a second admin toggling the same listing elsewhere).
   const patchListingStatus = useCallback((listingId, status) => {
-    setOrders((prev) =>
+    updateOrders((prev) =>
       prev?.map((o) => (o.listing?.id === listingId ? { ...o, listing: { ...o.listing, status } } : o))
     );
-  }, []);
+  }, [updateOrders]);
 
   const counts = useMemo(() => {
     const base = { all: orders?.length || 0 };

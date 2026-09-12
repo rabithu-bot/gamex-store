@@ -3,14 +3,20 @@
 import { useState, useCallback } from "react";
 import { IndianRupee, PackageCheck, PackageX, MessageCircle, Users } from "lucide-react";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
+import { getCached, setCached } from "./panelCache";
 
 export default function StatsBar() {
-  const [stats, setStats] = useState(null);
+  // Lazy initializer: renders the last-known stats immediately on mount
+  // (e.g. navigating back to the Dashboard) instead of flashing the
+  // skeleton bar every time, while the poll below still refreshes it.
+  const [stats, setStats] = useState(() => getCached("stats"));
 
   const fetchStats = useCallback(async () => {
     const res = await fetch("/api/admin/stats", { cache: "no-store" });
     if (!res.ok) return;
-    setStats(await res.json());
+    const data = await res.json();
+    setStats(data);
+    setCached("stats", data);
   }, []);
 
   useVisiblePolling(fetchStats, 6000);

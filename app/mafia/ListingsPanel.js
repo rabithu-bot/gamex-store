@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { uploadListingImages } from "@/app/lib/listingImageUpload";
+import { getCached, setCached } from "./panelCache";
 
 const emptyForm = {
   title: "",
@@ -21,7 +22,10 @@ const emptyForm = {
 };
 
 export default function ListingsPanel() {
-  const [listings, setListings] = useState(null);
+  // Lazy initializer: renders the last-known listings instantly on mount
+  // (e.g. navigating back to /mafia/listings) instead of flashing the
+  // skeleton grid every time, while the poll below still refreshes it.
+  const [listings, setListings] = useState(() => getCached("listings"));
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -43,7 +47,11 @@ export default function ListingsPanel() {
 
   const fetchListings = useCallback(async () => {
     const res = await fetch("/api/admin/listings", { cache: "no-store" });
-    if (res.ok) setListings(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setListings(data);
+      setCached("listings", data);
+    }
   }, []);
 
   useVisiblePolling(fetchListings, 5000);

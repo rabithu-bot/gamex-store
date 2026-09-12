@@ -3,16 +3,24 @@
 import { useEffect, useState } from "react";
 import { Eye, Mic } from "lucide-react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
+import { getCached, setCached } from "./panelCache";
 
 export default function AiLearningSettings() {
-  const [stats, setStats] = useState(null);
+  // Lazy initializer: renders the last-known stats instantly on mount
+  // (e.g. navigating back to this settings page) instead of flashing
+  // "Loading..." every time, while the fetch below still refreshes it.
+  const [stats, setStats] = useState(() => getCached("aiLearning"));
   const [confirmOn, setConfirmOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function load() {
     const res = await fetch("/api/admin/ai-learning");
-    if (res.ok) setStats(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setStats(data);
+      setCached("aiLearning", data);
+    }
   }
 
   useEffect(() => {
@@ -34,6 +42,7 @@ export default function AiLearningSettings() {
       return;
     }
     setStats(data);
+    setCached("aiLearning", data);
   }
 
   if (!stats) {
