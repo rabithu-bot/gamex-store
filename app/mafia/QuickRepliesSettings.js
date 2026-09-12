@@ -42,9 +42,21 @@ export default function QuickRepliesSettings() {
     fetchReplies();
   }
 
+  // Removes it from the list immediately instead of waiting for the
+  // DELETE round-trip and a full refetch — previously this button gave no
+  // feedback at all until both finished. Puts it back if the request
+  // actually fails.
   async function handleDelete(id) {
-    await fetch(`/api/admin/quick-replies/${id}`, { method: "DELETE" });
-    fetchReplies();
+    setError("");
+    const prevReplies = replies;
+    setReplies((r) => r?.filter((x) => x.id !== id));
+    try {
+      const res = await fetch(`/api/admin/quick-replies/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+    } catch {
+      setReplies(prevReplies);
+      setError("Couldn't delete that reply — try again.");
+    }
   }
 
   return (

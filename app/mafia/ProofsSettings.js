@@ -77,9 +77,19 @@ export default function ProofsSettings() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  // Removes it from the grid immediately instead of waiting for the
+  // DELETE round-trip and a full refetch. Puts it back (with an error) if
+  // the request actually fails.
   async function handleDelete(id) {
-    await fetch(`/api/admin/proofs/${id}`, { method: "DELETE" });
-    fetchProofs();
+    const prevProofs = proofs;
+    setProofs((p) => p?.filter((x) => x.id !== id));
+    try {
+      const res = await fetch(`/api/admin/proofs/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+    } catch {
+      setProofs(prevProofs);
+      setError("Couldn't delete that proof — try again.");
+    }
   }
 
   return (

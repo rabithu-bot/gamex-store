@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
@@ -29,6 +29,16 @@ function ProofThumb({ src, orderId, onZoom }) {
   );
 }
 
+// Same reasoning as ListingAvailabilityToggle's memo — every poll tick
+// hands this a freshly-parsed src string, but the src value itself rarely
+// changes. onZoom's identity is deliberately ignored: if src/orderId are
+// the same, it opens the same image regardless of which render's closure
+// it came from.
+const MemoProofThumb = memo(
+  ProofThumb,
+  (prev, next) => prev.src === next.src && prev.orderId === next.orderId
+);
+
 const FILTERS = ["all", "pending_verification", "pending"];
 const FILTER_LABELS = {
   all: "All",
@@ -55,12 +65,41 @@ export default function OrdersPanel() {
   // panel already uses (messages 4s, listings 5s, stats 6s).
   useVisiblePolling(fetchOrders, 5000);
 
+  // Optimistic: flips this order's status (and, for a confirm, its
+  // listing to "sold" — mirrors what confirmOrder() actually does
+  // server-side) immediately instead of waiting for the POST to finish
+  // and then re-fetching the entire orders list. Rolls back to the exact
+  // prior array if the request fails.
   async function handleAction(orderId, action) {
+    const prevOrders = orders;
+    const nextStatus = action === "confirm" ? "confirmed" : "declined";
     setBusyId(orderId);
-    await fetch(`/api/admin/orders/${orderId}/${action}`, { method: "POST" });
-    await fetchOrders();
-    setBusyId(null);
+    setOrders((prev) =>
+      prev?.map((o) => {
+        if (o.id !== orderId) return o;
+        const patched = { ...o, status: nextStatus };
+        if (action === "confirm" && o.listing) patched.listing = { ...o.listing, status: "sold" };
+        return patched;
+      })
+    );
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/${action}`, { method: "POST" });
+      if (!res.ok) throw new Error("action failed");
+    } catch {
+      setOrders(prevOrders);
+    } finally {
+      setBusyId(null);
+    }
   }
+
+  // Patches the matching order(s) in local state — no refetch. The
+  // background poll (useVisiblePolling above) is what reconciles anything
+  // this misses (e.g. a second admin toggling the same listing elsewhere).
+  const patchListingStatus = useCallback((listingId, status) => {
+    setOrders((prev) =>
+      prev?.map((o) => (o.listing?.id === listingId ? { ...o, listing: { ...o.listing, status } } : o))
+    );
+  }, []);
 
   const counts = useMemo(() => {
     const base = { all: orders?.length || 0 };
@@ -143,7 +182,7 @@ export default function OrdersPanel() {
                   <div className="muted">₹{order.listingPrice.toLocaleString("en-IN")}</div>
                 </td>
                 <td>
-                  <ProofThumb
+                  <MemoProofThumb
                     src={order.screenshotPath}
                     orderId={order.id}
                     onZoom={() => setZoomedProof(order.screenshotPath)}
@@ -180,7 +219,7 @@ export default function OrdersPanel() {
 
                   {order.status === "confirmed" && (
                     order.listing ? (
-                      <ListingAvailabilityToggle listing={order.listing} onChanged={fetchOrders} />
+                      <ListingAvailabilityToggle listing={order.listing} onChanged={patchListingStatus} />
                     ) : (
                       <span className="muted">Listing deleted</span>
                     )
