@@ -17,6 +17,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "Video must be under 50MB" }, { status: 400 });
   }
 
-  const { uploadUrl, fields } = getProofVideoUploadUrl(fileName);
-  return NextResponse.json({ uploadUrl, fields });
+  try {
+    const { uploadUrl, fields } = getProofVideoUploadUrl(fileName);
+    return NextResponse.json({ uploadUrl, fields });
+  } catch (err) {
+    console.error("Proof video-url mint failed:", err);
+    return NextResponse.json({ error: err.message || "Couldn't start the upload" }, { status: 500 });
+  }
 }

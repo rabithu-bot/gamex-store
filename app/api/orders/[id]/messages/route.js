@@ -105,7 +105,12 @@ export async function POST(request, { params }) {
     attachmentPath = String(preUploadedUrl);
     attachmentType = preUploadedType === "video" ? "video" : "image";
   } else if (hasAttachment) {
-    attachmentPath = await saveMessageAttachment(attachment);
+    try {
+      attachmentPath = await saveMessageAttachment(attachment);
+    } catch (err) {
+      console.error("Buyer chat attachment upload failed:", err);
+      return NextResponse.json({ error: err.message || "Attachment upload failed" }, { status: 500 });
+    }
     // Voice notes are recorded client-side and uploaded with a real audio
     // MIME type; anything else with an attachment keeps the pre-existing
     // image behavior.

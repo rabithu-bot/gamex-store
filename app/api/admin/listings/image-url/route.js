@@ -19,6 +19,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "Image must be under 20MB" }, { status: 400 });
   }
 
-  const { uploadUrl, fields } = getListingImageUploadUrl(fileName);
-  return NextResponse.json({ uploadUrl, fields });
+  try {
+    const { uploadUrl, fields } = getListingImageUploadUrl(fileName);
+    return NextResponse.json({ uploadUrl, fields });
+  } catch (err) {
+    console.error("Listing image-url mint failed:", err);
+    return NextResponse.json({ error: err.message || "Couldn't start the upload" }, { status: 500 });
+  }
 }

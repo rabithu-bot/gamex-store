@@ -81,7 +81,16 @@ export async function POST(request, { params }) {
     }
   }
 
-  const screenshotPath = await savePaymentScreenshot(screenshot);
+  let screenshotPath;
+  try {
+    screenshotPath = await savePaymentScreenshot(screenshot);
+  } catch (err) {
+    console.error("Payment screenshot upload failed:", err);
+    return NextResponse.json(
+      { error: "Couldn't upload your screenshot right now — please try again in a moment." },
+      { status: 500 }
+    );
+  }
 
   await prisma.order.update({
     where: { id: orderId },

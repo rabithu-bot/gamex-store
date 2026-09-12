@@ -44,7 +44,13 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const url = preUploadedVideoUrl ? String(preUploadedVideoUrl) : await saveProofImage(file);
+  let url;
+  try {
+    url = preUploadedVideoUrl ? String(preUploadedVideoUrl) : await saveProofImage(file);
+  } catch (err) {
+    console.error("Proof image upload failed:", err);
+    return NextResponse.json({ error: err.message || "Upload failed" }, { status: 500 });
+  }
   const type = preUploadedVideoUrl ? "video" : "image";
   const proof = await prisma.proofImage.create({ data: { url, type, proofDate } });
   return NextResponse.json(proof);

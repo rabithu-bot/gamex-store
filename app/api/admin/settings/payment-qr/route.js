@@ -14,7 +14,17 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Please choose a QR image" }, { status: 400 });
   }
 
-  const url = await savePaymentQr(file);
+  let url;
+  try {
+    url = await savePaymentQr(file);
+  } catch (err) {
+    // Without this, an upload-side failure (e.g. Cloudinary env vars not
+    // set in this environment yet) bubbled up as a bare 500 with no body —
+    // real cause visible in server logs, invisible to whoever's staring at
+    // the admin panel.
+    console.error("Payment QR upload failed:", err);
+    return NextResponse.json({ error: err.message || "Upload failed" }, { status: 500 });
+  }
   if (!url) {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }

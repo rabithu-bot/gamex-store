@@ -19,6 +19,21 @@ function uploadEndpoint() {
   return `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 }
 
+// Without this, a missing env var silently builds a malformed URL
+// (".../v1_1/undefined/auto/upload"), Cloudinary rejects it, and the
+// resulting error is confusing to whoever's debugging it. Fails loudly
+// and specifically instead — this is almost always what's wrong when an
+// upload route 500s right after a fresh deploy that didn't get the env
+// vars set in Vercel yet.
+function assertConfigured() {
+  const missing = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].filter(
+    (name) => !process.env[name]
+  );
+  if (missing.length) {
+    throw new Error(`Cloudinary is not configured — missing ${missing.join(", ")}`);
+  }
+}
+
 // Cloudinary's signature scheme: sha1 of the to-be-signed params as a
 // sorted "k=v&k=v" string with api_secret appended. Empty/undefined values
 // are dropped (Cloudinary does the same), and the exact same set must be
@@ -54,6 +69,7 @@ function keyToTarget(key) {
 // attachments, TTS audio). Returns the permanent secure_url string, same
 // contract the old S3 uploadBuffer had.
 export async function uploadBuffer(key, buffer, contentType) {
+  assertConfigured();
   const { folder, publicId } = keyToTarget(key);
   const timestamp = Math.floor(Date.now() / 1000);
   const signed = sendableParams({ folder, public_id: publicId, timestamp });
@@ -81,6 +97,7 @@ export async function uploadBuffer(key, buffer, contentType) {
 // multipart { file, ...fields } to uploadUrl and reads `secure_url` from
 // the JSON response.
 export function getSignedUploadParams(folder, fileName) {
+  assertConfigured();
   const base =
     String(fileName || "")
       .replace(/\.[^.]+$/, "")
