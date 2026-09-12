@@ -239,13 +239,21 @@ export default function ChatThread({ orderId }) {
       setEditingMessageId(null);
       setReplyText("");
       setSending(true);
-      await fetch(`/api/admin/orders/${order.id}/messages/${idToEdit}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: trimmed }),
-      });
-      await fetchOrder();
-      setSending(false);
+      // try/catch/finally, same reasoning as the normal send path below —
+      // without it a dropped connection mid-edit left `sending` stuck true
+      // forever, permanently disabling Send until a full page reload.
+      try {
+        await fetch(`/api/admin/orders/${order.id}/messages/${idToEdit}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: trimmed }),
+        });
+        await fetchOrder();
+      } catch {
+        setAttachmentError("Couldn't save that edit — check your connection and try again.");
+      } finally {
+        setSending(false);
+      }
       return;
     }
 
@@ -550,8 +558,18 @@ export default function ChatThread({ orderId }) {
 
   async function confirmDeleteConversation() {
     if (!order) return;
-    await fetch(`/api/admin/orders/${order.id}/messages`, { method: "DELETE" });
-    window.location.href = "/mafia/messages";
+    // try/catch — the confirm dialog is already closed by the time this
+    // runs, so a failed/rejected DELETE used to leave the admin on this
+    // page with zero feedback: no redirect, no error, no sign anything
+    // went wrong. Mirrors the same hardening CustomerChatThread.js already
+    // has for this exact flow.
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/messages`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+      window.location.href = "/mafia/messages";
+    } catch {
+      alert("Failed to delete this conversation. Please check your connection and try again.");
+    }
   }
 
   if (notFound) {

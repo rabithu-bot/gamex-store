@@ -34,20 +34,27 @@ export default function QuickRepliesSettings() {
     if (!newText.trim() || !newKeyword.trim() || (replies && replies.length >= MAX_QUICK_REPLIES) || saving) return;
     setError("");
     setSaving(true);
-    const res = await fetch("/api/admin/quick-replies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: newText.trim(), keyword: newKeyword.trim() }),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Couldn't save that reply");
-      return;
+    // try/catch/finally — without it, a dropped connection left `saving`
+    // stuck true forever, permanently disabling this add button.
+    try {
+      const res = await fetch("/api/admin/quick-replies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newText.trim(), keyword: newKeyword.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Couldn't save that reply");
+        return;
+      }
+      setNewKeyword("");
+      setNewText("");
+      fetchReplies();
+    } catch {
+      setError("Couldn't save that reply — try again.");
+    } finally {
+      setSaving(false);
     }
-    setNewKeyword("");
-    setNewText("");
-    fetchReplies();
   }
 
   // Removes it from the list immediately instead of waiting for the

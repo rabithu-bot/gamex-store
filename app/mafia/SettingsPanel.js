@@ -49,17 +49,25 @@ export default function SettingsPanel() {
     const formData = new FormData();
     formData.set("qr", file);
 
-    const res = await fetch("/api/admin/settings/payment-qr", { method: "PATCH", body: formData });
-    setSubmitting(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Something went wrong");
-      return;
+    // try/catch/finally — without it, a dropped connection during the
+    // upload left `submitting` stuck true forever, permanently disabling
+    // this button and stranding it on "Uploading..." until a page reload.
+    try {
+      const res = await fetch("/api/admin/settings/payment-qr", { method: "PATCH", body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Something went wrong");
+        return;
+      }
+      setFile(null);
+      e.target.reset();
+      setSaved(true);
+      fetchQr();
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setFile(null);
-    e.target.reset();
-    setSaved(true);
-    fetchQr();
   }
 
   return (

@@ -15,7 +15,7 @@
   --accent-soft: rgba(217, 119, 6, 0.16);
   --accent-cyan: #00f0ff; /* Cyber Cyan — secondary highlight/focus glow */
   --accent-cyan-soft: rgba(0, 240, 255, 0.16);
-  --accent-gold: #ffb800; /* Legend Gold — top-tier rarity only */
+  --accent-gold: #ffb800; /* Legend Gold — top-tier rarity, and the price everywhere it's shown */
   --accent-gold-soft: rgba(255, 184, 0, 0.16);
 }
 
@@ -778,8 +778,10 @@ select:focus-visible {
 .price {
   font-weight: 700;
   font-size: 1.1rem;
-  color: #39ff8a;
-  text-shadow: 0 0 10px rgba(57, 255, 138, 0.55);
+  /* var(--accent-gold), not the old neon green — money should read as
+     valuable/premium, the same visual language as top-tier rarity. */
+  color: var(--accent-gold);
+  text-shadow: 0 0 10px rgba(255, 184, 0, 0.55);
 }
 
 .price-sold {
@@ -4748,7 +4750,7 @@ select:focus-visible {
 
 .mobile-tab.active {
   opacity: 1;
-  color: #c4b5fd;
+  color: var(--accent);
 }
 
 .mobile-tab:active {

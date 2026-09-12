@@ -79,16 +79,21 @@ export default function MessagesPanel() {
     e.preventDefault();
     if (!nameInput.trim() || savingName) return;
     setSavingName(true);
-    const res = await fetch("/api/admin/settings/support-name", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: nameInput.trim() }),
-    });
-    if (res.ok) {
-      setSupportName((await res.json()).name);
-      setEditingName(false);
+    // try/finally — without it, a dropped connection left `savingName`
+    // stuck true forever, permanently disabling the save button.
+    try {
+      const res = await fetch("/api/admin/settings/support-name", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameInput.trim() }),
+      });
+      if (res.ok) {
+        setSupportName((await res.json()).name);
+        setEditingName(false);
+      }
+    } finally {
+      setSavingName(false);
     }
-    setSavingName(false);
   }
 
   // Groups every order from the same buyer (their persistent

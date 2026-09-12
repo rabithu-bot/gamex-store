@@ -31,21 +31,28 @@ export default function DealsCounterSettings() {
     setSaved(false);
     setSubmitting(true);
 
-    const res = await fetch("/api/admin/settings/manual-deals-baseline", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ value: rawValue.trim() === "" ? null : Number(rawValue.trim()) }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSubmitting(false);
-    if (!res.ok) {
-      setError(data.error || "Something went wrong");
-      return;
+    // try/catch/finally — without it, a dropped connection left
+    // `submitting` stuck true forever, permanently disabling Save/Clear.
+    try {
+      const res = await fetch("/api/admin/settings/manual-deals-baseline", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: rawValue.trim() === "" ? null : Number(rawValue.trim()) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        return;
+      }
+      setManualDeals(data.manual);
+      setAutoDeals(data.auto);
+      setDealsInput(data.manual === null ? "" : String(data.manual));
+      setSaved(true);
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setManualDeals(data.manual);
-    setAutoDeals(data.auto);
-    setDealsInput(data.manual === null ? "" : String(data.manual));
-    setSaved(true);
   }
 
   function handleSubmit(e) {

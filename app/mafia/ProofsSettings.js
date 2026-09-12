@@ -51,31 +51,43 @@ export default function ProofsSettings() {
       const formData = new FormData();
       if (batchDate) formData.set("proofDate", batchDate);
 
-      if (isVideoFile(file)) {
-        const result = await uploadVideoAttachment("/api/admin/proofs/video-url", file);
-        if (!result.ok) {
+      // try/catch around each file — without it, a dropped connection
+      // mid-upload threw past the cleanup below, leaving `uploading` stuck
+      // true forever and the submit button permanently disabled.
+      try {
+        if (isVideoFile(file)) {
+          const result = await uploadVideoAttachment("/api/admin/proofs/video-url", file);
+          if (!result.ok) {
+            setError(
+              files.length > 1 ? `Stopped after ${i} of ${files.length} — ${result.error}` : result.error
+            );
+            break;
+          }
+          formData.set("videoUrl", result.publicUrl);
+        } else {
+          formData.set("image", file);
+        }
+
+        const res = await fetch("/api/admin/proofs", { method: "POST", body: formData });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
           setError(
-            files.length > 1 ? `Stopped after ${i} of ${files.length} — ${result.error}` : result.error
+            files.length > 1
+              ? `Stopped after ${i} of ${files.length} — ${data.error || "upload failed"}`
+              : data.error || "Couldn't upload that file"
           );
           break;
         }
-        formData.set("videoUrl", result.publicUrl);
-      } else {
-        formData.set("image", file);
-      }
-
-      const res = await fetch("/api/admin/proofs", { method: "POST", body: formData });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        setProgress({ done: i + 1, total: files.length });
+        fetchProofs();
+      } catch {
         setError(
           files.length > 1
-            ? `Stopped after ${i} of ${files.length} — ${data.error || "upload failed"}`
-            : data.error || "Couldn't upload that file"
+            ? `Stopped after ${i} of ${files.length} — network error, please try again`
+            : "Network error — please try again"
         );
         break;
       }
-      setProgress({ done: i + 1, total: files.length });
-      fetchProofs();
     }
 
     setUploading(false);

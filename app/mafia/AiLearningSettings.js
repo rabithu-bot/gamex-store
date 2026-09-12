@@ -30,19 +30,26 @@ export default function AiLearningSettings() {
   async function toggle(enabled) {
     setBusy(true);
     setError("");
-    const res = await fetch("/api/admin/ai-learning/toggle", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) {
-      setError(data.error || "Couldn't update this");
-      return;
+    // try/catch/finally — without it, a dropped connection left `busy`
+    // stuck true forever, permanently disabling this toggle switch.
+    try {
+      const res = await fetch("/api/admin/ai-learning/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Couldn't update this");
+        return;
+      }
+      setStats(data);
+      setCached("aiLearning", data);
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setStats(data);
-    setCached("aiLearning", data);
   }
 
   if (!stats) {

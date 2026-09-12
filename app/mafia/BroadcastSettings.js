@@ -43,24 +43,31 @@ export default function BroadcastSettings() {
   async function handleConfirmSend() {
     setConfirmOpen(false);
     setSending(true);
-    const res = await fetch("/api/admin/broadcast", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim(),
-        message: message.trim(),
-        url: url.trim(),
-        image: image.trim(),
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSending(false);
-    if (!res.ok) {
-      setError(data.error || "Couldn't send the broadcast");
-      return;
+    // try/catch/finally — without it, a dropped connection left `sending`
+    // stuck true forever, permanently disabling the Send Broadcast button.
+    try {
+      const res = await fetch("/api/admin/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          message: message.trim(),
+          url: url.trim(),
+          image: image.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Couldn't send the broadcast");
+        return;
+      }
+      setResult(data);
+      loadSubscriberCount();
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setSending(false);
     }
-    setResult(data);
-    loadSubscriberCount();
   }
 
   return (

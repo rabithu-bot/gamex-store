@@ -287,13 +287,29 @@ export default function SupportChat({
 
     if (editingMessageId) {
       const trimmed = text.trim();
-      if (!trimmed || sending) return;
+      // Clearing the box while editing and hitting Send used to silently
+      // no-op — the button stayed enabled but did nothing, with no
+      // feedback and no way to tell an empty submit was even rejected.
+      // Treating it as "cancel the edit" instead gives it real behavior.
+      if (!trimmed) {
+        cancelEdit();
+        return;
+      }
+      if (sending) return;
       const idToEdit = editingMessageId;
       setEditingMessageId(null);
       setText("");
       setSending(true);
-      await onEditMessage(idToEdit, trimmed);
-      setSending(false);
+      // try/finally — without this, a dropped connection mid-edit left
+      // `sending` stuck true forever and the Send button permanently dead
+      // until a full page reload.
+      try {
+        await onEditMessage(idToEdit, trimmed);
+      } catch {
+        setAttachmentError("Couldn't save that edit — check your connection and try again.");
+      } finally {
+        setSending(false);
+      }
       return;
     }
 
@@ -306,32 +322,43 @@ export default function SupportChat({
     setAttachmentError("");
     setSending(true);
 
-    if (isVideoFile(attachment)) {
-      const result = await uploadVideoAttachment(`/api/orders/${orderId}/messages/video-url`, attachment);
-      if (!result.ok) {
-        setAttachmentError(result.error);
-        setSending(false);
-        return;
+    try {
+      if (isVideoFile(attachment)) {
+        const result = await uploadVideoAttachment(`/api/orders/${orderId}/messages/video-url`, attachment);
+        if (!result.ok) {
+          setAttachmentError(result.error);
+          return;
+        }
+        await onSend(text.trim(), null, { file: attachment, publicUrl: result.publicUrl });
+      } else {
+        await onSend(text.trim(), attachment);
       }
-      await onSend(text.trim(), null, { file: attachment, publicUrl: result.publicUrl });
-    } else {
-      await onSend(text.trim(), attachment);
-    }
 
-    setText("");
-    setFile(null);
-    setAudioBlob(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setSending(false);
-    checkAndPromptNotifications();
+      setText("");
+      setFile(null);
+      setAudioBlob(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      checkAndPromptNotifications();
+    } catch {
+      setAttachmentError("Couldn't send. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function handleSaveName(e) {
     e.preventDefault();
     if (!nameInput.trim() || savingName) return;
     setSavingName(true);
-    await onSaveName(nameInput.trim());
-    setSavingName(false);
+    // try/finally — without this, a dropped connection left `savingName`
+    // stuck true forever, permanently disabling the Continue button and
+    // locking the buyer out of the entire chat (this name-gate form stands
+    // in for the whole page until buyerName is set).
+    try {
+      await onSaveName(nameInput.trim());
+    } finally {
+      setSavingName(false);
+    }
   }
 
   if (!buyerName) {

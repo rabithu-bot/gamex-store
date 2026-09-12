@@ -230,13 +230,21 @@ export default function CustomerChatThread({ sessionId }) {
       setEditingMessage(null);
       setReplyText("");
       setSending(true);
-      await fetch(`/api/admin/orders/${editOrderId}/messages/${idToEdit}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: trimmed }),
-      });
-      await fetchData();
-      setSending(false);
+      // try/catch/finally, same reasoning as the normal send path below —
+      // without it a dropped connection mid-edit left `sending` stuck true
+      // forever, permanently disabling Send until a full page reload.
+      try {
+        await fetch(`/api/admin/orders/${editOrderId}/messages/${idToEdit}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: trimmed }),
+        });
+        await fetchData();
+      } catch {
+        setAttachmentError("Couldn't save that edit — check your connection and try again.");
+      } finally {
+        setSending(false);
+      }
       return;
     }
 
