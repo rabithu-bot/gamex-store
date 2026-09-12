@@ -12,6 +12,22 @@ import ImageGallery from "./ImageGallery";
 // purchase time regardless of what this page last rendered).
 export const revalidate = 10;
 
+// Without this, a dynamic segment ([id]) with no known param list gets
+// rendered fully per-request by Vercel regardless of `revalidate` above —
+// confirmed live: every hit came back `X-Vercel-Cache: MISS`, meaning the
+// DB round-trip was still happening on every single product page view.
+// Seeding the real listing ids here is what actually turns "revalidate"
+// into real ISR caching for this route; dynamicParams (default: true)
+// still covers any id not in this list (e.g. one added after the last
+// build) by rendering + caching it on its own first request.
+export async function generateStaticParams() {
+  const listings = await prisma.listing.findMany({
+    where: { status: { not: "draft" } },
+    select: { id: true },
+  });
+  return listings.map((l) => ({ id: String(l.id) }));
+}
+
 const SIMILAR_LIMIT = 8;
 
 // Without this, every product page would inherit the homepage's title/

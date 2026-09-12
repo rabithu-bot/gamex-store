@@ -141,19 +141,26 @@ export default function ListingsPanel() {
     const id = deleteTargetId;
     setDeleteTargetId(null);
     setDeleteError("");
+    // Optimistic: removes the row immediately instead of waiting on the
+    // DELETE round-trip and a full refetch — puts it back (with an error)
+    // if the request actually fails, same pattern as Proofs/Quick Replies.
+    const prevListings = listings;
+    const nextListings = listings?.filter((l) => l.id !== id);
+    setListings(nextListings);
+    setCached("listings", nextListings);
     try {
       const res = await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
-      // Previously the response was ignored entirely, so a failed delete
-      // looked identical to a successful one — the row just reappeared on
-      // the next refetch with no explanation.
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setDeleteError(data.error || "Couldn't delete that listing.");
+        setListings(prevListings);
+        setCached("listings", prevListings);
       }
     } catch {
       setDeleteError("Couldn't delete that listing — check your connection.");
+      setListings(prevListings);
+      setCached("listings", prevListings);
     }
-    fetchListings();
   }
 
   return (
