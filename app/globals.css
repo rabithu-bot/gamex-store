@@ -966,32 +966,32 @@ select:focus-visible {
   background: #ffffff;
 }
 
-/* "I've paid" — the one action this whole page exists for, so it gets
-   the same gold-foil treatment as the storefront's Buy Now button
-   (see .btn-buy-now), full-width and larger since it's the last step. */
+/* "I've paid" — the one action this whole page exists for. Solid white,
+   not the gold-foil treatment .btn-buy-now uses elsewhere: at this exact
+   step the loud amber glow read as harsh rather than premium, so this one
+   button breaks from that pattern on purpose — crisp white/black instead,
+   with a soft white glow on hover rather than a colored one. */
 .payment-submit-cta {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   margin-top: 1rem;
-  padding: 0.9rem 1.5rem;
-  border-radius: 999px;
+  padding: 1rem 1.5rem;
+  border-radius: 14px;
   border: none;
   font-weight: 700;
   font-size: 1.05rem;
-  color: #3a2405;
+  color: #000000;
   cursor: pointer;
   touch-action: manipulation;
-  background: linear-gradient(90deg, #92600a, #f5c344 35%, #fff3c4 50%, #f5c344 65%, #92600a);
-  background-size: 220% 100%;
-  box-shadow: 0 0 22px rgba(217, 158, 6, 0.5), 0 0 0 1px rgba(255, 244, 214, 0.4) inset;
-  transition: transform 0.12s ease, filter 0.15s ease;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 .payment-submit-cta:hover {
-  filter: brightness(1.08);
-  background-position: 100% 0;
+  box-shadow: 0 6px 26px rgba(255, 255, 255, 0.24);
 }
 
 .payment-submit-cta:active {
@@ -999,7 +999,7 @@ select:focus-visible {
 }
 
 .payment-submit-cta:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -1071,31 +1071,38 @@ select:focus-visible {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 50px rgba(217, 158, 6, 0.12);
 }
 
-.payable-badge-row {
+/* Stacked, not a single pill — a small gold "Total Payable" tag sitting
+   above a large solid-white amount reads as a clean price display
+   instead of the previous low-opacity gold-on-gold pill, which came out
+   looking like a dull brown outline rather than a crisp accent. */
+.payable-summary {
   display: flex;
-  justify-content: center;
-  margin: 0.75rem 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.75rem 0 1rem;
 }
 
-.payable-badge {
+.payable-summary-label {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.55rem 1.25rem;
+  padding: 0.3rem 0.85rem;
   border-radius: 999px;
   background: var(--accent-soft);
-  border: 1px solid rgba(217, 158, 6, 0.3);
-  color: #f0c869;
+  border: 1px solid rgba(217, 158, 6, 0.4);
+  color: var(--accent);
+  font-size: 0.68rem;
   font-weight: 700;
-  font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.payable-badge span:first-child {
-  font-size: 0.7rem;
-  font-weight: 600;
-  opacity: 0.85;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.payable-summary-amount {
+  font-family: var(--font-display), var(--font-geist-sans);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -0.01em;
 }
 
 .status-pill {

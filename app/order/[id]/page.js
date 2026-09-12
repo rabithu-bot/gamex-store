@@ -208,12 +208,9 @@ export default function OrderPage() {
 
         {PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="checkout-panel">
-            <h3>1. Pay via UPI</h3>
-            <div className="payable-badge-row">
-              <span className="payable-badge">
-                <span>Total Payable</span>
-                <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
-              </span>
+            <div className="payable-summary">
+              <span className="payable-summary-label">Total Payable</span>
+              <span className="payable-summary-amount">₹{order.listing.price.toLocaleString("en-IN")}</span>
             </div>
             {qrUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -230,7 +227,7 @@ export default function OrderPage() {
               />
             )}
 
-            <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
+            <h3 style={{ marginTop: "1.5rem" }}>Confirm your payment</h3>
             <form onSubmit={handleSubmitProof}>
               {order.status === "declined" && (
                 <p className="error-text" style={{ marginBottom: "0.75rem" }}>

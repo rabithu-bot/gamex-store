@@ -149,8 +149,6 @@ export default async function HomePage() {
           </section>
         ))}
 
-        <TelegramBanner />
-
         {/* Catalog-first layout — the SEO header/keyword text moved from
             the top (where it used to be the first thing on the page,
             before any actual products) down here, so the product grid is
@@ -162,6 +160,8 @@ export default async function HomePage() {
             Max Level IDs, Evo &amp; Cobra gun accounts — verified, instant delivery, sold directly by the store owner.
           </p>
         </section>
+
+        <TelegramBanner />
       </main>
       <Footer />
     </>
