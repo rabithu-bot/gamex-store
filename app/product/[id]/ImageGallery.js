@@ -26,8 +26,12 @@ export default function ImageGallery({ images, alt }) {
   const skipNextThumbScroll = useRef(true);
 
 
+  // Strict boundaries — no wraparound, matching the fullscreen Lightbox
+  // (which reads this same `active` index). Clamped, and a no-op past
+  // either end instead of silently jumping to the other side.
   function goTo(rawIndex, dir) {
-    const newIndex = ((rawIndex % gallery.length) + gallery.length) % gallery.length;
+    const newIndex = Math.min(gallery.length - 1, Math.max(0, rawIndex));
+    if (newIndex === active) return;
     setDirection(dir ?? (newIndex > active ? 1 : -1));
     setActive(newIndex);
   }
@@ -125,28 +129,32 @@ export default function ImageGallery({ images, alt }) {
         </div>
         {gallery.length > 1 && (
           <>
-            <button
-              type="button"
-              className="gallery-nav prev"
-              aria-label="Previous photo"
-              onClick={(e) => {
-                e.stopPropagation();
-                goTo(active - 1, -1);
-              }}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              className="gallery-nav next"
-              aria-label="Next photo"
-              onClick={(e) => {
-                e.stopPropagation();
-                goTo(active + 1, 1);
-              }}
-            >
-              <ChevronRight size={20} />
-            </button>
+            {active > 0 && (
+              <button
+                type="button"
+                className="gallery-nav prev"
+                aria-label="Previous photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(active - 1, -1);
+                }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
+            {active < gallery.length - 1 && (
+              <button
+                type="button"
+                className="gallery-nav next"
+                aria-label="Next photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(active + 1, 1);
+                }}
+              >
+                <ChevronRight size={20} />
+              </button>
+            )}
             <span className="gallery-counter">
               {active + 1} / {gallery.length}
             </span>

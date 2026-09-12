@@ -772,6 +772,15 @@ select:focus-visible {
   text-shadow: 0 0 10px rgba(255, 184, 0, 0.55);
 }
 
+/* The order page's own price display — deliberately plain, not gold: an
+   order confirmation is functional (this is what you paid), not a
+   storefront listing selling on "premium" framing. */
+.order-summary-price {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--foreground);
+}
+
 .price-sold {
   color: #ff3b5c;
   text-decoration: line-through;
@@ -1934,39 +1943,29 @@ select:focus-visible {
   opacity: 0.65;
 }
 
+/* Deliberately neutral (no accent color) — this tracker sits on every
+   order-flow screen, and a colored/glowing progress bar read as louder
+   than the page around it. State is carried by fill/weight, not hue. */
 .order-step.done .dot {
-  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  background: var(--foreground);
   border-color: transparent;
-  color: white;
-  box-shadow: 0 0 12px rgba(217, 158, 6, 0.6);
+  color: var(--background);
 }
 
 .order-step.done .line {
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(217, 158, 6, 0.6);
+  background: var(--foreground);
+  opacity: 0.4;
 }
 
 .order-step.current .dot {
-  border-color: var(--accent);
-  color: #f0c869;
-  animation: order-step-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes order-step-pulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(217, 158, 6, 0.45); }
-  50% { box-shadow: 0 0 16px rgba(217, 158, 6, 0.85); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .order-step.current .dot {
-    animation: none;
-  }
+  border-color: var(--foreground);
+  color: var(--foreground);
 }
 
 .order-step.current span {
   opacity: 1;
   font-weight: 600;
-  color: #f0c869;
+  color: var(--foreground);
 }
 
 .order-step.error .dot {
@@ -3014,13 +3013,18 @@ select:focus-visible {
   border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.6);
-  cursor: default;
-  animation: lightbox-zoom-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /* Pinch/pan/wheel-zoom set an inline transform on this element via JS —
+     the entrance animation below only touches opacity so the two never
+     fight over the transform property. touch-action: none hands pinch and
+     one-finger drag entirely to our own handlers instead of the browser's
+     native page-zoom/scroll gestures. */
+  touch-action: none;
+  animation: lightbox-fade-in-image 0.2s ease both;
 }
 
-@keyframes lightbox-zoom-in {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+@keyframes lightbox-fade-in-image {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .lightbox-close {

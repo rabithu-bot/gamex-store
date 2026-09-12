@@ -220,7 +220,7 @@ export default function OrderPage() {
       <main className="container" style={{ maxWidth: 560 }}>
         <h1>Order #{order.id}</h1>
         <p className="muted">{order.listing.title}</p>
-        <p className="price">₹{order.listing.price.toLocaleString("en-IN")}</p>
+        <p className="order-summary-price">₹{order.listing.price.toLocaleString("en-IN")}</p>
 
         <OrderSteps status={order.status} hasProof={order.proofSubmitted} />
 
@@ -358,7 +358,7 @@ export default function OrderPage() {
         )}
 
         <div className="panel support-cta-panel">
-          <Link href={`/order/${order.id}/support`} className="btn support-cta-btn">
+          <Link href={`/order/${order.id}/support`} className="btn secondary support-cta-btn">
             <MessageCircle size={18} />
             Contact Support
           </Link>
