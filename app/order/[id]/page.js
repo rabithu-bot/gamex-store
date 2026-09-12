@@ -17,14 +17,13 @@ import { useOrderPoll } from "./useOrderPoll";
 // pending_verification is deliberately excluded here — that status now has
 // its own dedicated /order/[id]/confirming page (see the redirect effect
 // below), so this page never needs to render a body for it.
-const PAYMENT_STEP_STATUSES = ["pending", "declined"];
-
-function formatCountdown(ms) {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
+//
+// "expired" is included too — the 5-minute window is a backend-only
+// safeguard now (see orderExpiry.js), with no visible countdown and no
+// blocking "session expired" screen. A buyer who's just a little slow
+// still sees the exact same payment form and can submit seamlessly;
+// /api/orders/[id]/submit-proof accepts it from this status too.
+const PAYMENT_STEP_STATUSES = ["pending", "declined", "expired"];
 
 export default function OrderPage() {
   const { id } = useParams();
@@ -40,17 +39,6 @@ export default function OrderPage() {
   // wrong, until the server has actually confirmed which one is current.
   // Renders a skeleton in its place until then (see the payment step below).
   const [qrUrl, setQrUrl] = useState(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  // Only the pending-payment countdown needs a per-second tick — once the
-  // order reaches any settled state there's nothing time-based left on
-  // screen, so keep re-rendering every second forever would be pure waste.
-  const needsCountdown = order?.status === "pending" && Boolean(order?.expiresAt);
-  useEffect(() => {
-    if (!needsCountdown) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [needsCountdown]);
 
   useEffect(() => {
     if (!screenshot) {
@@ -124,15 +112,6 @@ export default function OrderPage() {
       cancelled = true;
     };
   }, []);
-
-  // Ticks down locally so the buyer sees 00:00 the instant the window closes,
-  // instead of waiting up to 4s for the next poll to confirm the server-side
-  // expiry sweep already caught it.
-  const msRemaining =
-    order?.status === "pending" && order?.expiresAt
-      ? new Date(order.expiresAt).getTime() - now
-      : null;
-  const isExpired = order?.status === "expired" || (msRemaining !== null && msRemaining <= 0);
 
   async function handleSubmitProof(e) {
     e.preventDefault();
@@ -224,33 +203,15 @@ export default function OrderPage() {
 
         <OrderSteps status={order.status} hasProof={order.proofSubmitted} />
 
-        {isExpired && (
-          <div className="panel expired-notice">
-            <h3>Session Expired</h3>
-            <p className="muted">Please restart checkout if you wish to purchase.</p>
-            <Link href="/" className="btn" style={{ marginTop: "0.75rem", display: "inline-flex" }}>
-              Browse listings
-            </Link>
-          </div>
-        )}
-
-        {!isExpired && PAYMENT_STEP_STATUSES.includes(order.status) && (
+        {PAYMENT_STEP_STATUSES.includes(order.status) && (
           <div className="checkout-panel">
             <h3>1. Pay via UPI</h3>
-            {order.status === "pending" && msRemaining !== null && (
-              <p className="checkout-countdown">
-                Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
-              </p>
-            )}
             <div className="payable-badge-row">
               <span className="payable-badge">
                 <span>Total Payable</span>
                 <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
               </span>
             </div>
-            <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
-              Scan this QR with any UPI app, then enter the amount above yourself.
-            </p>
             {qrUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -267,10 +228,6 @@ export default function OrderPage() {
             )}
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
-            <span className="payment-upload-hint">
-              Upload your screenshot — our team verifies it within minutes, then your account
-              unlocks automatically.
-            </span>
             <form onSubmit={handleSubmitProof}>
               {order.status === "declined" && (
                 <p className="error-text" style={{ marginBottom: "0.75rem" }}>
@@ -290,7 +247,7 @@ export default function OrderPage() {
                 />
                 <label
                   htmlFor="screenshot"
-                  className={`file-upload-dropzone${screenshot ? " has-file" : ""}`}
+                  className={`file-upload-dropzone checkout-screenshot-dropzone${screenshot ? " has-file" : ""}`}
                 >
                   {screenshot ? (
                     <>
@@ -316,7 +273,7 @@ export default function OrderPage() {
                 </label>
               </div>
               {submitError && <p className="error-text">{submitError}</p>}
-              <button className="btn" type="submit" disabled={submitting}>
+              <button className="payment-submit-cta" type="submit" disabled={submitting}>
                 {submitting ? "Submitting..." : "I've paid"}
               </button>
             </form>

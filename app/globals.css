@@ -175,6 +175,12 @@ select:focus-visible {
   border-color: var(--accent);
 }
 
+.seo-footer-blurb {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
 .container {
   max-width: 1080px;
   width: 100%;
@@ -889,15 +895,6 @@ select:focus-visible {
 
 /* ---- Styled payment-screenshot uploader ---- */
 
-.payment-upload-hint {
-  display: block;
-  margin-top: 0.3rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #e879f9;
-}
-
 .file-upload-input {
   position: absolute;
   width: 1px;
@@ -942,6 +939,68 @@ select:focus-visible {
   background: rgba(74, 222, 128, 0.06);
   animation: none;
   box-shadow: none;
+}
+
+/* High-contrast variant for the customer checkout page specifically —
+   solid white with bold black text/icon, so it reads as the obvious next
+   action against the rest of the dark payment card. Layered on top of
+   .file-upload-dropzone (still shared with the two admin uploaders),
+   never changes the base rule those rely on. */
+.checkout-screenshot-dropzone {
+  background: #ffffff;
+  border: 2px solid #ffffff;
+  color: #000000;
+  padding: 1.1rem 1.25rem;
+}
+
+.checkout-screenshot-dropzone svg {
+  color: #000000;
+}
+
+.checkout-screenshot-dropzone .file-upload-text strong {
+  color: #000000;
+}
+
+.checkout-screenshot-dropzone.has-file {
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+/* "I've paid" — the one action this whole page exists for, so it gets
+   the same gold-foil treatment as the storefront's Buy Now button
+   (see .btn-buy-now), full-width and larger since it's the last step. */
+.payment-submit-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #3a2405;
+  cursor: pointer;
+  touch-action: manipulation;
+  background: linear-gradient(90deg, #92600a, #f5c344 35%, #fff3c4 50%, #f5c344 65%, #92600a);
+  background-size: 220% 100%;
+  box-shadow: 0 0 22px rgba(217, 158, 6, 0.5), 0 0 0 1px rgba(255, 244, 214, 0.4) inset;
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.payment-submit-cta:hover {
+  filter: brightness(1.08);
+  background-position: 100% 0;
+}
+
+.payment-submit-cta:active {
+  transform: scale(0.98);
+}
+
+.payment-submit-cta:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .file-upload-preview {
@@ -1076,18 +1135,6 @@ select:focus-visible {
   color: #94a3b8;
 }
 
-.checkout-countdown {
-  text-align: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 0.5rem 0;
-  color: #fbbf24;
-}
-
-.checkout-countdown strong {
-  font-variant-numeric: tabular-nums;
-}
-
 .expired-notice {
   text-align: center;
 }
@@ -1189,12 +1236,12 @@ select:focus-visible {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Amber against the box's green tint so the actual sensitive values pop
-   instead of blending into the surrounding monospace text. */
+/* Solid white, no color accent — these are the actual account
+   credentials, and the request was specifically to keep them crisp and
+   neutral rather than tinted. */
 .credentials-value {
-  color: #fbbf24;
+  color: #ffffff;
   font-weight: 700;
-  text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
 }
 
 .order-support-back {
@@ -2781,10 +2828,13 @@ select:focus-visible {
   font-size: 0.8rem;
 }
 
+/* Deliberately small/quiet — "I've paid" is the one action this page
+   wants you to take; Contact Support is an escape hatch, not a second
+   competing call to action. */
 .support-cta-btn {
-  min-width: 220px;
-  font-size: 0.95rem;
-  padding: 0.75rem 1.5rem;
+  min-width: 0;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.9rem;
 }
 
 .support-cta-panel {

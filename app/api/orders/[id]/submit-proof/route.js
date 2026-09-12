@@ -28,7 +28,12 @@ export async function POST(request, { params }) {
   }
   // "declined" is allowed back in here too — a decline just means the buyer
   // needs to attach a fresh screenshot, not that the order is dead.
-  if (order.status !== "pending" && order.status !== "declined") {
+  // "expired" is also allowed: the 5-minute window is a backend-only
+  // safeguard now (no visible countdown), so a screenshot that arrives a
+  // little late still gets accepted seamlessly and goes to manual review,
+  // rather than being rejected out from under a buyer who was genuinely
+  // paying, just slowly.
+  if (order.status !== "pending" && order.status !== "declined" && order.status !== "expired") {
     return NextResponse.json(
       { error: "This order is not awaiting payment proof" },
       { status: 400 }

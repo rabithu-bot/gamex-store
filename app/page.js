@@ -115,11 +115,6 @@ export default async function HomePage() {
       <TickerBar dealsCompleted={dealsCompleted} />
       <SiteHeader />
       <main className="container">
-        <h1>Buy Free Fire ID - Verified FF Accounts For Sale</h1>
-        <p className="muted">
-          Max Level IDs, Evo &amp; Cobra gun accounts — verified, instant delivery, sold directly by the store owner.
-        </p>
-
         {listings.length === 0 && (
           <div className="empty-state">
             <div className="icon">
@@ -154,6 +149,18 @@ export default async function HomePage() {
         ))}
 
         <TelegramBanner />
+
+        {/* Catalog-first layout — the SEO header/keyword text moved from
+            the top (where it used to be the first thing on the page,
+            before any actual products) down here, so the product grid is
+            what visitors see immediately on load. Still real, unique copy
+            for search engines; just no longer ahead of the products. */}
+        <section className="seo-footer-blurb">
+          <h1>Buy Free Fire ID - Verified FF Accounts For Sale</h1>
+          <p className="muted">
+            Max Level IDs, Evo &amp; Cobra gun accounts — verified, instant delivery, sold directly by the store owner.
+          </p>
+        </section>
       </main>
     </>
   );
