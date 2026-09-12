@@ -98,11 +98,7 @@ select:focus-visible {
 .site-header .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  font-family: var(--font-display), var(--font-geist-sans);
-  font-weight: 700;
-  font-size: 1.35rem;
-  letter-spacing: 0.02em;
+  gap: 0.5rem;
   color: var(--foreground);
   transition: filter 0.2s ease, transform 0.15s ease;
 }
@@ -115,21 +111,79 @@ select:focus-visible {
   transform: scale(0.98);
 }
 
-/* The logo glyph literally is the "X" shape, so the wordmark's own X gets
-   matching visual weight — a richer gradient plus a soft glow (filter, not
-   text-shadow, since text-shadow is invisible on a background-clip:text
-   transparent fill) rather than just a flat two-stop tint. */
-.site-header .brand-x {
-  font-size: 1.2em;
-  background: linear-gradient(135deg, #e9defc 5%, #c4b5fd 35%, #8b5cf6 70%, #7c3aed);
+.brand-icon {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.brand-gamepad {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.brand-word {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-gamex {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-logo), var(--font-display), var(--font-geist-sans);
+  font-size: 1.4rem;
+  letter-spacing: 0.01em;
+}
+
+/* Metallic chrome — multi-stop gradient (not a flat two-tone tint) so the
+   text reads as polished metal rather than solid grey. filter, not
+   text-shadow: text-shadow is invisible on a background-clip:text
+   transparent fill. */
+.brand-game {
+  background: linear-gradient(
+    160deg,
+    #ffffff 0%,
+    #b7bcc4 22%,
+    #f4f5f7 38%,
+    #7d818a 55%,
+    #eef0f3 70%,
+    #5c6067 88%,
+    #9a9ea6 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.85));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 
-.site-header .brand svg {
-  filter: drop-shadow(0 2px 10px rgba(139, 92, 246, 0.55));
+.brand-x-mark {
+  margin-left: -0.05em;
+  filter: drop-shadow(0 0 10px rgba(99, 132, 255, 0.55));
+}
+
+.brand-store {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.brand-store-text {
+  font-family: var(--font-logo), var(--font-display), var(--font-geist-sans);
+  font-size: 0.58rem;
+  letter-spacing: 0.32em;
+  color: #eef0f5;
+  padding-left: 0.32em; /* optical compensation for letter-spacing on the last char */
+}
+
+.brand-store-line {
+  height: 2px;
+  width: 16px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #7c9bff 40%, #a86bf0 100%);
+}
+
+.brand-store-line.right {
+  background: linear-gradient(90deg, #a86bf0 0%, #7c9bff 60%, transparent);
 }
 
 .site-header-nav-desktop {

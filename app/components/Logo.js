@@ -1,14 +1,12 @@
 import { useId } from "react";
 
-// "Shuriken Blade X" — four sharpened blades crossing at the center (the
-// "X" in GameX, and a throwing star — the kind of weapon silhouette that
-// shows up in every Free Fire GFX thumbnail), with a small flame at the
-// core where the blades meet. Kept as a shared component (rather than
-// duplicated inline SVGs) so the favicon, header, and splash screen can
-// never drift out of sync with each other.
-export default function Logo({ size = 32, withBackground = true, className }) {
-  const gradientId = useId();
-  const flameGradientId = useId();
+// The GameX brand mark's "X" — a leaping human figure crossing a blue
+// wing (upper-left) and a blue-to-magenta band (lower-right), point-
+// symmetric through the center. Kept as a shared component so the header
+// (its only real user) never drifts from a single source of truth.
+export default function Logo({ size = 32, className }) {
+  const wingGradientId = useId();
+  const bandGradientId = useId();
 
   return (
     <svg
@@ -21,34 +19,37 @@ export default function Logo({ size = 32, withBackground = true, className }) {
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#c4b5fd" />
-          <stop offset="0.55" stopColor="#8b5cf6" />
-          <stop offset="1" stopColor="#7c3aed" />
+        <linearGradient id={wingGradientId} x1="60" y1="50" x2="13" y2="9" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#4a86ff" />
+          <stop offset="1" stopColor="#8ecdff" />
         </linearGradient>
-        <linearGradient id={flameGradientId} x1="0" y1="1" x2="0" y2="0" gradientUnits="objectBoundingBox">
-          <stop offset="0" stopColor="#ef4444" />
-          <stop offset="0.6" stopColor="#fb923c" />
-          <stop offset="1" stopColor="#fde68a" />
+        <linearGradient id={bandGradientId} x1="44" y1="44" x2="87" y2="91" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#4a7dff" />
+          <stop offset="0.55" stopColor="#8a5cf0" />
+          <stop offset="1" stopColor="#e34fd6" />
         </linearGradient>
       </defs>
-      {withBackground && <rect width="100" height="100" rx="28" fill={`url(#${gradientId})`} />}
-      {/* Always dark ink, regardless of withBackground — when there's no
-          rect (e.g. the splash screen), the caller's own CSS already
-          supplies a colorful gradient card behind this mark (see
-          .splash-mark), so the blades need to read as a dark silhouette on
-          top of that, not another gradient layered on a gradient. */}
-      <g fill="#0d0b17">
-        <polygon transform="rotate(45 50 50)" points="50,47 58,47 58,48.5 90,50 58,51.5 58,53 50,53" />
-        <polygon transform="rotate(135 50 50)" points="50,47 58,47 58,48.5 90,50 58,51.5 58,53 50,53" />
-        <polygon transform="rotate(225 50 50)" points="50,47 58,47 58,48.5 90,50 58,51.5 58,53 50,53" />
-        <polygon transform="rotate(315 50 50)" points="50,47 58,47 58,48.5 90,50 58,51.5 58,53 50,53" />
-      </g>
+      {/* Upper-left wing: one flowing curve tapering to a point — point-
+          symmetric with the band below, through the mark's center. */}
       <path
-        fill={`url(#${flameGradientId})`}
-        transform="translate(41,32) scale(0.72)"
-        d="M12,0 C18,7 20,14 15,19 C12,22 6,20 7,15 C8,18 11,17 11,13 C8,12 6,8 9,3 C10,8 12,6 12,0 Z"
+        d="M56,56 C42,44 26,26 13,9 C20,7 27,10 33,17 C44,28 52,40 62,50 Z"
+        fill={`url(#${wingGradientId})`}
       />
+      {/* Lower-right band: the same curve mirrored 180°, blue fading to magenta. */}
+      <path
+        d="M44,44 C58,56 74,74 87,91 C80,93 73,90 67,83 C56,72 48,60 38,50 Z"
+        fill={`url(#${bandGradientId})`}
+      />
+      {/* Leaping figure — head, torso, raised arm, two legs — layered on
+          top so it reads as a person leaping through the X, not an
+          abstract blob. */}
+      <circle cx="63" cy="19" r="7" fill="#f6f4fc" />
+      <g stroke="#f6f4fc" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <path d="M61,26 L54,44" />
+        <path d="M58,29 L44,20 L28,10" />
+        <path d="M54,44 L38,64" />
+        <path d="M54,44 L64,52 L74,58" />
+      </g>
     </svg>
   );
 }
