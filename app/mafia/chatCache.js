@@ -29,3 +29,21 @@ export function shouldPrefetch(key, latestMessageAt) {
 export function markPrefetched(key, latestMessageAt) {
   prefetchedAt.set(key, latestMessageAt);
 }
+
+// Same idea as threadCache above, for MessagesPanel's own inbox list: it's
+// a route (/mafia/messages), so opening a conversation and hitting back
+// unmounts and remounts it, which used to mean starting from
+// useState(null) and flashing the skeleton loader every single time even
+// though the list barely changed. Reading this on mount renders the
+// last-known list instantly instead, while useVisiblePolling's own
+// immediate-on-mount fetch still runs right behind it to catch anything
+// new.
+let ordersListCache = null;
+
+export function getCachedOrdersList() {
+  return ordersListCache;
+}
+
+export function setCachedOrdersList(data) {
+  ordersListCache = data;
+}

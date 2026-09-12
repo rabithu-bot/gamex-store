@@ -6,7 +6,13 @@ import { Check, Pencil } from "lucide-react";
 import CustomerTagBadge from "./CustomerTagBadge";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { isBuyerOnline } from "@/app/lib/onlineStatus";
-import { setCachedThread, shouldPrefetch, markPrefetched } from "@/app/mafia/chatCache";
+import {
+  setCachedThread,
+  shouldPrefetch,
+  markPrefetched,
+  getCachedOrdersList,
+  setCachedOrdersList,
+} from "@/app/mafia/chatCache";
 
 // How many of the most-recently-active conversations get warmed in the
 // background while the admin is just sitting on the inbox — enough that
@@ -34,7 +40,11 @@ function relativeTime(iso) {
 }
 
 export default function MessagesPanel() {
-  const [orders, setOrders] = useState(null);
+  // Lazy initializer: reads the last-known list synchronously on mount
+  // instead of starting from null, so navigating back from a conversation
+  // renders the real inbox immediately instead of flashing the skeleton
+  // loader while a fresh fetch is still in flight.
+  const [orders, setOrders] = useState(() => getCachedOrdersList());
   const [supportName, setSupportName] = useState("Support");
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -42,7 +52,11 @@ export default function MessagesPanel() {
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders", { cache: "no-store" });
-    if (res.ok) setOrders(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setOrders(data);
+      setCachedOrdersList(data);
+    }
   }, []);
 
   const fetchSupportName = useCallback(async () => {

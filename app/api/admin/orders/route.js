@@ -7,15 +7,16 @@ export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // expireStaleOrders() only ever touches OTHER rows (flips stale "pending"
-  // ones to "expired") and is heavily throttled (see orderExpiry.js) — it
-  // doesn't need to finish before the main read starts. This was the
-  // biggest of three sequential DB round-trips this route made per
-  // request (the other being the pushSubscription lookup below, which
-  // does need the order ids first); running the independent one alongside
-  // the main query instead of before it removes a full extra round-trip
-  // from the hot path of a route every admin screen polls every 5s.
-  const [, orders] = await Promise.all([
+  // All three queries here are independent of each other's results —
+  // expireStaleOrders() only touches other rows, and the pushSubscription
+  // lookup doesn't actually need to be scoped to this request's order ids
+  // (it's a small table; fetching every buyer subscription directly is
+  // cheap and removes the data dependency that used to force it to run
+  // strictly after the main query). Running all three together instead of
+  // 1-then-2-sequential removes a full extra round-trip from the hot path
+  // of a route every admin screen polls every 5s and both Orders and
+  // Messages panels use.
+  const [, orders, subscribedRows] = await Promise.all([
     expireStaleOrders(),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -41,19 +42,16 @@ export async function GET() {
         },
       },
     }),
+    // Tells the inbox whether each buyer's device actually has push
+    // notifications subscribed, for the notification-status dot next to
+    // their name.
+    prisma.pushSubscription.findMany({
+      where: { role: "buyer", orderId: { not: null } },
+      select: { orderId: true },
+    }),
   ]);
 
-  // One extra lightweight query rather than per-order round-trips — tells
-  // the inbox whether each buyer's device actually has push notifications
-  // subscribed, for the notification-status dot next to their name.
-  const subscribedOrderIds = new Set(
-    (
-      await prisma.pushSubscription.findMany({
-        where: { role: "buyer", orderId: { in: orders.map((o) => o.id) } },
-        select: { orderId: true },
-      })
-    ).map((s) => s.orderId)
-  );
+  const subscribedOrderIds = new Set(subscribedRows.map((s) => s.orderId));
   const withNotifyStatus = orders.map((o) => ({
     ...o,
     notificationsEnabled: subscribedOrderIds.has(o.id),
