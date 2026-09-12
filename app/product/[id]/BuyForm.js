@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { X, ShieldCheck, Loader2, Zap } from "lucide-react";
+import { X, ShieldCheck, Loader2, Zap, QrCode, ImageUp, KeyRound } from "lucide-react";
+
+// Same three stages OrderSteps shows once a real order exists — previewed
+// here, before the buyer has even entered their name, so someone who has
+// never bought a game account online before can see the whole journey
+// (and that a human verifies the payment, not an instant/automatic
+// charge) before committing to anything.
+const HOW_IT_WORKS = [
+  { icon: QrCode, label: "Scan & pay via UPI" },
+  { icon: ImageUp, label: "Upload payment screenshot" },
+  { icon: KeyRound, label: "Get account instantly" },
+];
 
 export default function BuyForm({ listingId, listingTitle, listingPrice }) {
   const router = useRouter();
@@ -110,13 +121,24 @@ export default function BuyForm({ listingId, listingTitle, listingPrice }) {
               </button>
 
               <div className="checkout-modal-header">
-                <h3>
-                  {listingTitle} — ₹{listingPrice.toLocaleString("en-IN")}
-                </h3>
+                <span className="checkout-modal-listing-title">{listingTitle}</span>
+                <span className="checkout-modal-price">₹{listingPrice.toLocaleString("en-IN")}</span>
                 <span className="checkout-verified-badge">
                   <ShieldCheck size={12} />
                   Verified Stock
                 </span>
+              </div>
+
+              <div className="checkout-how-it-works">
+                {HOW_IT_WORKS.map(({ icon: Icon, label }, i) => (
+                  <div key={label} className="checkout-how-it-works-step">
+                    {i > 0 && <div className="checkout-how-it-works-line" />}
+                    <span className="checkout-how-it-works-icon">
+                      <Icon size={16} />
+                    </span>
+                    <span>{label}</span>
+                  </div>
+                ))}
               </div>
 
               <form onSubmit={handleConfirmBuy}>

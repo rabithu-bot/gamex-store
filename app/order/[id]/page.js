@@ -242,8 +242,14 @@ export default function OrderPage() {
                 Time remaining to attach proof: <strong>{formatCountdown(msRemaining)}</strong>
               </p>
             )}
+            <div className="payable-badge-row">
+              <span className="payable-badge">
+                <span>Total Payable</span>
+                <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
+              </span>
+            </div>
             <p className="muted" style={{ textAlign: "center", margin: "0.5rem 0" }}>
-              Scan this QR with any UPI app, then enter the amount below yourself.
+              Scan this QR with any UPI app, then enter the amount above yourself.
             </p>
             {qrUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -259,15 +265,12 @@ export default function OrderPage() {
                 aria-hidden="true"
               />
             )}
-            <div className="payable-badge-row">
-              <span className="payable-badge">
-                <span>Total Payable</span>
-                <span>₹{order.listing.price.toLocaleString("en-IN")}</span>
-              </span>
-            </div>
 
             <h3 style={{ marginTop: "1.5rem" }}>2. Confirm your payment</h3>
-            <span className="payment-upload-hint">Please upload screenshot for fast verification</span>
+            <span className="payment-upload-hint">
+              Upload your screenshot — our team verifies it within minutes, then your account
+              unlocks automatically.
+            </span>
             <form onSubmit={handleSubmitProof}>
               {order.status === "declined" && (
                 <p className="error-text" style={{ marginBottom: "0.75rem" }}>
