@@ -175,10 +175,27 @@ select:focus-visible {
   border-color: var(--accent);
 }
 
+/* Deliberately no card/box treatment here (no background, border, shadow,
+   or padding box) — this is plain SEO copy that should read as part of the
+   page, not a separated panel. Spacing comes from margin alone. */
 .seo-footer-blurb {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+}
+
+.seo-footer-blurb h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.seo-footer-blurb p {
+  margin-top: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  opacity: 1;
 }
 
 .container {
@@ -966,32 +983,34 @@ select:focus-visible {
   background: #ffffff;
 }
 
-/* "I've paid" — the one action this whole page exists for. Solid white,
-   not the gold-foil treatment .btn-buy-now uses elsewhere: at this exact
-   step the loud amber glow read as harsh rather than premium, so this one
-   button breaks from that pattern on purpose — crisp white/black instead,
-   with a soft white glow on hover rather than a colored one. */
+/* "I've paid" — the one action this whole page exists for. Neither the
+   gold-foil treatment .btn-buy-now uses elsewhere, nor solid white — an
+   extremely subtle emerald tint/glow instead, since "I've paid" is a
+   completion action (matches the same green language the confirmed-order
+   credentials box already uses) and a loud solid fill here read as
+   harsh rather than premium. */
 .payment-submit-cta {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   margin-top: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.5rem;
   border-radius: 14px;
-  border: none;
+  border: 1px solid rgba(16, 185, 129, 0.35);
   font-weight: 700;
   font-size: 1.05rem;
-  color: #000000;
+  color: #34d399;
   cursor: pointer;
   touch-action: manipulation;
-  background: #ffffff;
-  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
-  transition: transform 0.12s ease, box-shadow 0.15s ease;
+  background: rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12);
+  transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .payment-submit-cta:hover {
-  box-shadow: 0 6px 26px rgba(255, 255, 255, 0.24);
+  background: rgba(16, 185, 129, 0.16);
+  box-shadow: 0 6px 28px rgba(16, 185, 129, 0.22);
 }
 
 .payment-submit-cta:active {
