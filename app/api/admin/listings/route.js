@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { parseRareItems } from "@/app/lib/listingTags";
+import { enhanceImageUrl } from "@/app/lib/cloudinary";
 
 export async function GET() {
   if (!(await requireAdmin())) {
@@ -67,7 +68,7 @@ export async function POST(request) {
     // body actually was.
     let newImageUrls = [];
     try {
-      newImageUrls = JSON.parse(formData.get("newImageUrls") || "[]");
+      newImageUrls = JSON.parse(formData.get("newImageUrls") || "[]").map(enhanceImageUrl);
     } catch {
       return NextResponse.json({ error: "Malformed image list" }, { status: 400 });
     }

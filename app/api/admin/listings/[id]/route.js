@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { parseRareItems } from "@/app/lib/listingTags";
+import { enhanceImageUrl } from "@/app/lib/cloudinary";
 
 export async function PUT(request, { params }) {
   if (!(await requireAdmin())) {
@@ -54,7 +55,7 @@ export async function PUT(request, { params }) {
     let newImageUrls = [];
     let keptImages;
     try {
-      newImageUrls = JSON.parse(formData.get("newImageUrls") || "[]");
+      newImageUrls = JSON.parse(formData.get("newImageUrls") || "[]").map(enhanceImageUrl);
       const keepImagesRaw = formData.get("keepImages");
       const existingImages = JSON.parse(existing.images);
       keptImages = keepImagesRaw ? JSON.parse(keepImagesRaw) : existingImages;

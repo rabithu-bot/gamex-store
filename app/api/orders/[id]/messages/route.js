@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { saveMessageAttachment } from "@/app/lib/uploads";
+import { enhanceVideoUrl } from "@/app/lib/cloudinary";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
 import { notifyAdminsOfMessage, notifyBuyerOfReply } from "@/app/lib/push";
 import { buildOrderAiContext } from "@/app/lib/aiSupportContext";
@@ -102,8 +103,9 @@ export async function POST(request, { params }) {
   let attachmentPath = null;
   let attachmentType = null;
   if (preUploadedUrl) {
-    attachmentPath = String(preUploadedUrl);
     attachmentType = preUploadedType === "video" ? "video" : "image";
+    attachmentPath =
+      attachmentType === "video" ? enhanceVideoUrl(String(preUploadedUrl)) : String(preUploadedUrl);
   } else if (hasAttachment) {
     try {
       attachmentPath = await saveMessageAttachment(attachment);

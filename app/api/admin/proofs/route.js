@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { requireAdmin } from "@/app/lib/session";
 import { saveProofImage } from "@/app/lib/uploads";
+import { enhanceVideoUrl } from "@/app/lib/cloudinary";
 
 const MAX_PROOFS = 150;
 
@@ -46,7 +47,7 @@ export async function POST(request) {
 
   let url;
   try {
-    url = preUploadedVideoUrl ? String(preUploadedVideoUrl) : await saveProofImage(file);
+    url = preUploadedVideoUrl ? enhanceVideoUrl(String(preUploadedVideoUrl)) : await saveProofImage(file);
   } catch (err) {
     console.error("Proof image upload failed:", err);
     return NextResponse.json({ error: err.message || "Upload failed" }, { status: 500 });

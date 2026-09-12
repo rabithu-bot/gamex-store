@@ -19,6 +19,41 @@ function uploadEndpoint() {
   return `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 }
 
+// Inserts a Cloudinary delivery transformation into an already-uploaded
+// asset's secure_url — e.g. ".../image/upload/v169.../folder/name.jpg"
+// becomes ".../image/upload/<transformation>/v169.../folder/name.jpg".
+// Cloudinary applies (and caches) the transformation at delivery time, so
+// nothing needs to be re-uploaded or re-encoded here. Leaves the URL
+// untouched if it doesn't look like a Cloudinary delivery URL at all —
+// this must never throw on an unexpected value, since it sits directly
+// in front of every image/video URL about to be saved to the DB.
+function withTransformation(url, transformation) {
+  if (typeof url !== "string") return url;
+  const marker = "/upload/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return url;
+  const insertAt = idx + marker.length;
+  return `${url.slice(0, insertAt)}${transformation}/${url.slice(insertAt)}`;
+}
+
+// Auto quality-enhancement for uploaded photos (listing photos, chat
+// image attachments, proof screenshots, payment QR/screenshots) — auto
+// color/contrast correction at full strength, real sharpening, a
+// noticeable saturation/contrast lift. All standard Cloudinary
+// transformations, no paid add-on required (true AI upscaling is a
+// separate paid add-on and isn't what this does).
+export function enhanceImageUrl(url) {
+  return withTransformation(url, "e_improve:100,e_sharpen:100,e_saturation:20,e_contrast:10");
+}
+
+// Video: a real quality lever without a paid add-on — Cloudinary's
+// highest auto-bitrate quality tier. Not true AI enhancement (that needs
+// a paid add-on) — a genuine encoding-quality tweak, which is what this
+// was scoped to.
+export function enhanceVideoUrl(url) {
+  return withTransformation(url, "q_auto:best");
+}
+
 // Without this, a missing env var silently builds a malformed URL
 // (".../v1_1/undefined/auto/upload"), Cloudinary rejects it, and the
 // resulting error is confusing to whoever's debugging it. Fails loudly
@@ -86,6 +121,11 @@ export async function uploadBuffer(key, buffer, contentType) {
     throw new Error(`Cloudinary upload failed (${res.status}): ${body.slice(0, 300)}`);
   }
   const json = await res.json();
+  // Auto quality-enhancement — audio (voice notes) passes through
+  // untouched, images/video get the transformation appropriate to their
+  // type. See enhanceImageUrl/enhanceVideoUrl for what each one does.
+  if ((contentType || "").startsWith("image/")) return enhanceImageUrl(json.secure_url);
+  if ((contentType || "").startsWith("video/")) return enhanceVideoUrl(json.secure_url);
   return json.secure_url;
 }
 
