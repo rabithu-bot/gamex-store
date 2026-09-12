@@ -5,7 +5,10 @@ import SiteHeader from "@/app/components/SiteHeader";
 import ProofGallery from "./ProofGallery";
 import ProofsBackButton from "./ProofsBackButton";
 
-export const dynamic = "force-dynamic";
+// Was force-dynamic — same fix as the homepage, longer window since proof
+// batches are uploaded in bulk occasionally, not continuously (see
+// app/page.js for the full reasoning).
+export const revalidate = 60;
 
 // Title: 59 chars. Description: 131 chars — measured, not guessed, same
 // as the homepage/product page rewrite, to stay under Google's practical

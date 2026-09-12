@@ -7,7 +7,15 @@ import TickerBar from "@/app/components/TickerBar";
 import ListingCard from "@/app/components/ListingCard";
 import TelegramBanner from "@/app/components/TelegramBanner";
 
-export const dynamic = "force-dynamic";
+// Was force-dynamic — every single navigation here paid a full fresh DB
+// round-trip (the droplet is genuinely far from Vercel's region, ~500ms+
+// each way), even for two visitors landing seconds apart. Listings/sold
+// status changing a few seconds late is harmless: /api/orders always
+// re-checks listing.status === "available" at the moment of purchase
+// regardless of what this page rendered, so a stale "available" here can
+// never actually oversell anything — it just means a rejected order
+// attempt with a clear error, same as any real race condition would.
+export const revalidate = 10;
 
 // Real Product/Offer data for every listing actually shown on this page —
 // deliberately no aggregateRating/review block (see app/layout.js for why:

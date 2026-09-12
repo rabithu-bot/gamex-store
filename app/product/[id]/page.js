@@ -7,7 +7,10 @@ import ListingCard from "@/app/components/ListingCard";
 import BuyForm from "./BuyForm";
 import ImageGallery from "./ImageGallery";
 
-export const dynamic = "force-dynamic";
+// Was force-dynamic — see app/page.js for the full reasoning (same fix,
+// same safety argument: /api/orders re-checks real availability at
+// purchase time regardless of what this page last rendered).
+export const revalidate = 10;
 
 const SIMILAR_LIMIT = 8;
 
