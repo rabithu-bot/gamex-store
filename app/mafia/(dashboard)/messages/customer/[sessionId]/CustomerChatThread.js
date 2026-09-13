@@ -15,6 +15,9 @@ import {
   CheckCheck,
   Video as VideoIcon,
   Share2,
+  Sparkles,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
@@ -90,6 +93,16 @@ export default function CustomerChatThread({ sessionId }) {
   const [swipeState, setSwipeState] = useState(null); // { id, offset }
   const [now, setNow] = useState(() => Date.now());
   const [quickShareOpen, setQuickShareOpen] = useState(false);
+  // "Suggest Mode" — see ChatThread.js (the single-order twin of this
+  // component) for the full rationale. Here the "latest message" is drawn
+  // from the merged, cross-order data.messages instead of one order's own
+  // messages, and the suggestion is requested against whichever real order
+  // that specific message belongs to (m.orderId) — never against
+  // selectedOrderId, which defaults to the most recently CREATED order and
+  // can genuinely be a different (e.g. already-expired) order than the one
+  // the buyer is actually messaging about right now.
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [aiSuggestionLoading, setAiSuggestionLoading] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
@@ -103,6 +116,9 @@ export default function CustomerChatThread({ sessionId }) {
   const recordedChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
   const createdObjectUrlsRef = useRef(new Set());
+  // Which buyer message id the AI suggestion was last fetched (or
+  // dismissed) for — same dedup guard as ChatThread.js.
+  const lastSuggestionForRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     const res = await fetch(`/api/admin/customers/${sessionId}`, { cache: "no-store" });
@@ -138,6 +154,38 @@ export default function CustomerChatThread({ sessionId }) {
       fetch(`/api/admin/customers/${sessionId}/read`, { method: "POST" }).catch(() => {});
     }
   }, [sessionId, data?.messages]);
+
+  // Suggest Mode: fetch a draft AI reply whenever the newest message across
+  // this customer's ENTIRE merged history is an unanswered buyer message —
+  // see ChatThread.js for the same pattern on a single order. Reuses that
+  // exact per-order endpoint, called with the real order the latest message
+  // itself belongs to (m.orderId), not selectedOrderId.
+  useEffect(() => {
+    const messages = data?.messages;
+    if (!messages || messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.sender !== "buyer") {
+      if (aiSuggestion || aiSuggestionLoading) {
+        setAiSuggestion(null);
+        setAiSuggestionLoading(false);
+      }
+      return;
+    }
+    if (lastSuggestionForRef.current === lastMessage.id) return;
+    lastSuggestionForRef.current = lastMessage.id;
+    setAiSuggestion(null);
+    setAiSuggestionLoading(true);
+    fetch(`/api/admin/orders/${lastMessage.orderId}/ai-suggestion`, { cache: "no-store" })
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+        return body;
+      })
+      .then((body) => setAiSuggestion(body?.suggestion ? { ...body.suggestion, orderId: lastMessage.orderId } : "none"))
+      .catch((err) => setAiSuggestion({ error: err.message || "Couldn't load a suggestion" }))
+      .finally(() => setAiSuggestionLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.messages]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -330,6 +378,43 @@ export default function CustomerChatThread({ sessionId }) {
     } finally {
       setSending(false);
     }
+  }
+
+  // Loads the draft into the composer AND switches the reply target to the
+  // real order the suggestion was drafted for — the buyer's latest message
+  // could belong to an older order than whatever selectedOrderId happened
+  // to default to (see the effect above), so sending via the composer
+  // normally from here still needs to land on the right one.
+  function editAiSuggestion() {
+    if (!aiSuggestion?.text) return;
+    setReplyText(aiSuggestion.text);
+    if (aiSuggestion.orderId) setSelectedOrderId(aiSuggestion.orderId);
+    setAiSuggestion(null);
+    textareaRef.current?.focus();
+  }
+
+  // Sends directly against the suggestion's own order id — deliberately
+  // NOT routed through handleReply/selectedOrderId, for the same reason.
+  async function sendAiSuggestionNow() {
+    if (!aiSuggestion?.text || !aiSuggestion.orderId || sending) return;
+    const targetOrderId = aiSuggestion.orderId;
+    const text = aiSuggestion.text;
+    setAiSuggestion(null);
+    setSending(true);
+    const formData = new FormData();
+    formData.set("body", text);
+    try {
+      await fetch(`/api/admin/orders/${targetOrderId}/messages`, { method: "POST", body: formData });
+      await fetchData();
+    } catch {
+      setAttachmentError("Couldn't send that — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function dismissAiSuggestion() {
+    setAiSuggestion(null);
   }
 
   async function handleDeleteMessage(message) {
@@ -805,6 +890,62 @@ export default function CustomerChatThread({ sessionId }) {
           <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
             <X size={14} />
           </button>
+        </div>
+      )}
+
+      {!recording && !editingMessage && !replyText.trim() && (aiSuggestionLoading || aiSuggestion) && (
+        <div className="ai-suggestion-card">
+          <div className="ai-suggestion-header">
+            <Sparkles size={14} />
+            <span>AI suggested reply</span>
+          </div>
+          {aiSuggestionLoading ? (
+            <div className="ai-suggestion-loading">
+              <Loader2 size={14} className="icon-spin" />
+              <span className="muted">Thinking...</span>
+            </div>
+          ) : aiSuggestion === "none" ? (
+            <div className="ai-suggestion-none">
+              <span className="muted">No suggestion for this message.</span>
+              <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                Dismiss
+              </button>
+            </div>
+          ) : aiSuggestion?.error ? (
+            <div className="ai-suggestion-none ai-suggestion-error">
+              <span>Couldn&apos;t generate a suggestion — {aiSuggestion.error}</span>
+              <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                Dismiss
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="ai-suggestion-text">{aiSuggestion.text}</p>
+              {aiSuggestion.hasAttachment && (
+                <p className="muted ai-suggestion-note">
+                  Also suggests attaching an image — attach it yourself if you send this.
+                </p>
+              )}
+              <div className="ai-suggestion-actions">
+                <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                  Dismiss
+                </button>
+                <button type="button" className="ai-suggestion-btn ai-suggestion-edit" onClick={editAiSuggestion}>
+                  <Pencil size={13} />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="ai-suggestion-btn ai-suggestion-send"
+                  onClick={sendAiSuggestionNow}
+                  disabled={sending}
+                >
+                  <Send size={13} />
+                  Send
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
