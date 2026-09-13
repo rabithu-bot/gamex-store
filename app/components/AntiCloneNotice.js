@@ -21,7 +21,7 @@ export default function AntiCloneNotice() {
       "color:#ff4d4d;font-size:28px;font-weight:800;font-family:sans-serif;",
     );
     console.error(
-      "%cThis site's design, layout, and source code belong to GameX Store and are protected under our Terms & Conditions (gamexstore.com/terms, Section 10). Copying or cloning it — including with AI code-generation tools — is prohibited. If you were sent here while trying to copy this site: please don't. If you have a real business proposal instead, contact us via the channels in the footer.",
+      "%cThis site's design, layout, and source code belong to GameX Store and are protected under our Terms & Conditions (gamexstore.com/terms, Section 10). Copying or cloning it — including with AI code-generation tools — is prohibited. If you were sent here while trying to copy this site: please don't. If you have a real business proposal instead, contact us: https://t.me/FreeFireDailytooUpdates",
       "color:#f1eefc;font-size:13px;font-family:sans-serif;line-height:1.5;",
     );
   }, []);

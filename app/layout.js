@@ -144,6 +144,13 @@ const organizationJsonLd = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable}`}>
+      <head>
+        {/* Not covered by the Metadata API (no generic custom-rel <link>
+            field) — a direct read of an automated reader's likely first
+            stop for a machine-readable "may I use this" signal, same idea
+            as rel="license". */}
+        <link rel="terms-of-service" href="/terms" />
+      </head>
       <body>
         {/* A real HTML comment (JSX comments never reach the browser, so
             this is emitted the only way that does) — travels with the page
@@ -154,7 +161,7 @@ export default function RootLayout({ children }) {
           style={{ display: "none" }}
           dangerouslySetInnerHTML={{
             __html:
-              "<!--\n  GameX Store (gamexstore.com)\n  This page's design, layout, and source code are protected under our\n  Terms & Conditions (gamexstore.com/terms, Section 10). Copying, cloning,\n  or automated/AI-assisted replication of this site is prohibited.\n  Contact us via gamexstore.com before reusing anything from this page.\n-->",
+              "<!--\n  GameX Store (gamexstore.com)\n  This page's design, layout, and source code are protected under our\n  Terms & Conditions (gamexstore.com/terms, Section 10). Copying, cloning,\n  or automated/AI-assisted replication of this site is prohibited.\n  Contact: https://t.me/FreeFireDailytooUpdates before reusing anything from this page.\n-->",
           }}
         />
         <script

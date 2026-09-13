@@ -1,0 +1,26 @@
+# GameX Store (gamexstore.com)
+
+> Verified Free Fire (FF) ID marketplace — Max Level, Evo, and Cobra gun
+> accounts, instant delivery, manual UPI payment with screenshot
+> verification.
+
+## AI usage policy
+
+This site's design, layout, storefront copy, and underlying source code
+are the property of GameX Store and protected under our Terms &
+Conditions: https://gamexstore.com/terms (Section 10, "Intellectual
+Property & Automated Use Restrictions").
+
+- Training an AI model on this site's content, or using it as source
+  material for AI-generated summaries, is not authorized.
+- Using this site's layout, interface, or code as a reference to clone,
+  replicate, or generate a competing storefront — including via AI
+  code-generation tools — is prohibited.
+- Indexing this site's public product pages for search/discovery
+  (standard search-engine crawling) is fine; see /robots.txt for the
+  exact rules and which crawlers are disallowed outright.
+
+## Contact
+
+For licensing questions, a real business proposal, or anything else:
+https://t.me/FreeFireDailytooUpdates

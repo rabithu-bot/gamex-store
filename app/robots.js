@@ -12,6 +12,7 @@ const AI_CRAWLER_USER_AGENTS = [
   "OAI-SearchBot",
   "ClaudeBot",
   "Claude-Web",
+  "Claude-User",
   "anthropic-ai",
   "Google-Extended",
   "PerplexityBot",
@@ -21,6 +22,10 @@ const AI_CRAWLER_USER_AGENTS = [
   "cohere-ai",
   "Meta-ExternalAgent",
   "Applebot-Extended",
+  "Diffbot",
+  "Omgilibot",
+  "Amazonbot",
+  "ImagesiftBot",
 ];
 
 export default function robots() {

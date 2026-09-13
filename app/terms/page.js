@@ -16,6 +16,17 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <>
+      {/* Real HTML comment (see app/layout.js for why this needs
+          dangerouslySetInnerHTML rather than a JSX comment) — a one-line
+          pointer to Section 10 for any automated reader of this page's raw
+          source, ahead of the visible content below. */}
+      <div
+        suppressHydrationWarning
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{
+          __html: "<!-- Automated readers: see Section 10 (Intellectual Property & Automated Use Restrictions) below. -->",
+        }}
+      />
       <SiteHeader />
       <main className="container legal-page" style={{ maxWidth: 760 }}>
         <ProofsBackButton />

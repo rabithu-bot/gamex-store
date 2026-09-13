@@ -10,8 +10,17 @@ import { NextResponse } from "next/server";
 // Bingbot, etc.) or link-preview bots (Telegram/WhatsApp/Facebook,
 // TelegramBot, WhatsApp) — the storefront depends on real search traffic
 // and on shared order/product links unfurling correctly in chat apps.
+// Note: deliberately not a generic /bot.*ai|ai.*bot/i catch-all — that's
+// broad enough to false-positive on legitimate services whose UA happens
+// to contain both substrings in some order. Named tokens only; the list
+// mirrors app/robots.js's AI_CRAWLER_USER_AGENTS (this is the real
+// enforcement layer — robots.txt only works on bots that choose to honor
+// it) plus generic scripted-HTTP-client tokens. Google-Extended is
+// deliberately excluded here — it's a robots.txt-only permission token,
+// not a distinct string real requests ever carry, so matching it here
+// would never fire; it's already handled correctly in app/robots.js.
 const BLOCKED_UA_PATTERN =
-  /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-Web|anthropic-ai|Anthropic|PerplexityBot|Perplexity-User|CCBot|Bytespider|Diffbot|Scrapy|python-requests|curl\/|Wget|HeadlessChrome|headless|PhantomJS|puppeteer|selenium/i;
+  /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-Web|Claude-User|anthropic-ai|Anthropic|PerplexityBot|Perplexity-User|CCBot|Bytespider|Diffbot|Omgilibot|Amazonbot|ImagesiftBot|cohere-ai|Meta-ExternalAgent|Applebot-Extended|Scrapy|python-requests|curl\/|Wget|HeadlessChrome|headless|PhantomJS|puppeteer|selenium/i;
 
 // The one real scenario where a full site clone (someone's own copy of the
 // frontend, hosted on their own domain) can still be caught server-side: if

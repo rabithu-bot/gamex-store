@@ -11,6 +11,7 @@ export default function SiteHeader() {
       <nav className="site-header-nav-desktop">
         <Link href="/proofs">Proofs</Link>
         <Link href="/orders">My Orders</Link>
+        <Link href="/terms">Terms</Link>
       </nav>
       <InstallAppButton />
     </header>
