@@ -159,7 +159,11 @@ export default function ChatThread({ orderId }) {
     setAiSuggestion(null);
     setAiSuggestionLoading(true);
     fetch(`/api/admin/orders/${orderId}/ai-suggestion`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+        return data;
+      })
       // "none" (a string, distinct from null) means "asked, got a real
       // answer: nothing to suggest" — e.g. an image/video with no caption
       // text, which this can't draft a reply from yet. Shown as its own
@@ -167,7 +171,13 @@ export default function ChatThread({ orderId }) {
       // message that genuinely has no suggestion doesn't look identical
       // to the feature having silently failed.
       .then((data) => setAiSuggestion(data?.suggestion || "none"))
-      .catch(() => setAiSuggestion(null))
+      // { error } (an object, distinct from both "none" and a real
+      // suggestion) means the request itself or the AI generation failed —
+      // network drop, or the server-side Gemini call throwing (bad/missing
+      // GEMINI_API_KEY, quota, etc.). Surfaced explicitly rather than
+      // folded into "none", so a real outage is never mistaken for "AI
+      // correctly had nothing to say".
+      .catch((err) => setAiSuggestion({ error: err.message || "Couldn't load a suggestion" }))
       .finally(() => setAiSuggestionLoading(false));
     // aiSuggestion/aiSuggestionLoading deliberately excluded — they're only
     // read here to decide whether the "already answered" branch above needs
@@ -398,7 +408,7 @@ export default function ChatThread({ orderId }) {
   // Loads the AI's draft into the composer for the admin to tweak before
   // sending — same effect as tapping a quick-reply chip.
   function editAiSuggestion() {
-    if (!aiSuggestion || aiSuggestion === "none") return;
+    if (!aiSuggestion?.text) return;
     setReplyText(aiSuggestion.text);
     setAiSuggestion(null);
     textareaRef.current?.focus();
@@ -407,7 +417,7 @@ export default function ChatThread({ orderId }) {
   // One-tap send, text only — see the ai-suggestion route's own comment on
   // why an attached QR/listing photo isn't wired into this fast path yet.
   function sendAiSuggestionNow() {
-    if (!aiSuggestion || aiSuggestion === "none" || sending) return;
+    if (!aiSuggestion?.text || sending) return;
     handleReply(null, aiSuggestion.text);
     setAiSuggestion(null);
   }
@@ -905,6 +915,17 @@ export default function ChatThread({ orderId }) {
             // look identical to the feature having silently failed.
             <div className="ai-suggestion-none">
               <span className="muted">No suggestion for this message.</span>
+              <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                Dismiss
+              </button>
+            </div>
+          ) : aiSuggestion?.error ? (
+            // A real failure (network drop, or the server's Gemini call
+            // itself erroring — bad/missing API key, quota, etc.) — kept
+            // visually distinct from "no suggestion" so an actual outage
+            // is never mistaken for the AI correctly having nothing to say.
+            <div className="ai-suggestion-none ai-suggestion-error">
+              <span>Couldn&apos;t generate a suggestion — {aiSuggestion.error}</span>
               <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
                 Dismiss
               </button>

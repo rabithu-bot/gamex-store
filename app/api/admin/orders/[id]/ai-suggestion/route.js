@@ -45,7 +45,20 @@ export async function GET(request, { params }) {
     return NextResponse.json({ suggestion: null });
   }
 
-  const decision = await decideAiReply(orderId, effectiveText, effectiveText);
+  // Distinguished from "genuinely nothing to suggest" (a real, expected
+  // outcome — see the null returns above) — decideAiReply throwing means
+  // the Gemini call itself failed (bad/missing GEMINI_API_KEY, quota,
+  // network), which used to look identical to "nothing to suggest" on the
+  // admin's screen with zero way to tell the two apart. Logged here so
+  // it's visible in Vercel's function logs instead of only ever showing up
+  // as a quiet, unexplained blank.
+  let decision;
+  try {
+    decision = await decideAiReply(orderId, effectiveText, effectiveText);
+  } catch (err) {
+    console.error("ai-suggestion: decideAiReply failed:", err);
+    return NextResponse.json({ error: "AI suggestion failed to generate" }, { status: 502 });
+  }
   if (!decision) {
     return NextResponse.json({ suggestion: null });
   }
