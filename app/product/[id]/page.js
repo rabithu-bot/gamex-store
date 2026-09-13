@@ -7,6 +7,7 @@ import Footer from "@/app/components/Footer";
 import ListingCard from "@/app/components/ListingCard";
 import BuyForm from "./BuyForm";
 import ImageGallery from "./ImageGallery";
+import StickyBuyBarVisibility from "./StickyBuyBarVisibility";
 
 // Was force-dynamic — see app/page.js for the full reasoning (same fix,
 // same safety argument: /api/orders re-checks real availability at
@@ -194,7 +195,7 @@ export default async function ProductPage({ params }) {
               Verified &amp; Secure Transaction
             </div>
 
-            <div className="buy-bar">
+            <div className="buy-bar" id="buy-bar">
               <div className="buy-bar-mobile-price">
                 <span className="muted">Price</span>
                 <span className="buy-bar-price-value">
@@ -251,7 +252,7 @@ export default async function ProductPage({ params }) {
         </div>
 
         {similarListings.length > 0 && (
-          <section style={{ marginTop: "3rem" }}>
+          <section id="similar-accounts" style={{ marginTop: "3rem" }}>
             <h2>Similar Accounts</h2>
             <p className="muted">Other accounts you might be interested in.</p>
             <div className="listing-grid" style={{ marginBottom: "3rem" }}>
@@ -262,6 +263,7 @@ export default async function ProductPage({ params }) {
           </section>
         )}
       </main>
+      <StickyBuyBarVisibility />
       <Footer />
     </>
   );

@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, memo } from "react";
 import { Search, ImageOff } from "lucide-react";
 import ListingAvailabilityToggle from "./ListingAvailabilityToggle";
 import Lightbox from "@/app/components/Lightbox";
+import { useToast } from "@/app/components/Toast";
 import { useVisiblePolling } from "@/app/lib/useVisiblePolling";
 import { getCached, setCached } from "./panelCache";
 
@@ -56,6 +57,7 @@ export default function OrdersPanel() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [zoomedProof, setZoomedProof] = useState(null);
+  const toast = useToast();
 
   // Every write to `orders` — the poll's fresh fetch, an optimistic
   // action, or a rollback — also mirrors into the cache, so a remount
@@ -101,8 +103,10 @@ export default function OrdersPanel() {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/${action}`, { method: "POST" });
       if (!res.ok) throw new Error("action failed");
+      toast(action === "confirm" ? `Order #${orderId} confirmed` : `Order #${orderId} declined`);
     } catch {
       updateOrders(prevOrders);
+      toast("Something went wrong, please try again");
     } finally {
       setBusyId(null);
     }

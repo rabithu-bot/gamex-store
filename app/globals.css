@@ -2475,7 +2475,7 @@ select:focus-visible {
 }
 
 .btn-buy-now:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 .btn-buy-now:disabled {
@@ -2572,6 +2572,17 @@ select:focus-visible {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.8);
     animation: buy-bar-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    transition: transform 0.35s cubic-bezier(0.34, 1.1, 0.4, 1), opacity 0.25s ease;
+  }
+
+  /* Slid/faded out once "Similar Accounts" scrolls into view — see
+     StickyBuyBarVisibility.js. A spring-flavored easing (slight overshoot)
+     rather than a linear/ease slide, to read as tactile instead of just a
+     toggle. */
+  .buy-bar.buy-bar-hidden {
+    transform: translateY(120%);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .buy-bar-mobile-price {
@@ -2599,6 +2610,10 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .buy-bar {
     animation: none;
+    transition: opacity 0.15s ease;
+  }
+  .buy-bar.buy-bar-hidden {
+    transform: none;
   }
 }
 
