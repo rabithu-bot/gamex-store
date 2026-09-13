@@ -13,11 +13,41 @@ import { NextResponse } from "next/server";
 const BLOCKED_UA_PATTERN =
   /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-Web|anthropic-ai|Anthropic|PerplexityBot|Perplexity-User|CCBot|Bytespider|Diffbot|Scrapy|python-requests|curl\/|Wget|HeadlessChrome|headless|PhantomJS|puppeteer|selenium/i;
 
+// The one real scenario where a full site clone (someone's own copy of the
+// frontend, hosted on their own domain) can still be caught server-side: if
+// they didn't rebuild a backend and their copied frontend JS calls straight
+// back to *our* live API. A cross-origin fetch like that carries a real
+// browser-set Origin header naming their domain — that's what this catches.
+//
+// Deliberately does NOT block when the Origin header is simply absent —
+// same-origin navigation and plenty of legitimate same-site requests never
+// send one, and treating "missing" as suspicious would risk a real
+// customer's own checkout request here. Only an Origin that is *present
+// and explicitly a different site* trips this, so it can't false-positive
+// a genuine visitor.
+const SITE_ORIGIN = "https://gamexstore.com";
+
 export function middleware(request) {
   const ua = request.headers.get("user-agent") || "";
   if (BLOCKED_UA_PATTERN.test(ua)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
+
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+    if (origin && origin !== SITE_ORIGIN) {
+      return NextResponse.json(
+        {
+          error:
+            "This request came from an unauthorized copy of GameX Store's site. The real site is at " +
+            SITE_ORIGIN +
+            ". Cloning this site's code, layout, or API is prohibited under our Terms & Conditions.",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   return NextResponse.next();
 }
 

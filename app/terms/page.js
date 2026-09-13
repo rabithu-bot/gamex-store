@@ -156,6 +156,18 @@ export default function TermsPage() {
           Questions about an order or these Terms can be raised directly through the order chat on
           your order page, or via the official channels linked in the footer below.
         </p>
+
+        <h2>10. Intellectual Property &amp; Automated Use Restrictions</h2>
+        <p>
+          The Site's design, layout, interface, and underlying source code are the property of
+          GameX Store and are protected under applicable intellectual property and unfair
+          competition law. Other than ordinary personal browsing and purchasing, you may not
+          scrape, crawl, systematically extract, mirror, or use automated tools — including
+          AI-assisted code generation — to reproduce or replicate the Site's layout, interface, or
+          code, whether for a competing service or any other purpose, without our prior written
+          permission. This restriction applies equally to a person acting directly and to an
+          automated agent or tool acting on that person's behalf.
+        </p>
       </main>
       <Footer />
     </>

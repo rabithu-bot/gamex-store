@@ -1,3 +1,4 @@
+import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import Footer from "@/app/components/Footer";
 import ProofsBackButton from "@/app/proofs/ProofsBackButton";
@@ -127,6 +128,15 @@ export default function PrivacyPage() {
         <p>
           Questions about this policy or your data can be raised directly through the order chat
           on your order page, or via the official channels linked in the footer below.
+        </p>
+
+        <h2>10. Automated Scraping &amp; Data Extraction</h2>
+        <p>
+          Automated or bulk collection of content or data from the Site — including via scraping,
+          crawling, or AI-assisted tools — is restricted under Section 10 of our{" "}
+          <Link href="/terms">Terms &amp; Conditions</Link>. This Privacy Policy governs how we
+          ourselves handle personal data (see Section 1 above); it does not grant any third party,
+          human or automated, a right to extract data from the Site beyond that.
         </p>
       </main>
       <Footer />

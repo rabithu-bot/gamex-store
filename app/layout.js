@@ -6,6 +6,7 @@ import MobileTabBar from "./components/MobileTabBar";
 import InAppBrowserBanner from "./components/InAppBrowserBanner";
 import RegisterServiceWorker from "./components/RegisterServiceWorker";
 import DisableInspect from "./components/DisableInspect";
+import AntiCloneNotice from "./components/AntiCloneNotice";
 import { SITE_URL } from "./lib/siteUrl";
 
 const geistSans = Geist({
@@ -144,12 +145,25 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable}`}>
       <body>
+        {/* A real HTML comment (JSX comments never reach the browser, so
+            this is emitted the only way that does) — travels with the page
+            source itself into any raw copy of it, unlike everything else
+            on this page which only exists live on gamexstore.com. */}
+        <div
+          suppressHydrationWarning
+          style={{ display: "none" }}
+          dangerouslySetInnerHTML={{
+            __html:
+              "<!--\n  GameX Store (gamexstore.com)\n  This page's design, layout, and source code are protected under our\n  Terms & Conditions (gamexstore.com/terms, Section 10). Copying, cloning,\n  or automated/AI-assisted replication of this site is prohibited.\n  Contact us via gamexstore.com before reusing anything from this page.\n-->",
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <RegisterServiceWorker />
         <DisableInspect />
+        <AntiCloneNotice />
         <AuroraBackground />
         <InAppBrowserBanner />
         <ToastProvider>{children}</ToastProvider>
