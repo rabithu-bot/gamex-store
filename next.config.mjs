@@ -8,6 +8,17 @@ const nextConfig = {
     // on the Orders admin page's proof thumbnails).
     unoptimized: true,
   },
+  // Don't publish original source to the browser's Sources/DevTools panel
+  // in production. (Doesn't hide anything from someone determined — the
+  // shipped JS itself is unavoidably readable, source maps just make it
+  // pleasant to read — but there's no reason to make it pleasant either.)
+  productionBrowserSourceMaps: false,
+  compiler: {
+    // Strips console.* calls from client bundles in production builds only
+    // (dev keeps them). console.error survives so real client-side errors
+    // still surface in the browser console / any error-reporting hook.
+    removeConsole: { exclude: ["error"] },
+  },
   async headers() {
     return [
       {
@@ -33,6 +44,13 @@ const nextConfig = {
           // voice notes in support chat genuinely need it.
           { key: "Permissions-Policy", value: "camera=(), geolocation=(), payment=()" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          // Opts out of AI training/summarization use specifically, without
+          // the broader noindex/nofollow the same header could also carry —
+          // this store still wants (and is built for) real Google/Bing
+          // search visibility; app/robots.js already blocks AI crawlers
+          // that honor robots.txt, this is the header-level equivalent for
+          // ones that check this instead.
+          { key: "X-Robots-Tag", value: "noai, noimageai" },
         ],
       },
     ];

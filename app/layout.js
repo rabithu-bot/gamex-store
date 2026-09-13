@@ -66,6 +66,11 @@ export const metadata = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,
+  // Explicit index/follow (real Google/Bing traffic is the whole point of
+  // the SEO copy on the homepage) plus the AI-training opt-out signals —
+  // deliberately not noindex/nofollow, which would also deindex the store
+  // from real search engines.
+  robots: "index, follow, noai, noimageai",
   alternates: {
     canonical: `${SITE_URL}/`,
   },
