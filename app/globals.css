@@ -2579,9 +2579,16 @@ select:focus-visible {
      StickyBuyBarVisibility.js. A spring-flavored easing (slight overshoot)
      rather than a linear/ease slide, to read as tactile instead of just a
      toggle. */
+  /* !important on both: .buy-bar's own entrance animation
+     (buy-bar-in, above) uses animation-fill-mode: both, which keeps
+     applying that animation's own final transform/opacity (0 / 1)
+     indefinitely after it finishes — CSS animations always win over a
+     normal-priority rule for the same property regardless of selector
+     specificity, so without !important here this class was toggling
+     correctly but never actually taking visual effect. */
   .buy-bar.buy-bar-hidden {
-    transform: translateY(120%);
-    opacity: 0;
+    transform: translateY(120%) !important;
+    opacity: 0 !important;
     pointer-events: none;
   }
 
@@ -2613,7 +2620,10 @@ select:focus-visible {
     transition: opacity 0.15s ease;
   }
   .buy-bar.buy-bar-hidden {
-    transform: none;
+    /* !important to win over the base (non-reduced-motion) rule's own
+       !important transform above — only !important beats !important,
+       and this rule comes later in the cascade so it wins the tie. */
+    transform: none !important;
   }
 }
 
