@@ -4643,6 +4643,110 @@ select:focus-visible {
   color: #c4b5fd;
 }
 
+/* ---- AI Suggest Mode (admin chat) ---- */
+
+.ai-suggestion-card {
+  margin: 0 0 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid var(--accent-soft);
+  background: linear-gradient(160deg, var(--accent-soft), transparent 70%), var(--surface-solid);
+}
+
+.ai-suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  /* var(--accent), not a hardcoded gold/cyan — this card renders inside
+     .admin-light too (see (dashboard)/layout.js), which redefines --accent
+     to its own purple rather than the storefront's amber, and every color
+     here needs to follow that automatically rather than needing its own
+     .admin-light override block (the pattern .admin-light .btn's own
+     comment establishes). */
+  color: var(--accent);
+}
+
+.ai-suggestion-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.ai-suggestion-text {
+  margin-top: 0.45rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.ai-suggestion-note {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.ai-suggestion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.ai-suggestion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.ai-suggestion-btn:active {
+  transform: scale(0.96);
+}
+
+.ai-suggestion-dismiss {
+  color: var(--foreground);
+  opacity: 0.65;
+}
+
+.ai-suggestion-dismiss:hover {
+  opacity: 1;
+}
+
+.ai-suggestion-edit:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ai-suggestion-send {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+.ai-suggestion-send:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ai-suggestion-send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ---- Support display name control ---- */
 
 .support-name-control {

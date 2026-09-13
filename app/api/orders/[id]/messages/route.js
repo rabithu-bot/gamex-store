@@ -4,26 +4,10 @@ import { saveMessageAttachment } from "@/app/lib/uploads";
 import { enhanceVideoUrl } from "@/app/lib/cloudinary";
 import { assertOrderAccess } from "@/app/lib/orderAccessToken";
 import { notifyAdminsOfMessage, notifyBuyerOfReply } from "@/app/lib/push";
-import { buildOrderAiContext } from "@/app/lib/aiSupportContext";
-import { generateSupportReply } from "@/app/lib/gemini";
-import { getOfficialQrUrl } from "@/app/lib/paymentQr";
 import { transcribeVoiceNote } from "@/app/lib/transcribeAudio";
 import { sendChunkedReply } from "@/app/lib/chunkReply";
 import { isAiAutoReplyEnabled, estimateTypingSeconds } from "@/app/lib/aiLearning";
-import {
-  isGreetingOnly,
-  pickGreetingReply,
-  isQrRequest,
-  QR_REPLY_CHUNKS,
-  isBuyIntent,
-  CLOSING_REPLY_CHUNKS,
-  isLoginQuestion,
-  LOGIN_REPLY_CHUNKS,
-  isBuyingGuidanceQuestion,
-  BUYING_GUIDANCE_CHUNKS,
-  isTrustQuestion,
-  TRUST_REPLY_CHUNKS,
-} from "@/app/lib/aiIntent";
+import { decideAiReply } from "@/app/lib/aiDecision";
 
 // Debounce window for the AI auto-reply. A buyer firing off several
 // messages in quick succession ("bhai" / "order ka status?" / "please
@@ -209,55 +193,10 @@ export async function POST(request, { params }) {
         // only happens after the simulated typing delay further down, so
         // the buyer sees a natural "typing..." stretch before the message
         // itself appears, instead of it landing the instant it's decided.
-        // A handful of questions have exactly one correct, policy-level
-        // answer that has nothing to do with the LLM — handled directly
-        // instead of trusting a model to phrase store policy right every
-        // time. Checked in this order because a message can't be more
-        // than one of these anyway (each check is fairly specific).
-        let decision = null;
-        if (isGreetingOnly(effectiveText)) {
-          decision = { chunks: pickGreetingReply() };
-        } else if (isBuyIntent(effectiveText)) {
-          // Sale-closing takes priority over a bare "QR do" — the customer
-          // has just committed to a specific ID, so the reply is the
-          // closing line, not the plain "here's the QR" one, even though
-          // both send the same real QR image pulled from the global
-          // settings row (never from chat history or any other order's data).
-          const qrUrl = await getOfficialQrUrl();
-          decision = { chunks: CLOSING_REPLY_CHUNKS, attachmentPath: qrUrl, attachmentType: "image" };
-        } else if (isQrRequest(effectiveText)) {
-          // The ONLY source for this is the global settings row — never a
-          // URL pulled from this or any other order's past chat history.
-          const qrUrl = await getOfficialQrUrl();
-          decision = { chunks: QR_REPLY_CHUNKS, attachmentPath: qrUrl, attachmentType: "image" };
-        } else if (isLoginQuestion(effectiveText)) {
-          decision = { chunks: LOGIN_REPLY_CHUNKS };
-        } else if (isBuyingGuidanceQuestion(effectiveText)) {
-          decision = { chunks: BUYING_GUIDANCE_CHUNKS };
-        } else if (isTrustQuestion(effectiveText)) {
-          decision = { chunks: TRUST_REPLY_CHUNKS };
-        } else {
-          const context = await buildOrderAiContext(orderId, effectiveText);
-          // The one case where a past admin line gets reused word-for-word
-          // instead of generating a fresh reply — see findVerbatimMatch for
-          // exactly how narrow/safe that match has to be.
-          if (context?.verbatimReply) {
-            decision = { chunks: [context.verbatimReply] };
-          } else {
-            const reply = context ? await generateSupportReply(context, effectiveText || notifyBody) : null;
-            if (reply) {
-              // A real screenshot of the top matching listing rides along
-              // when the customer was asking about budget/availability —
-              // "ye lo ID ki details aur screenshot", with an actual photo
-              // attached, not just a claim.
-              decision = {
-                chunks: [reply],
-                attachmentPath: context.topListingImage || undefined,
-                attachmentType: context.topListingImage ? "image" : undefined,
-              };
-            }
-          }
-        }
+        // See app/lib/aiDecision.js for the actual decision chain (shared
+        // with the admin-facing Suggest Mode draft endpoint, so the two
+        // never answer the same question two different ways).
+        const decision = await decideAiReply(orderId, effectiveText, notifyBody);
 
         if (!decision) return;
 

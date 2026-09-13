@@ -15,6 +15,9 @@ import {
   CheckCheck,
   Video as VideoIcon,
   Share2,
+  Sparkles,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import Lightbox from "@/app/components/Lightbox";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
@@ -78,6 +81,11 @@ export default function ChatThread({ orderId }) {
   const [swipeState, setSwipeState] = useState(null); // { id, offset }
   const [now, setNow] = useState(() => Date.now());
   const [quickShareOpen, setQuickShareOpen] = useState(false);
+  // "Suggest Mode" — a draft AI reply to the latest unanswered buyer
+  // message, shown above the composer for the admin to send/edit/dismiss.
+  // Never sent on its own; see app/api/admin/orders/[id]/ai-suggestion.
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [aiSuggestionLoading, setAiSuggestionLoading] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
@@ -91,6 +99,10 @@ export default function ChatThread({ orderId }) {
   const recordedChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
   const createdObjectUrlsRef = useRef(new Set());
+  // Which buyer message id the AI suggestion above was last fetched (or
+  // explicitly dismissed) for — guards the effect below from re-fetching
+  // on every 1.5s poll tick when nothing about the latest message changed.
+  const lastSuggestionForRef = useRef(null);
 
   const fetchOrder = useCallback(async () => {
     const res = await fetch(`/api/admin/orders/${orderId}`, { cache: "no-store" });
@@ -124,6 +136,38 @@ export default function ChatThread({ orderId }) {
       fetch(`/api/admin/orders/${orderId}/read`, { method: "POST" }).catch(() => {});
     }
   }, [orderId, order?.messages]);
+
+  // Suggest Mode: fetch a draft AI reply whenever the newest message is an
+  // unanswered buyer message. Re-runs on every poll tick (order changes
+  // every ~1.5s) but the ref guard makes that a no-op unless the latest
+  // buyer message id actually changed, or a prior dismissal needs clearing
+  // because a NEW buyer message has since arrived.
+  useEffect(() => {
+    const messages = order?.messages;
+    if (!messages || messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.sender !== "buyer") {
+      // Already answered (or was never a buyer message) — nothing to draft.
+      if (aiSuggestion || aiSuggestionLoading) {
+        setAiSuggestion(null);
+        setAiSuggestionLoading(false);
+      }
+      return;
+    }
+    if (lastSuggestionForRef.current === lastMessage.id) return;
+    lastSuggestionForRef.current = lastMessage.id;
+    setAiSuggestion(null);
+    setAiSuggestionLoading(true);
+    fetch(`/api/admin/orders/${orderId}/ai-suggestion`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setAiSuggestion(data?.suggestion || null))
+      .catch(() => setAiSuggestion(null))
+      .finally(() => setAiSuggestionLoading(false));
+    // aiSuggestion/aiSuggestionLoading deliberately excluded — they're only
+    // read here to decide whether the "already answered" branch above needs
+    // to clear anything, not to re-trigger this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.messages, orderId]);
 
   // Drives the typing indicator's staleness check between poll ticks — the
   // order data itself only refreshes every 1.5s, but "is this still recent
@@ -218,9 +262,14 @@ export default function ChatThread({ orderId }) {
     setReplyText("");
   }
 
-  async function handleReply(e) {
+  // textOverride lets the AI suggestion card's "Send" action fire a real
+  // send without the round-trip of writing into replyText first and
+  // waiting a render (setState there wouldn't be visible to this same
+  // synchronous call yet) — every other caller omits it and falls back to
+  // the composer's own text exactly as before.
+  async function handleReply(e, textOverride) {
     e?.preventDefault();
-    const trimmed = replyText.trim();
+    const trimmed = (textOverride ?? replyText).trim();
     if (!order || sending) return;
 
     if (editingMessageId) {
@@ -338,6 +387,27 @@ export default function ChatThread({ orderId }) {
     } finally {
       setSending(false);
     }
+  }
+
+  // Loads the AI's draft into the composer for the admin to tweak before
+  // sending — same effect as tapping a quick-reply chip.
+  function editAiSuggestion() {
+    if (!aiSuggestion) return;
+    setReplyText(aiSuggestion.text);
+    setAiSuggestion(null);
+    textareaRef.current?.focus();
+  }
+
+  // One-tap send, text only — see the ai-suggestion route's own comment on
+  // why an attached QR/listing photo isn't wired into this fast path yet.
+  function sendAiSuggestionNow() {
+    if (!aiSuggestion || sending) return;
+    handleReply(null, aiSuggestion.text);
+    setAiSuggestion(null);
+  }
+
+  function dismissAiSuggestion() {
+    setAiSuggestion(null);
   }
 
   async function handleDeleteMessage(messageId) {
@@ -804,6 +874,51 @@ export default function ChatThread({ orderId }) {
           <button type="button" onClick={() => setAudioBlob(null)} aria-label="Discard voice message">
             <X size={14} />
           </button>
+        </div>
+      )}
+
+      {/* Suggest Mode — hidden while the admin is already composing their
+          own reply, editing a past message, or recording, so it never
+          fights for attention with something they're already doing. */}
+      {!recording && !editingMessageId && !replyText.trim() && (aiSuggestionLoading || aiSuggestion) && (
+        <div className="ai-suggestion-card">
+          <div className="ai-suggestion-header">
+            <Sparkles size={14} />
+            <span>AI suggested reply</span>
+          </div>
+          {aiSuggestionLoading ? (
+            <div className="ai-suggestion-loading">
+              <Loader2 size={14} className="icon-spin" />
+              <span className="muted">Thinking...</span>
+            </div>
+          ) : (
+            <>
+              <p className="ai-suggestion-text">{aiSuggestion.text}</p>
+              {aiSuggestion.hasAttachment && (
+                <p className="muted ai-suggestion-note">
+                  Also suggests attaching an image — attach it yourself if you send this.
+                </p>
+              )}
+              <div className="ai-suggestion-actions">
+                <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                  Dismiss
+                </button>
+                <button type="button" className="ai-suggestion-btn ai-suggestion-edit" onClick={editAiSuggestion}>
+                  <Pencil size={13} />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="ai-suggestion-btn ai-suggestion-send"
+                  onClick={sendAiSuggestionNow}
+                  disabled={sending}
+                >
+                  <Send size={13} />
+                  Send
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
