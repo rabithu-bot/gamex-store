@@ -34,8 +34,15 @@ const BLOCKED_UA_PATTERN =
 // customer's own checkout request here. Only an Origin that is *present
 // and explicitly a different site* trips this, so it can't false-positive
 // a genuine visitor.
-const SITE_ORIGIN = "https://gamexstore.com";
-
+//
+// Compared against request.nextUrl.origin (derived from THIS request's own
+// Host header) rather than a hardcoded "https://gamexstore.com" — a
+// hardcoded constant here was a real bug: it made every admin login and
+// every Suggest Mode/API call fail with a false "unauthorized copy" 403 on
+// any origin other than the literal production domain, including local dev
+// (localhost) and any Vercel preview deployment. Comparing against the
+// request's own origin means "same-origin as whatever is actually serving
+// this request" is correct everywhere it runs, with no hardcoded domain.
 export function middleware(request) {
   const ua = request.headers.get("user-agent") || "";
   if (BLOCKED_UA_PATTERN.test(ua)) {
@@ -44,12 +51,12 @@ export function middleware(request) {
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin");
-    if (origin && origin !== SITE_ORIGIN) {
+    if (origin && origin !== request.nextUrl.origin) {
       return NextResponse.json(
         {
           error:
             "This request came from an unauthorized copy of GameX Store's site. The real site is at " +
-            SITE_ORIGIN +
+            request.nextUrl.origin +
             ". Cloning this site's code, layout, or API is prohibited under our Terms & Conditions.",
         },
         { status: 403 },

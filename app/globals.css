@@ -4678,6 +4678,15 @@ select:focus-visible {
   font-size: 0.85rem;
 }
 
+.ai-suggestion-none {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
 .ai-suggestion-text {
   margin-top: 0.45rem;
   font-size: 0.88rem;

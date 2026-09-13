@@ -160,7 +160,13 @@ export default function ChatThread({ orderId }) {
     setAiSuggestionLoading(true);
     fetch(`/api/admin/orders/${orderId}/ai-suggestion`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setAiSuggestion(data?.suggestion || null))
+      // "none" (a string, distinct from null) means "asked, got a real
+      // answer: nothing to suggest" — e.g. an image/video with no caption
+      // text, which this can't draft a reply from yet. Shown as its own
+      // small dismissible line below rather than nothing, so a buyer
+      // message that genuinely has no suggestion doesn't look identical
+      // to the feature having silently failed.
+      .then((data) => setAiSuggestion(data?.suggestion || "none"))
       .catch(() => setAiSuggestion(null))
       .finally(() => setAiSuggestionLoading(false));
     // aiSuggestion/aiSuggestionLoading deliberately excluded — they're only
@@ -392,7 +398,7 @@ export default function ChatThread({ orderId }) {
   // Loads the AI's draft into the composer for the admin to tweak before
   // sending — same effect as tapping a quick-reply chip.
   function editAiSuggestion() {
-    if (!aiSuggestion) return;
+    if (!aiSuggestion || aiSuggestion === "none") return;
     setReplyText(aiSuggestion.text);
     setAiSuggestion(null);
     textareaRef.current?.focus();
@@ -401,7 +407,7 @@ export default function ChatThread({ orderId }) {
   // One-tap send, text only — see the ai-suggestion route's own comment on
   // why an attached QR/listing photo isn't wired into this fast path yet.
   function sendAiSuggestionNow() {
-    if (!aiSuggestion || sending) return;
+    if (!aiSuggestion || aiSuggestion === "none" || sending) return;
     handleReply(null, aiSuggestion.text);
     setAiSuggestion(null);
   }
@@ -890,6 +896,18 @@ export default function ChatThread({ orderId }) {
             <div className="ai-suggestion-loading">
               <Loader2 size={14} className="icon-spin" />
               <span className="muted">Thinking...</span>
+            </div>
+          ) : aiSuggestion === "none" ? (
+            // Asked and genuinely got nothing to suggest — most often a
+            // buyer message that's an image/video with no caption text, or
+            // a voice note that failed to transcribe. Shown explicitly
+            // rather than just hiding the whole block, so this doesn't
+            // look identical to the feature having silently failed.
+            <div className="ai-suggestion-none">
+              <span className="muted">No suggestion for this message.</span>
+              <button type="button" className="ai-suggestion-btn ai-suggestion-dismiss" onClick={dismissAiSuggestion}>
+                Dismiss
+              </button>
             </div>
           ) : (
             <>
